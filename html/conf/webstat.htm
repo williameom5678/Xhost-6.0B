@@ -1,0 +1,38 @@
+<?
+    include "../db.htm";
+    include "../ut.htm";
+    if ($super_user!=1235) {alert("관리자용기능");exit;}
+
+    function run($num,$str,$limit=9999) {
+        $buff="";
+        $count=0;
+        $fp=popen($str,"r");
+        $out="-----------------------------------------------------------\n";
+        $out.="($num) $str\n";
+        $out.="-----------------------------------------------------------\n";
+        while ($buff=fgets($fp,5000) ) {
+            if ($count==0&&($buff==""||$buff=="\n")) continue;
+            if ( $limit<$count++ ) break;
+            $out.=$buff;
+        }
+        pclose($fp);
+        return $out;
+    }
+
+    $now_date=date("Y-m-d H:i:s");
+    $str="";
+    $str.="----------------------------------------------------------------\n";
+    $str.="(1) $now_date\n";
+    $str.="----------------------------------------------------------------\n";
+    $str.=run(2,"w");
+    $str.=run(3,"top -b -n1",20);
+    $str.=run(4,"ping kornet.net -c 5");
+    $str.=run(5,"ps aux");
+    $str.=run(6,"df");
+    $str.=run(7,"xfcheck show ");
+    if (!$hide) {
+        echo "<pre>\n$str</pre>";
+    $fp=fopen("/nfs/akom/rec/system.rec","a+");
+    fputs($fp,$str);
+    fclose($fp);
+?>

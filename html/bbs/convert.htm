@@ -1,0 +1,237 @@
+<?
+  function convert_face($str) {
+	  $aface=array(
+	  미소 =>	"gima0101.gif",
+	  와아 =>	"gima0102.gif",
+	  하하 =>	"gima0104.gif",
+	  호호 =>	"gima0108.gif",
+	  오호호 => "gima0105.gif",
+	  오호 =>	"gima0116.gif",
+	  헤헤 =>	"gima0106.gif",
+	  히히 =>	"gima0107.gif",
+	  메롱 =>	"gima0111.gif",
+	  푸하하 => "gima0103.gif",
+	  우와 =>	"gima0115.gif",
+	  발끈 =>	"gima0109.gif",
+	  성남 =>	"gima0110.gif",
+	  오잉 =>	"gima0114.gif",
+	  뭐라고 => "gima0113.gif",
+	  흑흑 =>	"gima0112.gif",
+	  힐끔 =>	"gima0117.gif",
+	  흐으 =>	"gima0118.gif",
+	  으으 =>	"gima0119.gif",
+	  부들 =>	"gima0120.gif",
+	  으악 =>	"gima0121.gif",
+	  깝죽 =>	"gima0122.gif",
+	  졸려 =>	"gima0123.gif",
+	  뾰옹 =>	"gima0124.gif",
+	  시무룩 => "gima0125.gif",
+	  띠용 =>	"gima0126.gif",
+	  멍듦 =>	"gima0127.gif",
+	  당황 =>	"gima0128.gif",
+	  우웩 =>	"gima0129.gif",
+	  허허 =>	"gima0130.gif",
+	  푸훗 =>	"gima0131.gif",
+	  웃음 =>	"gima0132.gif",
+	  함박 =>	"gima0133.gif",
+	  음산 =>	"gima0134.gif",
+	  놀람 =>	"gima0135.gif",
+	  황당 =>	"gima0136.gif",
+	  울먹 =>	"gima0137.gif",
+	  훌쩍 =>	"gima0138.gif",
+	  씨이 =>	"gima0139.gif",
+	  크하하 => "gima0140.gif",
+	  호호호 => "gima0146.gif",
+	  와하하 => "gima0143.gif",
+	  새침 =>	"gima0144.gif",
+	  꾸벅 =>	"gima0163.gif",
+	  방끗 =>	"gima0164.gif",
+	  아하 =>	"gima0152.gif",
+	  궁금 =>	"gima0153.gif",
+	  부끄 =>	"gima0154.gif",
+	  땀땀 =>	"gima0145.gif",
+	  허걱 =>	"gima0150.gif",
+	  한숨 =>	"gima0162.gif",
+	  쿨쿨 =>	"gima0165.gif",
+	  헬쑥 =>	"gima0158.gif",
+	  으씨 =>	"gima0159.gif",
+	  반짝 =>	"gima0160.gif",
+	  엉엉 =>	"gima0155.gif",
+	  잉잉 =>	"gima0149.gif",
+	  흐음 =>	"gima0156.gif",
+	  윙크 =>	"gima0157.gif",
+	  으윽 =>	"gima0151.gif",
+	  야호 =>	"gima0141.gif",
+	  아잉 =>	"gima0142.gif",
+	  화남 =>	"gima0147.gif",
+	  반함 =>	"gima0148.gif",
+	  째려봄 => "gima0161.gif",
+	  얼굴0 =>	"face0.gif",
+	  얼굴1 =>	"face1.gif",
+	  얼굴2 =>	"face2.gif",
+	  얼굴3 =>	"face3.gif",
+	  얼굴4 =>	"face4.gif",
+	  얼굴5 =>	"face5.gif",
+	  얼굴6 =>	"face6.gif",
+	  얼굴7 =>	"face7.gif",
+	  얼굴8 =>	"face8.gif",
+	  얼굴9 =>	"face9.gif",
+	  );
+	  while ( list ($key,$val) = each ($aface) ) {
+		  if (!(empty($key))) {
+			  if(gettype($val) != "string") settype($val,"string");
+			  $get_key = "/".$key."/";
+			  $get_face = "<img src=images/face/$val border=0>";
+			  $str = str_replace($get_key,$get_face,$str);
+		  }
+	  }
+	  return $str;
+  }
+
+
+  function convert_row() {
+      global $cfg,$bcfg,$row,$face,$code,$club,$num;
+      global $userip,$userid,$userna,$tread_id,$tread_email,$tread_date,$tread_date2;
+      global $super_user,$csuper_user,$userty,$ctype;
+      global $field,$s_que;
+
+	  // url과 이메일의 정규 표현식
+	  if ($row[tag]!='y') {
+		//$http_pattern = "http://([0-9a-zA-Z./@~?&=_]+)";
+		//$email_pattern = "([_0-9a-zA-Z-]+(\.[_0-9a-zA-Z-]+)*)@([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)";
+		// 컨텐츠의 url과 이메일을 링크시킴
+		//$row[body] = eregi_replace($http_pattern, "<a href=http://\\1 target=_blank>http://\\1</a>", $row[body]);
+		//$row[body] = eregi_replace($email_pattern, "<a href=mailto:\\1@\\3>\\1@\\3</a>", $row[body]);
+	  }
+
+      if ($s_que) {
+        $row[title] = str_replace($s_que,"<font color=red><B>$s_que</B></font>",$row[title]);
+        $row[body] = str_replace($s_que,"<font color=red><B>$s_que</B></font>",$row[body]);
+        $row[body2] = str_replace($s_que,"<font color=red><B>$s_que</B></font>",$row[body2]);
+        $row[note1] = str_replace($s_que,"<font color=red><B>$s_que</B></font>",$row[note1]);
+        $row[note2] = str_replace($s_que,"<font color=red><B>$s_que</B></font>",$row[note2]);
+      }
+
+	  $row[body]=stripslashes($row[body]) ;
+
+	  if ($bcfg[not_convert1]!='y') {
+		  $row[body]=eregi_replace("<script","&lt;script",$row[body]);
+	  }
+	  if ($bcfg[not_convert2]!='y') {
+		  $row[body]=eregi_replace("<applet","&lt;applet",$row[body]);
+		  $row[body]=eregi_replace("<object","&lt;object",$row[body]);
+	  }
+	  if ($bcfg[not_convert3]!='y') {
+		  $row[body]=eregi_replace("<xmp","&lt;xmp",$row[body]);
+	  }
+
+	  $row[body]=eregi_replace("<\?","&lt;?",$row[body]);
+	  $row[body]=eregi_replace(">\?","&gt;?",$row[body]);
+
+	  $tread_body="";
+	  if ($bcfg[use_nl2br2]=='y'&&$row[tag]!='y') $tread_body=nl2br($row[body]);
+	  else $tread_body=$row[body];
+
+	  if ($bcfg[use_xmp]=='y') $tread_body="<XMP>".$tread_body."</XMP>";
+
+	  $tread_id="$row[id] ($row[name])";
+      if ($row[email]&&$super_user==1235) {
+		$tread_email="<a href='mailto:$row[email]'><img src='images/email1.gif' border=0></a>";
+	  }
+
+      if ($userid&&$userid!="guest"&&$userid==$row[id]&&$bcfg[use_myread]=='y') $skip_itype=true;
+      if ($skip_itype);
+      else if ($row[name]=="내용공개") ;
+      else if ($super_user==1235||$csuper_user);
+      else if ($row[readopen]=='n') $tread_body="*** 비공개 내용입니다. (관리자만 읽을 수 있습니다.) ***";
+      else if ($bcfg[bform]==51) {echo ("<script>alert('이 게시물을 운영자만 읽을수 있습니다.');history.back();</script>");exit;}
+
+      if (!$skip_itype&&$row[name]!="내용공개") {
+		  if ($club!="main") {
+			if ($bcfg[rctype]>0&&$bcfg[rctype]>$ctype) {echo ("<script>window.alert('동호등급 $bcfg[rctype] 이상 읽기가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+			if ($ccfg[rctype]>0&&$ccfg[rctype]>$ctype) {echo ("<script>window.alert('동호등급 $ccfg[rctype] 이상 읽기가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+			if ($ccfg[rtype]>0&&$ccfg[rtype]>$userty)  {echo ("<script>window.alert('메인등급 $ccfg[rtype]  이상 읽기가능 (현재:$userty)');history.go(-1)</script>");exit;}
+		  }
+
+		  if ($bcfg[rtype]>0&&$bcfg[rtype]>$userty)    {echo ("<script>window.alert('메인등급 $bcfg[rtype]  이상 읽기가능 (현재:$userty)');history.go(-1)</script>");exit;}
+		  if ($cfg[rtype]>0&&$cfg[rtype]>$userty)	   {echo ("<script>window.alert('메인등급 $cfg[rtype]   이상 읽기가능 (현재:$userty)');history.go(-1)</script>");exit;}
+	  }
+
+
+	  //$row[title] = htmlspecialchars($row[title]);
+	  $row[title]=eregi_replace("<","&lt;",$row[title]);
+	  $row[title]=eregi_replace(">","&gt;",$row[title]);
+
+	  $tread_date=$row[date];
+	  $tread_date2=substr($row[date],0,16);
+
+	  if ($bcfg[bform]==2&&$super_user!=1235) {  //비공개
+		  $row[id]=$row[name]="...";
+		  $tread_id="";
+	  }
+      else if ($bcfg[send_mail]=='y') {
+          $tread_id="<a href='../mailwrit.htm?cmd=rebbs&toid=$row[id]&num=$row[num]&code=$code&club=$club&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno'>$tread_id</a>";
+      }
+
+	  if ($bcfg[bform]==14) {  //사진뉴스
+		$extend=substr(strrchr($row[filename], "."),1);
+		if (($extend=="jpg"||$extend=="gif")) {
+		  $ori_file=sprintf("$cfg_base/pds/%s/%s/%s",$club,$code,$row[filename]);
+		  if (file_exists($ori_file)) {  //사진뉴스 일때는 그대로
+            system("ln -sf $ori_file ../tmp/$code/$row[filename]");
+            $tread_body="<img src='../tmp/$code/$row[filename]' align=right border=0 valign=top>".$tread_body;
+		  }
+		  else {
+			$ori_file=sprintf("$cfg_base/pds/%s/%s/%s.%x",$club,$code,$row[filename],$row[fcount]);
+			if (file_exists($ori_file))  {	//사진뉴스 일때는 그대로
+              if (!is_dir("../tmp/$code")) mkdir("../tmp/$code",0777);
+              system("ln -sf $ori_file ../tmp/$code/$row[filename]");
+              $tread_body="<img src='../tmp/$code/$row[filename]' align=right border=0 valign=top>".$tread_body;
+			}
+		  }
+		}
+	  }
+
+	  $face="";
+	  if ($row[face]) $face=sprintf("<img src=images/face/gima%04d.gif border=0>",$row[face]);
+	  else if (is_super_user($row[id])) $face="<img src=images/master.gif border=0>";
+
+	  if ($row[tag]!='y'&&$bcfg[use_background]!='n') {
+		  $tread_body="<img src=images/i_sign.gif border=0>".$tread_body;
+	  }
+	  return $tread_body;
+  }
+
+  function str_shcode($str) {
+	$count=0;
+	while ($count++<50&&($i=strstr($str,"///"))) {
+		$str2="";
+		if ($i) {
+		  for ($i1=3;$i1<25;$i1++) {
+			$ch=substr($i,$i1,3);
+			if ($ch=="///") break;
+			$str2=$str2.substr($i,$i1,1);
+			//echo ("$count,$str2,<BR>");
+		  }
+		}
+		$str3="///".$str2."///";
+		$str4="<a href=/goods/detail.htm?cnt=0&code=$str2><img src=/img/".strtolower($str2)."_s.jpg border=0></a>";
+		$str=str_replace($str3,$str4,$str);
+	}
+	while ($count++<50&&($i=strstr($str,"[[["))) {
+		$str2="";
+		if ($i) {
+		  for ($i1=3;$i1<25;$i1++) {
+			$ch=substr($i,$i1,3);
+			if ($ch=="]]]") break;
+			$str2=$str2.substr($i,$i1,1);
+			//echo ("$count,$str2,<BR>");
+		  }
+		}
+		$str3="[[[".$str2."]]]";
+        $str4="<img src=images/face/".strtolower($str2).".gif border=0>";
+		$str=str_replace($str3,$str4,$str);
+	}
+	return $str;
+  }
+?>

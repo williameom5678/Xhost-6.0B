@@ -1,0 +1,91 @@
+<?
+  $ut_dir="..";
+  if (file_exists("ut.htm")) $ut_dir=".";
+  include "$ut_dir/db.htm";
+  include "$ut_dir/ut.htm";
+  //include "$ut_dir/lib/template.htm";
+
+  $connect=mysql_connect($DBHOST,$DBUSER,$DBPASS);
+  if (!mysql_select_db($DBNAME,$connect)) exit;
+
+  echo("
+  <html>
+  <head>
+<style type=text/css>
+<!--
+td              { font-family:굴림,arial; font-size:12px; line-height:14pt;}
+input           { font-family:굴림,arial; font-size:12px; }
+.copyright      { font-family:굴림,arial; font-size:12px; color:#654321; line-height:13pt; }
+pre             { font-family:굴림,arial; font-size:12px; color:#123456; }
+a.top           { font-family:굴림,arial; font-size:12px; color:#5A5A5A; text-decoration:none; }
+a.top:hover     { font-family:굴림,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a.tmenu         { font-family:굴림,arial; font-size:12px; color:#444444; text-decoration:none; }
+a.tmenu:hover   { font-family:굴림,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a.lmenu         { font-family:굴림,arial; font-size:12px; color:#222222; text-decoration:none; }
+a.lmenu:hover   { font-family:굴림,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a               { font-family:굴림,arial; font-size:12px; color:#68689F; text-decoration:none; }
+-->
+</style>
+
+  <title>상품검색</title>
+  </head>
+  <script>
+  function select_code(v1,v2) {
+      opener.document.form1.e_goods.value = ''+v1;
+      opener.document.form1.title.value = opener.document.form1.title.value + v2;
+      opener.document.form1.body.value  = opener.document.form1.body.value + ' '+ v1 + ' 에 관한 질문입니다. ///'+v1+'/// ';
+      self.close();
+  }
+  </script>
+
+  <body OnLoad='document.form1.name.focus()';>
+  <form name=form1 action='$PHP_SELF'>
+  <center>
+  [제품코드 검색]<BR>
+
+  <font size=-1>검색하시고자하는 제품코드나 이름을 입력하세요.<BR>
+  <font color=blue> (예: <font color=red>n1000,니트</font>)<BR>
+  <input type=text name='name' value='$name' size=15>
+  <input type=button value='찾기' onclick='submit();' style='background-color:#ffcc00; border-bottom:gray solid 1px; border-left:gray solid 1px; border-right:gray solid 1px; border-top:gray solid 1px; color:black; height: 20px'>
+  </form>
+  ");
+  if (strlen($name)>1) {
+    echo("<table border=0 width=100%>");
+    $query="select * from goods where code like '%$name%' or gname like '%$name%' order by reg_date DESC limit 50";
+    $result=mysql_db_query($DBNAME,$query);
+    if (!$result) echo $query,mysql_error();
+	$count=0;
+	while ($row=mysql_fetch_array($result)){
+        if ($row[vflag]=='n') continue;
+        if ($row[maker]=='x') continue;
+        if (!$row[code]) continue;
+        $href="<a href=\"javascript:select_code('$row[code]','$row[gname]')\">";
+		$tstr="$row[v_province] $row[v_district] $row[v_city]";
+		$tstr=str_replace("\n","",$tstr);
+		$tstr=str_replace("\r","",$tstr);
+		if($count++ %2 == 0) $row_color='#f7f7f7';
+		else $row_color='#CBDCED';
+        $title=substr($row[intro],0,150);
+        $title=text_cut($title,145);
+        $title=str_replace("\n"," ",$title);
+        echo("<tr bgcolor='$row_color' >
+        <td>$href<img src=/shop/img/".strtolower($row[code])."_s.jpg border=0 align=left valign=top>
+        No. $count &nbsp; &nbsp; Code: $row[code]<BR>
+        품명: $row[gname]<BR>
+        색상: $row[color]<BR>
+        크기: $row[size]<BR>
+        가격: ".number_format($row[price2])."<BR>
+        등록: ".substr($row[reg_date],0,16)."<BR>
+        설명: $title <BR>
+        </a></td>
+        </tr>");
+    }
+	echo("</table>");
+  }
+  echo("
+  </body>
+  </html>
+  ");
+
+mysql_close();
+?>

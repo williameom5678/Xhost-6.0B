@@ -1,0 +1,137 @@
+<?
+
+
+echo("
+OUT파일을 DB에 저장!<br>
+<form method=post action=$PHP_SELF>
+<input type=hidden name=cmd value=save>
+변환 할 파일경로 : <input type=text name=list value=$list>&nbsp;&nbsp;<input type=submit value=확인>
+</form>
+");
+
+$db_host="localhost";
+$db_name="akom";
+$db_user="akom";
+$db_pass="";
+$connect=mysql_connect($db_host,$db_user,$db_pass);
+
+if($cmd=="save") {
+  if(!$list) echo "<script>alert('디렉토리를 입력해주세요!');history.go(-1);</script>";
+
+  $dirhandle=opendir("/akom/akom_txtfile/논문정보/$list");
+  $filename=readdir($dirhandle);
+  $filename=readdir($dirhandle);
+  
+  while($filename = readdir($dirhandle)) {
+	$filen=substr($filename,0,-4);
+	$contents=file("/akom/akom_txtfile/논문정보/$list/$filen".".out");
+	$n=count($contents);
+	echo "<br>$filen,,,,,,,<br>";
+	//초기화
+	
+	$line1=$line2=$line3=$line4=$line5=$line6="";
+	$body="";
+	$text_on=flase;
+
+	  for ($i=0;$i<$n;$i++) {
+		$line=chop($contents[$i]);
+		 /*
+		if (strncmp($line,"__[[아디[[",10)==0) { 
+		  $str1=substr($line,10);
+		}
+		*/
+		if (strstr($line,"__[[아디[[")) { 
+		  $str1=substr($line,10);
+		} 
+		else if (strstr($line,"__[[이름[[")) { 
+		  $str2=substr($line,10);
+		}
+		else if (strstr($line,"__[[문01[[")) {
+		  $str3=substr($line,10);
+		}
+		else if (strstr($line,"__[[문02[[")) {
+		  $str4=substr($line,10);
+		}
+		else if (strstr($line,"__[[문03[[")) {
+		  $str5=substr($line,10);
+		}
+		else if (strstr($line,"__[[문04[[")) {
+		  $str6=substr($line,10);
+		}
+		else if (strstr($line,"__[[문05[[")) {
+		  $str7=substr($line,10);
+		}
+		else if (strstr($line,"__[[문06[[")) {
+		  $str8=substr($line,10);
+		}
+		else if (strstr($line,"__[[문07[[")) {
+		  $str9=substr($line,10);
+		}
+		else if (strstr($line,"__[[문08[[")) {
+		  $str10=substr($line,10);
+		}
+		else if (strstr($line,"__[[문09[[")) {
+		  $str11=substr($line,10);
+		}
+		else if (strstr($line,"__[[문10[[")) {
+		  $str12=substr($line,10);
+		}
+		else if (strstr($line,"__[[문11[[")) {
+		  $str13=substr($line,10);
+		}
+		else if (strstr($line,"__[[문12[[")) {
+		  $str14=substr($line,10);
+		}
+		else if (strstr($line,"__[[문13[[")) {
+		  $str15=substr($line,10);
+		}
+		else if (strstr($line,"__[[문14[[")) {
+		  $str16=substr($line,10);
+		}
+		else if (strstr($line,"__[[문15[[")) {
+		  $str17=substr($line,10);
+		}
+		else if (strstr($line,"__[[문16[[")) {
+		  $str18=substr($line,10);
+		}
+		else if (strstr($line,"__[[문18[[")) {
+		  $str19=substr($line,10);
+		}
+		else if (strstr($line,"__[[내용[[")) {
+		  $text_on=true;
+		}
+		else if (strstr($line,"__[[완료[[")) {
+			//str1~str19 까지 저장
+
+		 $body2=addslashes($body);
+		 $query="insert into dblist (
+									 id,name,menu3,menu4,menu5,
+									 menu6,menu7,menu8,menu9,menu10,
+									 menu11,menu12,menu13,menu14,menu15,
+									 menu16,menu17,menu18,menu19,menu20
+									)
+							  values(
+									 '$str1','$str2','$str3','$str4','$str5',
+									 '$str6','$str7','$str8','$str9','$str10',
+									 '$str11','$str12','$str13','$str14','$str15',
+									 '$str16','$str17','$str18','$str19','$body2'
+									)";
+		 $result=mysql_db_query($db_name,$query);
+		 if(!$result) $error=mysql_error($connect);
+		 echo(",,,$error<br><br>,$query,,,,");
+		 echo("<br>,,,,완료,,,,저장하고 초기화하는 중,,,,,,,,");
+		 /*  초기화   */
+		   $line1=$line2=$line3=$line4=$line5=$line6=$body=$body2="";
+		   $text_on=false;
+	    }
+	    else if ($text_on) {
+		  $body.="$line\n";
+	  }
+									  
+	}
+  }
+  closedir($dirhandle);
+}
+mysql_close();
+
+?>

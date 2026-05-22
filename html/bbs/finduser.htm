@@ -1,0 +1,78 @@
+<?
+  $ut_dir="..";
+  if (file_exists("ut.htm")) $ut_dir=".";
+  include "$ut_dir/db.htm";
+  include "$ut_dir/ut.htm";
+  //include "$ut_dir/lib/template.htm";
+
+  $connect=mysql_connect($DBHOST,$DBUSER,$DBPASS);
+  if (!mysql_select_db($DBNAME,$connect)) exit;
+
+  echo("
+  <html>
+  <head>
+<style type=text/css>
+<!--
+td              { font-family:±¼¸²,arial; font-size:12px; line-height:14pt;}
+input           { font-family:±¼¸²,arial; font-size:12px; }
+.copyright      { font-family:±¼¸²,arial; font-size:12px; color:#654321; line-height:13pt; }
+pre             { font-family:±¼¸²,arial; font-size:12px; color:#123456; }
+a.top           { font-family:±¼¸²,arial; font-size:12px; color:#5A5A5A; text-decoration:none; }
+a.top:hover     { font-family:±¼¸²,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a.tmenu         { font-family:±¼¸²,arial; font-size:12px; color:#444444; text-decoration:none; }
+a.tmenu:hover   { font-family:±¼¸²,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a.lmenu         { font-family:±¼¸²,arial; font-size:12px; color:#222222; text-decoration:none; }
+a.lmenu:hover   { font-family:±¼¸²,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a               { font-family:±¼¸²,arial; font-size:12px; color:#68689F; text-decoration:none; }
+-->
+</style>
+
+  <title>°í°´°Ë»ö</title>
+  </head>
+  <script>
+  function select_code(v1,v2) {
+      opener.document.form1.write_id.value = ''+v1;
+      opener.document.form1.write_name.value = ''+v2;
+      opener.document.form1.email.value = ''+v2;
+      self.close();
+  }
+  </script>
+
+  <body OnLoad='document.form1.name.focus()';>
+  <form name=form1 action='$PHP_SELF'>
+  <center>
+  [°í°´ÄÚµå °Ë»ö]<BR>
+
+  <font size=-1>°Ë»öÇÏ½Ã°íÀÚÇÏ´Â ID,ÀÌ¸§,ÀüÈ­¹øÈ£¸¦ ÀÔ·ÂÇÏ¼¼¿ä.<BR>
+  <font color=blue> (¿¹: <font color=red>hello,¼º´ë</font>)<BR>
+  <input type=text name='name' value='$name' size=15>
+  <input type=button value='Ã£±â' onclick='submit();' style='background-color:#ffcc00; border-bottom:gray solid 1px; border-left:gray solid 1px; border-right:gray solid 1px; border-top:gray solid 1px; color:black; height: 20px'>
+  </form>
+  ");
+  if (strlen($name)>1) {
+    echo("<table border=0 width=100%>");
+    $query="select * from user where id like '%$name%' or name like '%$name%' or cellph like '%$name%' or phone like '%$name%' order by inday DESC limit 50";
+    $result=mysql_db_query($DBNAME,$query);
+    echo $query;
+    if (!$result) echo $query,mysql_error();
+	$count=0;
+	while ($row=mysql_fetch_array($result)){
+		if($count++ %2 == 0) $row_color='#f7f7f7';
+		else $row_color='#CBDCED';
+        $title=substr($row[intro],0,150);
+        $title=text_cut($title,145);
+        $title=str_replace("\n"," ",$title);
+        echo("<tr bgcolor='$row_color' >
+        <td>$row[num]</td>
+        <td><a href=\"javascript:select_code('$row[id]','$row[name]')\">$row[id]($row[name]) $row[address1] $row[address2]</a></td>
+        </tr>");
+    }
+	echo("</table>");
+  }
+  echo("
+  </body>
+  </html>
+  ");
+
+mysql_close();
+?>

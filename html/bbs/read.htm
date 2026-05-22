@@ -1,0 +1,466 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+###  if ($sw__id=="akom"&&$userty<5)  {alert3("정식 회원만이 AKOM을 사용할수 있습니다. (ID:$userid 등급:$userty)","../index.htm");exit;}
+  $s_que=strip2($s_que);
+
+  $width1=650;   if ($bbs_width1    ) $width1=$bbs_width1;
+  $width2=650;   if ($bbs_width2    ) $width2=$bbs_width2;
+  $width3=640;   if ($bbs_width3    ) $width3=$bbs_width3;
+  $widthall=780; if ($bbs_widthall  ) $widthall=$bbs_widthall;
+  $widthleft=130;if ($bbs_widthleft ) $widthleft=$bbs_widthleft;
+  $widthbody=650;if ($bbs_widthbody ) $widthbody=$bbs_widthbody;
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+  if (!$code) {echo "code 없음";exit;}
+  if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+
+  $tread_filesize="";
+  $tread_filename="";
+  $tread_table="";
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  if ($club!="main") {
+	$query="select * from ccfg where club='$club'" ;
+	$result=mysql_db_query($DB_CM,$query);
+	if ($result) $ccfg=mysql_fetch_array($result);
+  }
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+
+  if ($super_user==1235)   $userty=$ctype=19;
+  if ($bcfg[use_name]=='') $bcfg[use_name]='y';
+  if ($super_user!=1235&&$bcfg[member_read]=='y'&&$userid=="guest") {echo ("<script>window.alert('죄송합니다. 회원전용 게시판입니다.\\n먼저 로그인한뒤 글을 읽으세요');history.go(-1)</script>");exit;}
+  if ($cfg[sysop1]&&$cfg[sysop1]==$userid||$userty>=15) {$csuper_user=true;$userty=19;}
+
+  if ($cmd=="ok"||$cmd=="no") {
+      if (!$userid||$userid=="guest") {alert2('손님은 찬성기능을 사용할수 없습니다.');exit;}
+	  $rec_name=$table_name."_rec";
+	  $query="select * from $rec_name where id='$userid' and num='$num'";
+	  $result=mysql_db_query($DB_CM,$query);
+	  if ($result&&($qrow=mysql_fetch_array($result))) {
+		  echo("<script>window.alert('(오류)  $num번 게시물에 이미 응답을 하셨습니다.');history.go(-1);</script>");
+		  exit;
+	  }
+	  if ($cmd=="ok") {$ans="찬성";$query="update $table_name set ok=ok+1 where num=$num";}
+	  else {$ans="반대";$query="update $table_name set no=no+1 where num=$num";}
+	  $result=mysql_db_query($DB_CM,$query);
+	  echo("<script>window.alert('$num번 게시물에 $ans 지정되었습니다.');</script>");
+
+	  $query="insert $rec_name (id,num,mode,date) values ('$userid','$num','$mode','$date')";
+	  $result=mysql_db_query($DB_CM,$query);
+      if (mysql_errno()==1146) {create_db($DB_CM,"def_bbs_rec",$rec_name);$result=mysql_db_query($DB_CM,$query);}
+      $cmd="";
+  }
+  if ($cmd=="goodok"||$cmd=="goodno") {
+      if ($cmd=="goodok") {$ans="추천";$query="update $table_name set good=good+1 where num=$num";}
+      else {$ans="비추천";$query="update $table_name set good=0 where num=$num";}
+      $result=mysql_db_query($DB_CM,$query);
+      alert("$num번 게시물에 $ans 지정되었습니다.");
+      $cmd="";
+  }
+
+  $can_write=true;
+  if ($club!="main"&&$ctype&&$bcfg[wctype]>0&&$bcfg[wctype]>$ctype) $can_write=false;
+  if ($bcfg[wtype]>0&&$bcfg[wtype]>$userty)  $can_write=false;
+
+  if ($super_user==1235||$csuper_user||$bsuper_user||$ctype>16||$userty>14||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop3]) {
+	$bsuper_user=true;
+	$can_write=true;
+  }
+
+  //삭제키사용함
+  $s_que=trim($s_que);
+  $s_ord=trim($s_ord);
+  $field=trim($field);
+  $query="select * from $table_name where num=$num";
+  $result=mysql_db_query($DB_CM,$query);
+  //echo $query,$num;
+  if (!$result) {echo $query,mysql_error();exit;}
+
+  $row=mysql_fetch_array($result);
+  if (!$row) {
+	echo ("<script>alert('$num 번 게시물을 읽을수 없습니다.');history.back();</script>");
+	exit;
+  }
+  mysql_free_result($result);
+
+  $my_rank="";
+  if ($row[id]&&!is_super_user($row[id])) {
+	  $query2="select * from user where id='$row[id]'";
+	  $result2=mysql_db_query($DB_NAME,$query2);
+	  if ($result2) {
+		  $user=mysql_fetch_array($result2);
+		  $ir=irank($user[buy_total]);
+		  $rtitle=irank_str($user[buy_total]);
+		  if ($ir) $my_rank="<img src=/member/images/a$ir.gif title='신용도:$rtitle'>";
+	  }
+  }
+
+    include "convert.htm";
+
+    $tread_body=convert_row();  //출력되는 모양 수정
+    $tread_body=convert_face($tread_body);
+    $tread_body=str_shcode($tread_body);
+
+	if ($bcfg[use_goods]=='y'&&strlen($row[goods])>3) {  //상품명
+	  $query2 = "select * from goods where code='$row[goods]'";
+	  $result2 = mysql_db_query($DBNAME,$query2);
+	  if (!$result2) {echo $query,mysql_error();exit;}
+	  $row2 = mysql_fetch_array($result2);
+	  $count_goods=0;
+	  if ($row2) {
+        $query3="select count(*) from $table_name where goods='$row[goods]'";
+		$result3=mysql_db_query($DB_CM,$query3);
+		if ($result3) {
+			$row3=mysql_fetch_array($result3);
+			$count_goods= $row3[0]; //전체 글 수
+		}
+
+		$tread_goods="<tr><td colspan=5 align=center>
+		<a href='/goods/detail.htm?rec=view_detail3&code=$row2[code]'><b>상품명:$row2[gname]</b>(
+		<img src=images/isgoods.gif border=0>$row2[code])</a></font>
+		&nbsp; &nbsp;";
+		if ($count_goods>1) $tread_goods.="<a href='list.htm?code=$code&club=$club&goods=$goods&mo=$mo&field=goods&s_que=$row[goods]&s_ord=$s_ord'>☞[클릭] 이 상품에 관한 게시물이 $count_goods 건 있습니다.</a>";
+		$tread_goods.="</td></tr>";
+		$href="<a href=/goods/detail.htm?code=$row2[code]>";
+
+		$goods_jpg="
+		<table width=650 cellspacing=1 cellpadding=2 border=0>
+        <tr>
+		<td width=200 align=right valign=top>
+		$href<img src=/img/".strtolower($row2[code])."_s.jpg border=0></a>
+		</td>
+		<td width=5></td>
+		<td width=445 align=left valign=top>
+		코드: $href$row2[code] </a><BR>
+		품명: $href$row2[gname] </a><BR>
+		색상: $href$row2[color] </a><BR>
+		크기: $href$row2[size] </a><BR>
+		가격: ".number_format($row2[price2])." 원<BR>
+		$row2[intro]
+		</td>
+		</tr>
+		</table>
+		";
+	  }
+	}
+
+	//목록표시
+	$list_str=("
+    <table width=$width1 border=0>
+	<tr><td align=center>
+
+	  <a href=list.htm?code=$code&mn=$mn&club=$club&page=$page&mo=$mo&field=$filed&s_que=$s_que><img src=images/list.gif border=0></a>
+	  ");
+      if ($super_user==1235||$userid==$row[id]||$csuper_user||$bsuper_user) $list_str.="
+	  <a href=delete.htm?code=$code&mn=$mn&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que=$s_que onClick=\"return confirm('$row[num] 번 게시물을 삭제할까요?');\";><img src=images/delete.gif border=0></a>
+	  <a href=edit.htm?code=$code&mn=$mn&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que=$s_que><img src=images/edit.gif border=0></a>";
+	  $list_str.=("
+	  <a href=write.htm?code=$code&mn=$mn&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que=$s_que><img src=images/write.gif border=0></a>
+	  <a href=write.htm?cmd=rebbs&code=$code&mn=$mn&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que=$s_que><img src=images/reply.gif border=0></a>
+	  <a href=javascript:send_email()><img src=images/email.gif border=0></a>
+	  ");
+      if ($row[use_ok]=='y'||$bsuper_user) $list_str.=("
+        <a href=$PHP_SELF?cmd=ok&code=$code&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que='$s_que'>[OK]</a>
+        <a href=$PHP_SELF?cmd=no&code=$code&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que='$s_que'>[NO]</a>
+	  ");
+      if ($row[use_good]=='y'||$bsuper_user) $list_str.=("
+        <a href=$PHP_SELF?cmd=goodok&code=$code&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que='$s_que'>[추천]</a>
+        <a href=$PHP_SELF?cmd=goodno&code=$code&num=$num&club=$club&page=$page&mo=$mo&field=$filed&s_que='$s_que'>[해제]</a>
+	  ");
+
+	  $list_str.=("
+      <a href=javascript:print_out()><img src=images/icon_print_w.gif border=0></a>
+	</td></tr>
+	</table>
+	");
+
+    $top_list_str=("
+	<!-- 게시물 리스트 -->
+    <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+	<tr>
+	<td width=50% align=left>
+	<a title='리스트' href='list.htm?code=$code&club=$club'><img src='images/list_i.gif' border=0></A>
+	");
+    if($can_write) $top_list_str.=("<a title='글쓰기' href='write.htm?code=$code&club=$club&page=$page'><img src='images/write_i.gif' border=0></a>");
+    $top_list_str.=("
+	<td width=50% align=right>");
+	if ($bsuper_user||$super_user==1235||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop3]) {
+      $top_list_str.="<a href=cfg.htm?code=$code&mn=$mn&club=$club>[관리]</a>";
+	}
+    $top_list_str.=("
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	</tr>
+	</table>
+	");
+
+	//조회수 확인
+	if ($userid=="guest"||$userid!=$row[id]) {
+		$filename = "$cfg_base/user/rec/read_tag_$club.txt";
+		$tag_str="$userid,$code,$num,$userip\n";
+        if (!check_is_read($tag_str,$filename)) {
+			//============ 조회수 1 증가 =============
+			$query="update $table_name set hits=hits+1 where num=$num";
+			$result=mysql_db_query($DB_CM,$query);
+            //echo($query);
+		}
+	}
+
+
+	if ($bcfg[body_only]!='y') {
+        $now_html="게시판읽기 $code";
+		if (!$define_bbstop&&$bcfg[include_top]!='n') include "../bbstop.htm";
+        else include "../css.htm";
+		if ($bcfg[include_left]!='n') {
+		  echo ("<table width='$widthall' border='0' cellspacing='0' cellpadding='0'>
+		  <tr>
+		  <td width=$widthleft valign=top>
+		  <!---- 왼쪽 메뉴 시작 --->
+		  ");
+		  if ($define_left) ;
+		  else if ($mo=="board") include "../board/left.htm";
+		  else if ($mo&&$mo!="main") include "../$mo/left.htm";
+		  else if ($club&&$club!="main") include "../$club/left.htm";
+		  else include "../left.htm";
+		  echo ("
+		  $left_str
+		  <!---- 왼쪽 메뉴 끝 --->
+		  </td>
+		  <td width=$widthbody valign=top>
+		  <!---- 오른쪽 메뉴 시작 --->
+		  ");
+		}
+	}
+    else include "../css.htm";
+
+	echo ("
+
+	<script>
+	<!--
+	function openView(filename) {
+		imgwnd = window.open(filename,'_down','toolbar=0,location=0,directories=0,status=1,menubar=0,scrollbars=1,resizable=1,width=500,height=450');
+		imgwnd.focus();
+	}
+	function send_email() {
+		imgwnd = window.open('email.htm?club=$club&code=$code&num=$num','_pop_up','toolbar=0,location=0,directories=0,status=1,menubar=0,scrollbars=1,resizable=1,width=650,height=500');
+		imgwnd.focus();
+	}
+    function print_out() {
+        imgwnd = window.open('print.htm?club=$club&code=$code&num=$num','_pop_up','toolbar=0,location=0,directories=0,status=1,menubar=0,scrollbars=1,resizable=1,width=650,height=500');
+		imgwnd.focus();
+	}
+	//-->
+	</script>
+
+    $top_list_str
+    <table width='$width1'>
+	<TR><TD align=center bgcolor='#7d6433'><font color=white>$row[title]</TD></TR>$tread_goods</TABLE>
+    <table width='$width1' border='0' cellspacing='1' cellpadding='5'>
+	");
+	//=====================   화일표시 =====================
+	//파일명 (자료실) //실제파일이름
+	$filename=sprintf("$cfg_base/pds/$club/$code/%s.%x",$row[filename],$row[fcount]);
+    $filename2=sprintf("$cfg_base/pds/$club/$code/%s",$row[filename]);
+	if (($bcfg[use_file]=='y'||$row[filename])) {
+	  if (file_exists($filename)) echo ("
+		  <tr bgcolor=f4f4f4>
+		  <td colspan=5 align=center><font color=000000>
+          <a href=javascript:openView('down.htm?code=$code&club=$club&num=$row[num]&$rand1'); title='$filename2'>
+          <img src=images/binary.gif size=5 border=0>
+          <b>$row[filename] &nbsp;&nbsp;( ".number_format($row[filesize])." Byte)</b></font></a>
+		  <a href=javascript:openView('down1.htm?code=$code&club=$club&num=$row[num]&$rand1');>[다운로드]</a>
+		  </td></tr>");
+	  else if ($row[filename]) echo ("
+		  <tr bgcolor=f4f4f4>
+		  <td colspan=5 align=center><font color=000000>파일을 찾을 수 없습니다.($row[filename])</font></td></tr>");
+	}
+	if ($bcfg[bform]==15&&$bcfg[note]) {
+	  echo ("
+	  <tr bgcolor=f4f4f4>
+	  <td colspan=10 align=center><font color=000000><b><a href=$bcfg[note]>$bcfg[note]</a></b></font>
+	  </td></tr>");
+	}
+	if ($bcfg[bform]==14) {  //사진뉴스
+      $extend=get_extend($row[filename]);
+      if (($extend==".jpg"||$extend==".gif")) {
+        if (!is_dir("../tmp/$code")) mkdir("../tmp/$code",0777);
+        $ori_file=sprintf("$cfg_base/pds/%s/%s/%s",$club,$code,$row[filename]);
+        if (file_exists($ori_file)) {
+            system("ln -sf $ori_file ../tmp/$code/$row[filename]");
+        }
+        else {
+          $ori_file=sprintf("$cfg_base/pds/%s/%s/%s.%x",$club,$code,$row[filename],$row[fcount]);
+          if (file_exists($ori_file)) {
+            system("ln -sf $ori_file ../tmp/$code/$row[filename]");
+          }
+        }
+        $tread_body="<img src='../tmp/$code/$row[filename]' align=right border=0 valign=top>".$tread_body;
+      }
+	}
+
+	echo ("
+	  <tr bgcolor=f4f4f4>
+	  <td width=250 align=center>$face &nbsp;$rtitle $tread_id $tread_email</td>
+	  <td width=250 align=center>".substr($row[date],0,16)."</td>
+	  <td width=250 align=center>");
+      if ($bcfg[use_ok]=='y'||$row[ok]||$row[no]) echo ("찬성:$row[ok] 반대:$row[no] ");
+      if ($bcfg[use_good]=='y'||$row[good]) echo ("추천:$row[good] ");
+	  if ($row[readopen]=="n") echo "<font color=red>[비공개]</font>";
+	  echo ("
+	  </td>
+	  </tr>
+	  </table>
+
+      <table width=$width2 height=130 border=0>
+	  <tr bgcolor=white>
+	  ");
+	  if ($row[tag]!='y'&&$bcfg[use_background]!='n') echo ("<td valign=top background='images/sos_back.gif' style=padding-left:10pt;>");
+      else echo ("<td valign=top style=padding-left:10pt;>");
+	  echo ("
+      $tread_body
+	  </td></tr>
+	  </table>
+
+      <table width='$width1' border='0' cellspacing='1' cellpadding='5'>
+	  <tr bgcolor=f4f4f4>
+	  <td colspan=10 align=right>
+      조회:$row[hits]&nbsp;
+      ");
+      if ($row[down]) echo "다운:$row[down]&nbsp; ";
+      echo ("
+	  &nbsp; $row[line] Line &nbsp;  ".number_format($row[size])." Byte &nbsp;");
+      if ($super_user==1235||$csuper_user||$bsuper_user) echo ("( $row[pos]/$row[depth] $row[userip] )");
+	  echo ("&nbsp;
+	  </td>
+	  </tr>
+	  <tr bgcolor='#cccccc'><td width=100% colspan=5 height='3'></td></tr>
+	</table>
+	$list_str
+	");
+    flush();
+
+	//답변을 볼때
+    if ($bcfg[use_answer]=='y'||$bcfg[use_answer2]=='y') {
+		$old_row=$row;
+		$order="order by pos DESC,depth";
+		$bcfg[use_background]='n';
+        if ($bcfg[use_answer]=='y'||$bcfg[use_answer2]=='y') $order="order by pos DESC";
+		$i=$per_page+5;
+
+		$query = "SELECT * FROM $table_name where pos='$row[pos]' and num>'$row[num]' order by date";
+		//echo $query;
+		$result=mysql_db_query($DB_CM,$query);
+		if (!$result) {echo $query,mysql_error();exit;}
+		$count=0;
+		while ($row=mysql_fetch_array($result)) {
+			//if ($row[num]==$old_row[num]) continue;
+			$count++;
+			//if ($row[num]<$old_row[num]) continue;
+            $tread_body=convert_row();  //출력되는 모양 수정
+            $tread_body=convert_face($tread_body);
+            $tread_body=str_shcode($tread_body);
+			echo ("
+            $top_list_str
+            <table width='$width1'>
+			<TR><TD align=center bgcolor='#7d6433'><font color=white>
+			$face &nbsp;$rtitle $tread_id $tread_email &nbsp;&nbsp;&nbsp;$row[title] &nbsp;&nbsp;".substr($row[date],0,16)."</TD></TR></TABLE>
+
+              <table width=$width1 border=0>
+			  <tr bgcolor=white>
+			  ");
+			  if ($row[tag]!='y'&&$bcfg[use_background]!='n') echo ("<td valign=top background='images/sos_back.gif' style=padding-left:10pt;>");
+			  else echo ("<td valign=top style=padding-left:10pt;>");
+			  echo ("
+			  <div>$tread_body</div>
+			  </td></tr>
+			  </table>
+
+              <table width='$width1' border='0' cellspacing='1' cellpadding='5'>
+			  <tr>
+			  <td colspan=10 align=right>
+			  조회:$row[hits]
+			  &nbsp; $row[line] Line &nbsp;  ".number_format($row[size])." Byte &nbsp;");
+              if ($super_user==1235||$csuper_user||$bsuper_user) echo ("( $row[pos]/$row[depth] $row[userip] )");
+			  echo ("&nbsp;
+			  </td>
+			  </tr>
+			  <tr bgcolor='#cccccc'><td width=100% colspan=5 height='3'></td></tr>
+			</table>
+			");
+            flush();
+		}
+		$row=$old_row;
+		if ($count!=$row[an]&&$row[depth]==0) {
+		  $query="update $table_name set an='$count' where num=$row[num]";
+		  $result=mysql_db_query($DB_CM,$query);
+		}
+		if ($count>0) echo $list_str;
+
+	}
+    if (!$bbs_move_club) $bbs_move_club=$club;
+    if ($bbs_move_cmd=="copy") $check2="checked";
+    else $check1="checked";
+    if ($bsuper_user) echo ("
+    <table width=100%>
+	<form name=moveform action='move.htm' method=post>
+	<input type=hidden name=club value='$club'>
+	<input type=hidden name=old_code value='$code'>
+    <input type=hidden name=old_club value='$club'>
+	<input type=hidden name=sysop value='$sysop'>
+	<input type=hidden name=ordertype value='$ordertype'>
+	<input type=hidden name=mo value='$mo'>
+	<input type=hidden name=page value='$page'>
+	<input type=hidden name=field value='$field'>
+	<input type=hidden name=s_que value='$s_que'>
+	<input type=hidden name=num value='$num'>
+	<TR><TD align=center>
+    <input type=radio name=cmd value='move' $check1>이동&nbsp;
+    <input type=radio name=cmd value='copy' $check2>복사
+    &nbsp; Club<input type=text name='new_club' size=12 value='$bbs_move_club'>
+    Code<input type=text name='new_code' size=12 value='$bbs_move_code'>
+    <input type=submit value='확인'>
+	</td></tr>
+	</form>
+	</table>
+	");
+
+    echo $goods_jpg;
+
+
+	//읽기이후에 목록표시
+	if ($bcfg[use_list]=='y') {
+        echo ("<table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+		<tr><td align=center>");
+		$skip_include=true;  //추가 금지
+        $now_read_num=$num;
+		include "list.htm";
+		echo ("</td></tr></table>");
+	}
+
+	if ($bcfg[body_only]!='y') {
+		if ($bcfg[include_left]!='n') {
+		  echo ("
+		  <!---- 오른쪽 메뉴 끝 --->
+		  </td>
+		  </tr>
+		  </table>");
+		}
+	}
+
+  if ($bcfg[body_only]!='y'&&!$skip_include) {
+      if (!$define_bbsbottom&&$bcfg[include_bottom]!='n') include "../bottom2.htm";
+  }
+
+
+?>
+v

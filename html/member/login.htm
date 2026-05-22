@@ -1,0 +1,82 @@
+<?
+//비회원인경우는 로그인화면바로 나온다.
+include "akom.inc";
+$connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+if (!$cmd) {
+	setcookie("userid","");setcookie("userna","");
+	setcookie("userty","");setcookie("usersex","");
+	$userid=$userna="guest";
+	$userty=0;
+}
+
+include ("logon.htm");
+if ($cmd=="check_login"&&$userid&&$userid!="guest") {
+    $cmd="";
+
+	echo ("<meta http-equiv='Refresh' content='0; URL=main.htm'>");
+	exit;
+}
+?>
+<html>
+<head>
+<title>대전맹학교 WEB BBS</title>
+<meta name=\"Author\" content=\"XHOST 김성대(xhost@xhost.co.kr)\">
+<meta http-equiv=\"keywords\" content=\"대전맹학교.특수학교,시각장애,저시력,점자,흰지팡이,전공과,학점은행제\">
+<meta http-equiv=\"Reply-To\" content=\"webmaster@djschool.sc.kr\">
+<meta http-equiv=\"description\" content=\"대전맹학교\">
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=euc-kr\">
+<link rel=\"shortcut icon\" href=\"http://www.djschool.sc.kr/akom.ico\">
+</head>
+
+<link rel="stylesheet" type="text/css" href="font.css">
+<script language="JavaScript">
+function Send_Submit()
+{ 
+ document.login.submit();          
+}
+</script>
+</HEAD>
+<base target='_parent'>
+<body bgcolor='#FFFFFF' topmargin='25' leftmargin='100'>
+
+  <table width='415' border='0' cellspacing='0' cellpadding='0'>
+  <form name='login' method=post action='login.htm'>
+  <input type='hidden' name='cmd' value='check_login'>
+  <tr>
+  <td><img src='images/login/toplogo.gif' border=0></td> 
+  </tr>
+  <tr>
+  <td><img src='images/login/boxtop.gif' border=0></td> 
+  </tr>
+  <tr>
+  <td background='images/login/boxbg.gif'>
+    <br>
+      <table align='center' border='0' width='70%' cellspacing='0' cellpadding='0'>
+      <tr>
+      <td><img src='images/login/id.gif' width='120' height='30'></td>
+      <td><input type='text' name='username' maxlength=12></td>
+      </tr>
+      <tr>
+      <td><img src='images/login/pw.gif' width='120' height='30'></td>
+      <td><input type='password' name='password' maxlength=8></td>
+      </tr>
+      <tr>
+      <td colspan=2 align='center'> 
+      <input type='image' src='images/login/ok.gif' width='80' height=25' border='0' Onclick='Send_Submit()'>
+      </td>
+      </tr>
+      <tr>
+      <td colspan=2> 
+      가입을 원하시면 <a href="mjoin.htm"><font color='blue' size=3><b>여기</b></font></a>를 눌러 주세요.~~~</td>
+      </tr>
+      </table>
+  </td>
+  </tr>
+  <tr>
+  <td><img src='images/login/boxbot.gif' border='0' width='415' height='5'></td>
+  </tr>
+  </form>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,394 @@
+<?
+  include "../db.htm";
+  include "../ut.htm";
+
+  $table_name=$club."_$code";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+function claer_data() {
+	global $num,$del,$tag,$tag2,$id,$name,$mail,$home,$title,$body,$date,$date2,$hits,$down,$ok,$no,$feel,$good,$color,$thread,$depth,$pos,$passwd,$filename,$filesize,$user_ip,$keyword,$tcode,$connect;
+	$num=$del=$tag=$tag2=$date=$date2=$hits=$down=$ok=$no=$feel=0;
+	$good=$color=$thread=$depth=$pos=$filesize=0;
+	$id=$name=$mail=$home=$title=$body=$passwd=$filename=$user_ip=$keyword=$tcode="";
+    $depth=1;
+}
+
+
+function conv_xformat($conv_filename,$code,$type)
+{
+	global $num,$del,$tag,$tag2,$id,$name,$mail,$home,$title,$body;
+	global $date,$date2,$hits,$down,$ok,$no,$feel,$good,$color,$thread;
+    global $brand,$model,$filename;
+    global $count,$depth,$pos,$passwd,$filesize,$user_ip,$keyword,$tcode,$connect;
+
+    if (strlen($code)<1) {echo "code 없음";return 0;}
+    $contents=file($conv_filename);
+	$n=count($contents);
+	if ($n<1) {
+		echo(" <script>window.alert('$up_file_name 에 자료가 없습니다.');history.go(-1)</script>");
+		exit;
+	}
+	$text_on=0;
+	$linenum=0;
+	$body="";
+	$count=0;
+    $file_size=filesize($conv_filename);
+    echo(" 파일명: $conv_filename ( $file_size )  코드명 : $code <BR>");
+	claer_data();
+	$ii=0;
+	for ($i=0;$i<$n;$i++) {
+		$line=chop($contents[$i]);
+		if (strstr($line,"__[[번호[[")) {
+			if (strlen($title)>0) {add_data($code);$ii++;}
+			claer_data();
+			$recnum=intval(substr($line,10));
+			echo("번호:$recnum<BR>");
+			$text_on=0;
+			$linenum=0;
+			claer_data();
+			echo("<script>scroll(0,1000000);</script>\n");
+		}
+		else if (strstr($line,"__[[제목[[")) {
+			$title=substr($line,10);
+			echo("제목:$title<BR>");
+		}
+		else if (strstr($line,"__[[아이[[")) {
+			$id=substr($line,10);
+			echo("아이디:$id<BR>");
+		}
+		else if (strstr($line,"__[[이름[[")) {
+			$name=substr($line,10);
+			echo("이름:$name<BR>");
+		}
+		else if (strstr($line,"__[[줄수[[")) {
+		}
+		else if (strstr($line,"__[[찬성[[")) {
+			$oknum=intval(substr($line,10));
+			echo("찬성:$oknum<BR>");
+		}
+		else if (strstr($line,"__[[반대[[")) {
+			$nonum=intval(substr($line,10));
+			echo("반대:$nonum<BR>");
+		}
+		else if (strstr($line,"__[[파일[[")) {
+			$filename=substr($line,10);
+			if (strlen($filename)<2) $filename="";
+			else echo("파일명:$filename<BR>");
+		}
+		else if (strstr($line,"__[[내용[[")) {
+			$text_on=1;
+			echo("......................................내용.........................<BR>");
+		}
+		else if (strstr($line,"__[[날짜[[")) {
+			$date=substr($line,10);
+			echo("등록일:$date<BR>");
+		}
+		else if (strstr($line,"__[[등날[[")) {
+			$date=substr($line,10);
+			echo("등록일:$date<BR>");
+		}
+		else if (strstr($line,"__[[조날[[")) {
+			$date2=substr($line,10);
+			echo("조회일:$date2<BR>");
+		}
+		else if (strstr($line,"__[[조회[[")) {
+			$hits=substr($line,10);
+            echo("조회:$hits<BR>");
+		}
+        else if (strstr($line,"__[[브랜[[")) {
+            $brand=substr($line,10);
+            echo("브랜드:$brand<BR>");
+		}
+        else if (strstr($line,"__[[모델[[")) {
+            $model=substr($line,10);
+            echo("모델:$model<BR>");
+		}
+        else if (strstr($line,"__[[태그[[")) {
+            $tag=substr($line,10);
+            echo("태그:$tag<BR>");
+		}
+        else if (strstr($line,"__[[키워[[")||strstr($line,"__[[분류[[")) {
+            $keyword=substr($line,10);
+            echo("키워드:$keyword<BR>");
+		}
+		else if (strstr($line,"_[[완료[[")) {
+			echo("..........................$linenum 줄을 저장함....................<BR>");
+			if (strlen($title)>0) {add_data($code);$ii++;}
+			$text_on=0;
+			$linenum=0;
+			claer_data();
+			echo("<script>scroll(0,1000000);</script>\n");
+
+		}
+		else if ($text_on) {
+            echo("$line<BR>");
+			$linenum++;
+			$count++;
+			$body.="$line\n";
+		}
+	}
+	if (strlen($title)>0) {add_data($code);$ii++;}
+	claer_data();
+	return $ii;
+}
+
+
+function conv_now($mode,$conv_filename,$code)
+{
+	global $num,$del,$tag,$tag2,$id,$name,$mail,$home,$title,$body;
+	global $date,$date2,$hits,$down,$ok,$no,$feel,$good,$color,$thread;
+	global $depth,$pos,$passwd,$filesize,$user_ip,$keyword,$tcode,$connect;
+    global $model,$brand;
+
+
+	if (strlen($code)<1) return 0;
+    $file_size=filesize($conv_filename);
+    echo(" 자료 변환 파일명: $up_file_name ( $file_size )  코드명 : $code  <BR>");
+    echo("<script>scroll(0,1000000);</script>\n");
+    flush();
+    $contents=file($conv_filename);
+	$total=count($contents);
+	if ($total<1) {echo(" <script>window.alert('$up_file_name 에 자료가 없습니다.');history.go(-1)</script>");exit;}
+	$text_on=0;
+	$linenum=0;
+	claer_data();
+	$txt_on=0;
+	$ii=0;
+	$count=0;
+	while($ii<$total) {
+
+//『컴퓨터 묻고 답하기-멀티미디어 (go QNA)』 5번
+// 제  목:[질문] 매체제생기 실행후 화면 떨림
+// 올린이:cheez   (김종철  )	98/04/14 20:59	  읽음: 79 E[7m관련자료 있음(TL)E[0m
+// -----------------------------------------------------------------------------
+		$buff1=$contents[$ii];
+//        echo("$ii = $buff1 <BR>");
+		if (substr($contents[$ii+0], 0,2)=="『"&&
+			substr($contents[$ii+1], 0,8)==" 제  목:"&&
+			substr($contents[$ii+2], 0,8)==" 올린이:"&&
+			substr($contents[$ii+2],16,1)=="("&&
+			substr($contents[$ii+2],25,1)==")"&&
+			substr($contents[$ii+2],32,1)=='/'&&
+			substr($contents[$ii+2],48,5)=="읽음:"&&
+			substr($contents[$ii+3], 0,4)==" ---") {
+			$type=1;
+			if (strlen($title)>0) {add_data($code);$count++;}
+			claer_data();
+            $title=substr($contents[$ii+1],8,60);
+			$id  =trim(substr($contents[$ii+2], 8,8));
+			$name=trim(substr($contents[$ii+2],17,8));
+			$date=trim(substr($contents[$ii+2],30,17));
+			$txt_on=1;
+			$ii+=3;
+            echo("Line:$ii$nbsp; ID: $id ($name) $date ");
+            echo("&nbsp;&nbsp;&nbsp;제목: $title<BR>");
+            echo("<script>scroll(0,1000000);</script>\n");
+		}
+//『우스개 게시판-100명을 웃긴 베스트 유머 (go HUMOR)』 15000번
+// 제  목:[re] 여자의 일생.~(강추임다.^^)                              읽음:8573
+// 올린이:bestanya(유재현  )   작성:00/05/10 18:30       추천:00/05/11 00:29
+// -----------------------------------------------------------------------------
+        else if (substr($contents[$ii+0], 0,2)=="『"&&
+			substr($contents[$ii+1], 0,8)==" 제  목:"&&
+            substr($contents[$ii+1],69,5)=="읽음:"&&
+			substr($contents[$ii+2], 0,8)==" 올린이:"&&
+			substr($contents[$ii+2],16,1)=="("&&
+			substr($contents[$ii+2],25,1)==")"&&
+            substr($contents[$ii+2],29,5)=="작성:"&&
+            substr($contents[$ii+2],36,1)=='/'&&
+            substr($contents[$ii+2],39,1)=='/'&&
+			substr($contents[$ii+3], 0,4)==" ---") {
+            $type=2;
+			if (strlen($title)>0) {add_data($code);$count++;}
+			claer_data();
+            $title=substr($contents[$ii+1],8,60);
+			$id  =trim(substr($contents[$ii+2], 8,8));
+			$name=trim(substr($contents[$ii+2],17,8));
+            $date=trim(substr($contents[$ii+2],34,17));
+			$txt_on=1;
+			$ii+=3;
+            echo("Line:$ii$nbsp; ID: $id ($name) $date ");
+            echo("&nbsp;&nbsp;&nbsp;제목: $title<BR>");
+            echo("<script>scroll(0,1000000);</script>\n");
+		}
+		else if(strstr($buff1," PRINTER/CAPTURE를 정지하고  [Enter]를 누르십시오.")) $txt_on=0;
+		else if(strstr($buff1," 번호 올린ID   등록날짜 파일명       크기  받음 제목 ")) $txt_on=0;
+		else if(strstr($buff1,"*** 출력종료 ***")) $txt_on=0;
+		else if(strstr($buff1," PRINTER/CAPTURE를 정지하고  [Enter]를 누르십시오.")) $txt_on=0;
+		else if(strstr($buff1," 번호 올린ID   등록날짜 파일명       크기  받음 제목 ")) $txt_on=0;
+		else if(strstr($buff1,"*** 출력종료 ***")) $txt_on=0;
+		else if ($txt_on) {
+            if ($body==""&&($buff1=='\n'||$buff1=='\r'||$buff1==""||$buff1=="\n\r"||$buff1=="\r\n")) ;
+            else $body.="$buff1";
+		}
+		$ii++;
+	}
+	if (strlen($title)>0) {add_data($code);$count++;}
+	echo("....게시판 자동등록이 모두 끝났습니다.\n");
+
+	echo("<script>scroll(0,1000000);</script>\n");
+	return $count;
+}
+
+
+function conv_hit($mode,$conv_filename,$code)
+{
+	global $num,$del,$tag,$tag2,$id,$name,$mail,$home,$title,$body;
+	global $date,$date2,$hits,$down,$ok,$no,$feel,$good,$color,$thread;
+	global $depth,$pos,$passwd,$filesize,$user_ip,$keyword,$tcode,$connect;
+    global $model,$brand;
+
+	if (strlen($code)<1) return 0;
+    $file_size=filesize($conv_filename);
+    echo(" 자료 변환 파일명: $up_file_name ( $file_size )  코드명 : $code  <BR>");
+    echo("<script>scroll(0,1000000);</script>\n");
+    flush();
+    $contents=file($conv_filename);
+	$total=count($contents);
+	if ($total<1) {echo(" <script>window.alert('$up_file_name 에 자료가 없습니다.');history.go(-1)</script>");exit;}
+	$text_on=0;
+	$linenum=0;
+	claer_data();
+	$txt_on=0;
+	$ii=0;
+	$count=0;
+	while($ii<$total) {
+// 제  목:다가갈 수 없는 사랑!!                           관련자료:없음  [570]
+// 보낸이:방민아  (ses16   )  2000-06-26 17:11  조회:97
+//난 널 바라보고 있는데 넌 다른 곳에 눈을 두고 있어
+//그놈의 눈치를 유학을 보낸건지...
+		$buff1=$contents[$ii];
+//        echo("$ii = $buff1 <BR>");
+        if (substr($contents[$ii+0], 0,8)==" 제  목:"&&
+            substr($contents[$ii+1], 0,8)==" 보낸이:"&&
+            substr($contents[$ii+1],16,1)=="("&&
+            substr($contents[$ii+1],25,1)==")"&&
+            substr($contents[$ii+1],32,1)=='-'&&
+            substr($contents[$ii+1],35,1)=='-'&&
+            substr($contents[$ii+1],46,5)=="조회:" ) {
+			$type=1;
+			if (strlen($title)>0) {add_data($code);$count++;}
+			claer_data();
+            $title=substr($contents[$ii+0],8,48);
+            $id  =trim(substr($contents[$ii+1], 8,8));
+            $name=trim(substr($contents[$ii+1],17,8));
+            $date=trim(substr($contents[$ii+1],28,17));
+			$txt_on=1;
+            $ii+=2;
+            echo("Line:$ii$nbsp; ID: $id ($name) $date ");
+            echo("&nbsp;&nbsp;&nbsp;제목: $title<BR>");
+            echo("<script>scroll(0,1000000);</script>\n");
+		}
+		else if ($txt_on) {
+            if ($body==""&&($buff1=='\n'||$buff1=='\r'||$buff1==""||$buff1=="\n\r"||$buff1=="\r\n")) ;
+            else $body.="$buff1";
+		}
+		$ii++;
+	}
+	if (strlen($title)>0) {add_data($code);$count++;}
+	echo("....게시판 자동등록이 모두 끝났습니다.\n");
+
+	echo("<script>scroll(0,1000000);</script>\n");
+	return $count;
+}
+
+
+function add_data($code) {
+	global $num,$del,$tag,$tag2,$id,$name,$mail,$home,$title,$body,$date,$date2,$hits,$down,$ok,$no,$feel,$good,$color,$thread,$depth,$pos,$passwd,$filename,$filesize,$user_ip,$keyword,$tcode,$connect;
+    global $table_name,$DB_NAME,$DB_CM;
+    global $model,$brand;
+
+	$id=addslashes($id);
+	$name=addslashes($name);
+	$title=addslashes($title);
+	$mail=addslashes($mail);
+	$home=addslashes($home);
+	$filename=addslashes($filename);
+	$keyword=addslashes($keyword);
+	$tcode=addslashes($tcode);
+    $model=addslashes($model);
+    $brand=addslashes($brand);
+
+	$body=addslashes($body);
+    //$body = htmlspecialchars($body) ;
+    //$body = nl2br($body);
+
+    $depth=0;
+
+    // ------------  포지션 찾기 ---------
+    $query="select MAX(pos) from $table_name" ;
+    $result=mysql_db_query($DB_CM,$query);
+    if (!$result) {echo $query,mysql_error();exit;}
+    $row=mysql_fetch_array($result);
+    $pos=$row[0];
+    $pos++;
+
+    $depth=0;
+
+    $query_str = "INSERT INTO $table_name
+    (tag,id,name,
+     email,homepage,
+     title,body,date,date2,
+     hits,down,ok,no,
+     depth,pos,passwd,
+     model,brand,
+     filename,filesize,
+     userip,keyword,tcode)
+	 VALUES
+     ('$tag','$id','$name',
+     '$mail','$home',
+     '$title','$body','$date','$date2',
+     '$hits','$down','$ok','$no',
+     '$depth','$pos','$passwd',
+     '$model','$brand',
+     '$filename','$filesize',
+     '$user_ip','$keyword','$tcode'
+	  );";
+	$title="";
+	$body="";
+    $result=mysql_db_query($DB_CM,$query_str);
+    if (!$result&&mysql_error()=="Unknown column 'model' in 'field list'") {
+          $query2="ALTER TABLE $table_name ADD brand VARCHAR(50) NOT NULL";$result2=mysql_db_query($DB_CM,$query2);
+          $query2="ALTER TABLE $table_name ADD model VARCHAR(50) NOT NULL";$result2=mysql_db_query($DB_CM,$query2);
+          $result=mysql_db_query($DB_CM,$query_str);
+    }
+    if (!$result) {echo $query_str,mysql_error();exit;}
+    echo "$query_str<BR>";
+}
+
+    echo(" Xformat / 하이텔 / 나우누리 자료 변환 <BR>");
+    $count=0;
+    if ($up_file) {
+        /*
+        $up_file=str_replace("..","",$up_file);
+        $up_file=str_replace("/","",$up_file);
+        $up_file=str_replace(";","",$up_file);
+        */
+        if (!file_exists($up_file)) {echo("<script>window.alert('$up_file 파일전송실패.');history.go(-1);</script>");}
+             if ($type=='xformat') $count=conv_xformat($up_file,$code,$type);
+        else if ($type=='now1')    $count=conv_now(1,$up_file,$code,$type);
+        else if ($type=='hit1')    $count=conv_hit(1,$up_file,$code,$type);
+        $file_size=filesize($up_file);
+        echo(" 총 $count  자료 변환 파일명:$up_file ( $file_size )  타입:$type 코드명:$code 테이블:$table_name  <BR>");
+        unlink($up_file);
+    }
+    $up_file="";
+
+    echo ("
+    <form name='form' ENCTYPE='multipart/form-data' action='$PHP_SELF' method='POST'>
+    <input type=hidden name=cmd value='upload'>
+    <input type=hidden name=club value='$club'>
+    <input type=hidden name=code value='$code'>
+    코드명:$code  ( 현재자료수:$today_no / $total_no 개 )<BR>
+    자료형태:
+    <select name=type>
+    <option value='hit1'   >하이텔</option>
+    <option value='now1'   >나우누리</option>
+    <option value='xformat'>X포멧</option>
+    </select><BR><BR>
+    파일선택:<input type=file name='up_file' size=40> <BR>
+    <input type='submit' value='&nbsp;자료전송&nbsp;&nbsp'>
+    </form>
+    <BR>
+    ");
+?>

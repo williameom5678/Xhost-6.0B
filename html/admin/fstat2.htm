@@ -1,0 +1,207 @@
+<?
+  include "db.htm";
+  include "ut.htm";
+  $ffcode="akom";
+
+echo("
+<meta http-equiv='Pragma' content='no-cache'>
+<html>
+<head>
+<title>접속통계</title>
+</head>
+");
+
+//2000-06-22
+if (!$date_now) $date_now=date("Y-m-d");
+$time_now=date("H:i");
+$year  =intval(substr($date_now,0,4));
+$month =intval(substr($date_now,5,2));
+$day   =intval(substr($date_now,8,2));
+$filename1="count/$ffcode".".dat";
+$filename2="count/$ffcode".".all";
+
+echo("
+<body>
+<center>
+<FORM target=_self action='$PHP_SELF'>
+<font size=5><B>$date_now 접속통계</b></font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type=text Name='date_now' value='$date_now' size=10 maxlength=10>
+<input type=text name='time_now' text value='$time_now' size=5 maxlength=5 readonly>
+<input type=hidden name='ffcode'  value='$ffcode'>
+<input type=submit value='확인'>
+<input type=button value='일일' onclick=window.open('$PHP_SELF?date_now=$date_now&cmd=date&ffcode=$ffcode','_self','');>
+<input type=button value='닫기' onclick='self.close()'>
+</FORM>
+");
+
+if ($cmd=="date") {
+echo("
+<table border=0 width=100%>
+  <tr>
+    <td align=right width=70% valign=bottom>
+    <table border=1 cellpadding=2 cellspacing=0 width=405 height=180>
+	  <tr><td bgcolor=f0f5fe valign=bottom align=left>
+	  <font size='2'>&nbsp;
+      ");
+      for ($i=0;$i<24;$i++) $num[$i]=0;
+      if (!$ffcode) $ffcode="main";
+
+      $filename1="count/$ffcode".".dat";
+      $filename2="count/$ffcode".".all";
+
+      $count_today=0;
+      $date1=substr($date_now,2,8);
+      if (($fp=fopen($filename2,"r+"))) {
+        while(($buff=fgets($fp,100))) {
+          if (substr($buff,0,8)==$date1) {
+              $n=intval(substr($buff,9,2));
+              $num[$n]++;
+              $count_today++;
+              //$buff2=substr($buff,9,10);
+              //echo("$buff2, $n $count_today <BR>");
+          }
+        }
+        fclose($fp);
+      }
+      $max1=1;
+      for ($i=0;$i<24;$i++) {
+        if ($max1<$num[$i]) $max1=$num[$i];
+      }
+      if ($max1<50) $max1=50;
+
+      for ($i=1;$i<=10;$i++) {
+        $unit[$i]=(int)($max1/10 *$i);
+      }
+
+      for ($i=0;$i<24;$i++) {
+        $value=($num[$i]*150)/$max1;
+        $jpg='images/count/bar-00.gif';
+        for ($i2=0;$i2<10;$i2++) {
+          if ($num[$i]<=$unit[$i2]||$i2==9) {
+            $jpg="images/count/bar-$i2"."0.gif";
+            break;
+          }
+        }
+        echo("<img src=$jpg border=1 width=10 height=$value alt='$num[$i]'>\n");
+      }
+      echo("
+	  <br>&nbsp;
+      <img src='images/count/bar-under1.gif' border=0 width=383><br>
+	  </font>
+	  </td></tr>
+	</table>
+	</td>
+
+    <td align=left width=30% >
+	  <font size='2' face='Arial'>
+    ");
+    for ($i=1;$i<=10;$i++) {
+      $n1=10-$i;
+      $n2=$unit[11-$i];
+      echo("<img src='images/count/bar-$n1"."0.gif' border=1 width=15 height=10> $n2 hits<br>");
+    }
+    echo("
+    &nbsp; ( $count_today )<BR>
+    </font>
+	</td>
+  </tr>
+</table>
+");
+exit;
+}
+
+echo("
+<BR>
+<table border=1 width=550 cellspacing=0 cellpadding=0>
+  <tr bgcolor=ffffdd>
+  <td width=100 align=center><font size=2>날짜</font></td>
+  <td width=300 align=center><font size=2>시간대별접속</font></td>
+  <td width=100 align=center><font size=2>총접속</font></td>
+  </tr>
+  ");
+
+
+  if (!$limi_date) $limit_date=40;
+  for ($i1=0;$i1<$limit_date;$i1++)
+    for ($i2=0;$i2<25;$i2++)
+      $anum[$i1][$i2]=0;
+  $now=mktime(1,1,1,$month,$day,$year);
+
+  for ($i1=0;$i1<$limit_date;$i1++) {
+    $adate[$i1]=date("y-m-d",$now-$i1*24*60*60);
+    $last_date=$adate[$i1];
+//    echo("$i1,$adate[$i1] <BR>");
+  }
+
+  $max1=0;
+  $count_total=0;
+  if (($fp=fopen($filename2,"r+"))) {
+    while(($buff=fgets($fp,100))) {
+      $date1=substr($buff,0,8);
+      if ($date1<$last_date) {
+//        echo("$date1,$last_date <BR>");
+        continue;
+      }
+      for ($i1=0;$i1<$limit_date;$i1++) {
+        if ($adate[$i1]==$date1) {
+          $n=intval(substr($buff,9,2));
+          $anum[$i1][$n]++;
+          $i2=$anum[$i1][$n];
+//          echo("$filename2,$adate[$i1],$buff __ $i1,$n __ $i2 <BR>");
+          $count_total++;
+          $anum[$i1][24]++;     //일총계
+          if ($max1<$anum[$i1][24]) $max1=$anum[$i1][24];
+          break;
+        }
+      }
+    }
+    fclose($fp);
+  }
+
+  if ($max1<50) $max1=50;
+  for ($i1=0;$i1<$limit_date;$i1++) {
+    $i2=$anum[$i1][0];
+    $i3=$anum[$i1][1];
+    $num1=($anum[$i1][ 0]+$anum[$i1][ 1]+$anum[$i1][ 2]);
+    $num2=($anum[$i1][ 3]+$anum[$i1][ 4]+$anum[$i1][ 5]);
+    $num3=($anum[$i1][ 6]+$anum[$i1][ 7]+$anum[$i1][ 8]);
+    $num4=($anum[$i1][ 9]+$anum[$i1][10]+$anum[$i1][11]);
+    $num5=($anum[$i1][12]+$anum[$i1][13]+$anum[$i1][14]);
+    $num6=($anum[$i1][15]+$anum[$i1][16]+$anum[$i1][17]);
+    $num7=($anum[$i1][18]+$anum[$i1][19]+$anum[$i1][20]);
+    $num8=($anum[$i1][21]+$anum[$i1][22]+$anum[$i1][23]);
+    $num9=$anum[$i1][24];
+    $v1=(int)($num1*200/$max1);
+    $v2=(int)($num2*200/$max1);
+    $v3=(int)($num3*200/$max1);
+    $v4=(int)($num4*200/$max1);
+    $v5=(int)($num5*200/$max1);
+    $v6=(int)($num6*200/$max1);
+    $v7=(int)($num7*200/$max1);
+    $v8=(int)($num8*200/$max1);
+    echo("
+      <tr bgcolor=#fbeef2>
+      <td valign=middle align=center>$adate[$i1]</td>
+      <td valign=middle align=left>
+      ");
+      echo("<img src=images/count/bar-10.gif border=0 width=$v1 height=10 alt='$num1 (00~ 3)'>");
+      echo("<img src=images/count/bar-20.gif border=0 width=$v2 height=10 alt='$num2 (03~ 6)'>");
+      echo("<img src=images/count/bar-30.gif border=0 width=$v3 height=10 alt='$num3 (06~ 9)'>");
+      echo("<img src=images/count/bar-40.gif border=0 width=$v4 height=10 alt='$num4 (09~12)'>");
+      echo("<img src=images/count/bar-50.gif border=0 width=$v5 height=10 alt='$num5 (12~15)'>");
+      echo("<img src=images/count/bar-60.gif border=0 width=$v6 height=10 alt='$num6 (15~18)'>");
+      echo("<img src=images/count/bar-70.gif border=0 width=$v7 height=10 alt='$num7 (18~21)'>");
+      echo("<img src=images/count/bar-80.gif border=0 width=$v8 height=10 alt='$num8 (21~24)'>");
+      echo("
+      <td valign=middle align=center>$num9</td>
+      </tr>
+    ");
+  }
+echo("
+</table>
+
+</body>
+</HTML>
+
+");
+?>

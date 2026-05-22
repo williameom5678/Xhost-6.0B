@@ -1,0 +1,385 @@
+<?
+include "db.htm";
+include "ut.htm";
+$connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+$max1=200;
+$max2=10;
+
+$filename_dat="today.htm";
+$filename_rec="countrec.htm";
+$count_total=0;  //총접속수
+$count_today=0;  //오늘접속수
+
+if (file_exists($filename_dat)) include $filename_dat;
+
+
+//2000-06-22
+if (!$date_now) $date_now=date("Y-m-d");
+
+echo("
+<meta http-equiv='Content-Type' content='text/html; charset=euc-kr'>
+<meta http-equiv='Pragma' content='no-cache'>
+<link rel='stylesheet' type='text/css' href='../main.css'>
+<html>
+<head>
+<title>접속통계</title>
+</head>
+<script>
+  function view_date(frm) {
+      frm.cmd.value='date';
+      frm.submit();
+  }
+</script>
+<body>
+<center>
+<FORM name=form1 action='$PHP_SELF' method=post>
+<input type=hidden name=cmd value=''>
+<font size=5><B>$date_now 접속통계</b></font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type=text Name='date_now' value='$date_now' size=12 maxlength=10>
+<input type=submit value='확인'>
+<input type=button value='일일' onclick=view_date(document.form1)>
+<input type=button value='닫기' onclick='self.close()'>
+</FORM>
+");
+
+
+if ($cmd=="date") {
+  $query = "select * from count where time='$date_now'";
+  $result=mysql_db_query($DB_NAME,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+  $row=mysql_fetch_array($result);
+echo("
+<center>
+<table border=0 width=95%>
+  <tr>
+    <td align=right width=80% valign=bottom>
+    <table border=1 cellpadding=2 cellspacing=0 width=100% height=180>
+	  <tr><td bgcolor=f0f5fe valign=bottom align=left>
+	  <font size='2'>&nbsp;
+	  ");
+      for ($i=0;$i<24;$i++) {
+        $num[$i]=$anum1[$i]=$anum2[$i]=0;
+      }
+	  for ($i=0;$i<24;$i++) {
+		$total=$row[total];
+        $var="hour$i";$anum1[$i]=$row[$var];
+        $var="telnet$i";$anum2[$i]=$row[$var];
+        $num[$i]=$anum1[$i]+$anum2[$i];
+		$max1=max($max1,$num[$i]);
+	  }
+
+	  for ($i=1;$i<=10;$i++) $unit[$i]=(int)($max1/10 *$i);
+
+	  for ($i=0;$i<24;$i++) {
+		$value=($num[$i]*150)/$max1;
+		$jpg='images/bar-00.gif';
+		for ($i2=0;$i2<10;$i2++) {
+		  if ($num[$i]<=$unit[$i2]||$i2==9) {
+			$jpg="images/bar-$i2"."0.gif";
+			break;
+		  }
+		}
+		echo("<img src=$jpg border=1 width=10 height=$value alt='$num[$i]'>\n");
+	  }
+	  echo("
+	  <br>&nbsp;
+	  <img src='images/bar-under1.gif' border=0 width=383><br>
+	  </font>
+	  </td></tr>
+	</table>
+	</td>
+
+    <td align=left width=20% >
+	  <font size='2' face='Arial'>
+	");
+	for ($i=1;$i<=10;$i++) {
+	  $n1=10-$i;
+	  $n2=$unit[11-$i];
+	  echo("<img src='images/bar-$n1"."0.gif' border=1 width=15 height=10> $n2 hits<br>");
+	}
+	echo("
+	&nbsp; ( $count_today )<BR>
+	</font>
+	</td>
+  </tr>
+</table>");
+  $date1=date("Y-m-d",str2date($date_now)+24*3600);
+  $date2=date("Y-m-d");
+  $date3=date("Y-m-d",str2date($date_now)-24*3600);
+  echo("<a href=$PHP_SELF?cmd=date&date_now=$date1>◀BACK </a>");
+  echo("<a href=$PHP_SELF?cmd=date&date_now=$date2>-■-</a>");
+  echo("<a href=$PHP_SELF?cmd=date&date_now=$date3>NEXT▶</a>");
+
+  echo("<table border=1 width=95%>");
+  $max1=250;
+  for ($i=0;$i<24;$i++) {
+    $max1=max($max1,$num[$i]);
+  }
+  for ($i=0;$i<24;$i++) {
+    echo ("<tr><td width=5% align=center>$i</td><td width=85%>");
+    $value=($num[$i]*400)/$max1;
+    $jpg='images/bar-00.gif';
+    for ($i2=0;$i2<10;$i2++) {
+      if ($num[$i]<=$unit[$i2]||$i2==9) {
+        $jpg="images/bar-$i2"."0.gif";
+        break;
+      }
+    }
+    echo("<img src=$jpg border=1 width=$value height=10 alt='$num[$i]'>");
+    echo("</td><td width=10% align=center>$num[$i] ($anum1[$i]/$anum2[$i])</td></tr>\n");
+  }
+  echo("</table>");
+}
+
+if (!$cmd) {
+  echo("
+  <BR>
+  <table border=1 width=95% cellspacing=0 cellpadding=0>
+	<tr bgcolor=ffffdd>
+    <td width=30% align=center><font size=2>날짜/접속</font></td>
+    <td width=70% align=center><font size=2>시간대별접속</font></td>
+	</tr>
+	");
+    /*
+    $query = "select max(total) from count where time<='$date_now' order by time desc limit 50";
+    $result=mysql_db_query($DB_NAME,$query);
+	$row=mysql_fetch_array($result);
+	$max1=intval(intval($row[0])/1.5);
+	//echo $max1,$query;
+	$max1=max(100,$max1);
+    */
+    $max1=2000;
+
+    for ($i=0;$i<25;$i++) {
+      $atotal[$i]=0;$anum1[$i]=0;$anum2[$i]=0;
+      $atotal1[$i]=0;$atotal2[$i]=0;
+    }
+
+    $total0=0;
+    $query = "select * from count where time<='$date_now' order by time desc limit 50";
+    $result=mysql_db_query($DB_NAME,$query);
+	if (!$result) {echo $query,mysql_error();exit;}
+	//echo $max1,$query;
+    $count_total=0;
+    $max1=5000;
+	while (($row=mysql_fetch_array($result))) {
+      for ($i=0;$i<25;$i++) {
+        $anum1[$i]=0;$anum2[$i]=0;
+      }
+      $old_total=$row[total];
+      $row[total]=0;
+      $day_total[1]=0;
+      $day_total[2]=0;
+      for ($i=0;$i<24;$i++) {
+        $var="hour$i";
+        if ($row[$var]) $anum1[$i]=intval($row[$var]);
+        $var="telnet$i";
+        if ($row[$var]) $anum2[$i]=intval($row[$var]);
+
+        $row[total]+=$anum1[$i]+$anum2[$i];
+        $atotal[$i]+=$anum1[$i]+$anum2[$i];
+        $atotal1[$i]+=$anum1[$i];
+        $atotal2[$i]+=$anum2[$i];
+        $day_total[1]+=$anum1[$i];
+        $day_total[2]+=$anum2[$i];
+        //echo "$row[time] $row[total]+=$anum1[$i]+$anum2[$i] ";
+      }
+      if ($old_total!=$row[total]) {
+        $query4 = "update count set total='$row[toal]' where time='$row[time]'";
+        $result4=mysql_db_query($DB_NAME,$query4);
+        if (!$result4) {echo $query4,mysql_error();exit;}
+      }
+
+      $num1 =($row[hour0]+$row[hour1]+$row[hour2]);
+      $num2 =($row[hour3]+$row[hour4]+$row[hour5]);
+      $num3 =($row[hour6]+$row[hour7]+$row[hour8]);
+      $num4 =($row[hour9]+$row[hour10]+$row[hour11]);
+      $num5 =($row[hour12]+$row[hour13]+$row[hour14]);
+      $num6 =($row[hour15]+$row[hour16]+$row[hour17]);
+      $num7 =($row[hour18]+$row[hour19]+$row[hour20]);
+      $num8 =($row[hour21]+$row[hour22]+$row[hour23]);
+      $num1+=($row[telnet0]+$row[telnet1]+$row[telnet2]);
+      $num2+=($row[telnet3]+$row[telnet4]+$row[telnet5]);
+      $num3+=($row[telnet6]+$row[telnet7]+$row[telnet8]);
+      $num4+=($row[telnet9]+$row[telnet10]+$row[telnet11]);
+      $num5+=($row[telnet12]+$row[telnet13]+$row[telnet14]);
+      $num6+=($row[telnet15]+$row[telnet16]+$row[telnet17]);
+      $num7+=($row[telnet18]+$row[telnet19]+$row[telnet20]);
+      $num8+=($row[telnet21]+$row[telnet22]+$row[telnet23]);
+	  $v1=(int)($num1*200/$max1);
+	  $v2=(int)($num2*200/$max1);
+	  $v3=(int)($num3*200/$max1);
+	  $v4=(int)($num4*200/$max1);
+	  $v5=(int)($num5*200/$max1);
+	  $v6=(int)($num6*200/$max1);
+	  $v7=(int)($num7*200/$max1);
+	  $v8=(int)($num8*200/$max1);
+	  echo("
+		<tr bgcolor=#fbeef2>
+        <td valign=middle align=left>&nbsp; &nbsp; ".date_format(2,$row[time])." $row[total] ($day_total[1]/$day_total[2])</td>
+		<td valign=middle align=left>");
+
+        $count_total+=$num1;if ($num1) echo("<img src=images/bar-10.gif border=0 width=$v1 height=10 title='$num1 (00~ 3) / $count_total'>");
+        $count_total+=$num2;if ($num2) echo("<img src=images/bar-20.gif border=0 width=$v2 height=10 title='$num2 (03~ 6) / $count_total'>");
+        $count_total+=$num3;if ($num3) echo("<img src=images/bar-30.gif border=0 width=$v3 height=10 title='$num3 (06~ 9) / $count_total'>");
+        $count_total+=$num4;if ($num4) echo("<img src=images/bar-40.gif border=0 width=$v4 height=10 title='$num4 (09~12) / $count_total'>");
+        $count_total+=$num5;if ($num5) echo("<img src=images/bar-50.gif border=0 width=$v5 height=10 title='$num5 (12~15) / $count_total'>");
+        $count_total+=$num6;if ($num6) echo("<img src=images/bar-60.gif border=0 width=$v6 height=10 title='$num6 (15~18) / $count_total'>");
+        $count_total+=$num7;if ($num7) echo("<img src=images/bar-70.gif border=0 width=$v7 height=10 title='$num7 (18~21) / $count_total'>");
+        $count_total+=$num8;if ($num8) echo("<img src=images/bar-80.gif border=0 width=$v8 height=10 title='$num8 (21~24) / $count_total'>");
+        echo("</td>
+		</tr>
+	  ");
+	}
+
+  echo("</table>");
+  echo("<table width=95%>");
+  for ($i=0;$i<24;$i++) {
+    $width=intval($atotal[$i]/$max2);
+    echo ("<tr>
+    <td align=center width=30>$i</td>
+    <td width=300><img src=images/bar-40.gif border=0 width=$width height=10></td>
+    <td width=100 align=right>$atotal[$i] ($atotal1[$i]/$atotal2[$i])</td>
+    </tr>");
+  }
+  echo ("<tr>
+  <td>총계</td><td> </td><td align=right>$atotal[total]</td>
+  </tr>
+  </table>");
+}
+
+echo("
+<script>
+function re_load() {
+  window.open('$PHP_SELF','_self');
+}
+setInterval('re_load()',5*60*1000)
+</script>
+");
+
+if ($cmd=="conv1") {
+//010101 000119 211.183.248.209
+//010101 000232 211.193.61.201
+//010101 000423 211.193.244.66
+//010101 001146 211.115.225.165
+//10101 001258 211.44.81.243
+  $filename="shop01.dat";
+  if (($fp=fopen($filename,"r+"))) {
+	  $fp2=fopen($filename_rec,"a+");
+	  $count=0;
+	  while (($buff=fgets($fp,100))) {
+		//if ($count++>100) break;
+		$count++;
+		//echo "$buff<BR>";
+		if (substr($buff,6,1)!=" "||substr($buff,13,1)!=" ") continue;
+		$date="20".substr($buff,0,2)."-".substr($buff,2,2)."-".substr($buff,4,2)." ".
+			   substr($buff,7,2).":".substr($buff,9,2).":".substr($buff,11,2);
+		$buff2=$date." ".substr($buff,14);
+		fputs($fp2,$buff2);
+		echo "$count. $buff2<BR>";
+	  }
+	  fclose($fp);
+	  fclose($fp2);
+  }
+}
+
+if ($cmd=="conv2") {
+    $query = "select * from loginrec order by date";
+    $result=mysql_db_query($DB_NAME,$query);
+    echo "$query <BR>";
+	if (!$result) {echo $query,mysql_error();exit;}
+
+    while (($row=mysql_fetch_array($result))) {
+        $time=substr($row[date],0,10);
+        if ($row[login]) $hour="hour".intval(substr($row[date],11,2));
+        else $hour="telnet".intval(substr($row[date],11,2));
+        $query2 = "select * from count where time='$time'";
+
+        echo "Time:$time HOUR:$hour  $query2<BR>";
+        $result2=mysql_db_query($DB_NAME,$query2);
+        if (!$result2) {echo $query2,mysql_error();exit;}
+        $row_count=mysql_fetch_array($result2);
+        if (!$row_count) {
+            $query3 = "insert into count ($hour,total,time) values ('1','1','$time')";
+            $result3=mysql_db_query($DB_NAME,$query3);
+            if (!$result3) {echo $query3,mysql_error();exit;}
+            echo "추가: $query3 <BR>";
+        }
+        else {
+            $query3 = "update count set total=total+1,$hour=$hour+1 where time='$time'";
+            $result3=mysql_db_query($DB_NAME,$query3);
+            if (!$result3) {echo $query3,mysql_error();exit;}
+            echo "변경: $query3 <BR>";
+        }
+
+        $query4 = "update count set total=hour0+hour1+hour2+hour3+hour4+hour5+
+                                         hour6+hour7+hour8+hour9+hour10+hour11+
+                                         hour12+hour13+hour14+hour15+hour16+hour17+
+                                         hour18+hour19+hour20+hour21+hour22+hour23+
+                                         telnet0+telnet1+telnet2+telnet3+telnet4+telnet5+
+                                         telnet6+telnet7+telnet8+telnet9+telnet10+telnet11+
+                                         telnet12+telnet13+telnet14+telnet15+telnet16+telnet17+
+                                         telnet18+telnet19+telnet20+telnet21+telnet22+telnet23
+                  where time='$time'";
+        $result4=mysql_db_query($DB_NAME,$query4);
+        if (!$result4) {echo $query4,mysql_error();exit;}
+    }
+}
+
+
+//2000-08-01 00:24:04 guest 			  210.180.85.101
+//2000-08-01 00:25:55 guest 			  202.30.19.135
+//0000-08-01 00:33:48 guest 			  211.197.217.1
+if ($cmd=="reset") {
+      $query = "delete from count";
+      $result=mysql_db_query($DB_NAME,$query);
+	  if (!($fp=fopen($filename_rec,"r+"))) exit;
+	  $count=0;
+      $last_date="";
+	  while (($buff=fgets($fp,100))) {
+		$count++;
+		if ($mode==1&&$count>10000) continue;
+		//if ($count++>100) break;
+		if ($count%50==0) echo ("$count. $buff<BR>");
+
+		$time=substr($buff,0,10);
+		$hour="hour".intval(substr($buff,11,2));
+
+		//있는자료인가?
+		if ($time!=$last_date) {
+			$last_date=$time;
+			$query = "select * from count where time='$time'";
+            $result=mysql_db_query($DB_NAME,$query);
+			if (!$result) {echo $query,mysql_error();exit;}
+			$row_count=mysql_fetch_array($result);
+			if (!$row_count) {
+				$query = "insert into count ($hour,total,time) values ('0','0','$time')";
+                $result=mysql_db_query($DB_NAME,$query);
+				if (!$result) {echo $query,mysql_error();exit;}
+			}
+		}
+
+		$query = "update count set total=total+1,$hour=$hour+1 where time='$time'";
+        $result=mysql_db_query($DB_NAME,$query);
+		if (!$result) {echo $query,mysql_error();exit;}
+
+		if ($count%50==1) {
+			$query = "update count set total=hour0+hour1+hour2+hour3+hour4+hour5+
+											 hour6+hour7+hour8+hour9+hour10+hour11+
+											 hour12+hour13+hour14+hour15+hour16+hour17+
+											 hour18+hour19+hour20+hour21+hour22+hour23
+					  where time='$time'";
+            $result=mysql_db_query($DB_NAME,$query);
+			if (!$result) {echo $query,mysql_error();exit;}
+			//echo "$query,,,$result,,,";
+		}
+	  }
+	  fclose($fp);
+}
+
+
+
+
+?>
+

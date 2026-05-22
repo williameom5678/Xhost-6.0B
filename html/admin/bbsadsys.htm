@@ -1,0 +1,65 @@
+<?
+
+  include "akom.inc";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!$club) $club="main";
+  $table_name="$club"."_"."$code";
+
+  include "top.htm" ;
+
+  $query="select * from bcfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  echo("
+  <center>
+  <BR>
+  <table width=750 bgcolor=CAC5A2 cellspacing=1 cellpadding=2 border=0>
+  <tr>
+  <td align=center bgcolor=107cb3 colspan=9><font color=ffffff><b>전체게시판관리</b></font></td>
+  </tr>
+  </table>
+  <table width=750 cellspacing=0 cellpadding=0 border=1>
+  <tr bgcolor=e3e3bf>
+	  <td width=100 align=center><font color=000000><b>편집</b></font></td>
+	  <td width=100 align=center><font color=000000><b>동호회</b></font></td>
+	  <td width=100 align=center><font color=000000><b>가기코드</b></font></td>
+	  <td width=200 align=center><font color=000000><b>제 목</b></font></td>
+	  <td width=100 align=center><font color=000000><b>작성날짜</b></font></td>
+	  <td width=100 align=center><font color=000000><b>최종날짜</b></font></td>
+	  <td width=50 align=center><font color=000000><b>자료수</b></font></td>
+  </tr>
+  ");
+
+  while(($row=mysql_fetch_array($result))) {
+	  echo("
+	  <tr>
+	  <td align=center>
+	  <a href='bbssys.htm?cmd=edit&cmd2=all&code=$row[code]&club=$row[club]'>편집</a>
+	  <a href='bbssys.htm?cmd=delete&cmd2=all&code=$row[code]&club=$row[club]' onClick=\"return confirm('$row[code]($row[name])를 삭제할까요?')\">삭제</a>
+	  <a href='bbssys.htm?cmd=dump&cmd2=all&code=$row[code]&club=$row[club]'>DUMP</a>
+	  </td>
+	  <td align=center><a href='bbs/list.htm?code=$row[code]&club=$row[club]'>$row[club]</a></td>
+	  <td align=center><a href='bbs/list.htm?code=$row[code]&club=$row[club]'>$row[code]</a></td>
+	  <td align=center>$row[name]</td>
+	  <td align=center>".substr($row[date],2,14)."</td>
+	  <td align=center>".substr($row[date2],2,14)."</td>
+	  <td align=center>$row[total]</td>
+	  </tr>
+	  ");
+  }
+  echo("</table>");
+  echo("
+  <form action='$PHP_SELF' method=post>
+  <input type=hidden name=cmd value='search'>
+  <input type=hidden name=cmd2 value='all'>
+  <select name=field>
+  <option value=name>가기이름</option>
+  <option value=club>동호회</option>
+  <option value=code>가기코드</option>
+  </select>
+  <input type=text size=15 name=s_que>
+  <input type=submit value='검색'>
+  &nbsp; &nbsp;<input type=button value='신규' onclick=window.open('bbssys.htm?cmd=insert&cmd2=all','_top','')>
+  &nbsp; &nbsp;<input type=button value='종료' onclick=window.open('bbsmain.htm','_top','')>
+  </form>
+  ");
+?>

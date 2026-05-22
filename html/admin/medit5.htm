@@ -1,0 +1,252 @@
+<HTML>
+<HEAD>
+<LINK REL="stylesheet" TYPE="text/css" href="font.css">
+<TITLE>회원 정보 수정</TITLE>
+</HEAD>
+<body leftmargin='20'>
+<?
+  include "akom.inc";
+  include "sysop.htm";
+  if (!$super_user||!$editnum) exit;
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!mysql_select_db("$DB_NAME",$connect)) {echo mysql_error();exit;}
+  $query = "select * from user where num=$editnum";
+  $result=mysql_db_query($DB_NAME,$query);
+  $user=mysql_fetch_array($result);
+
+
+echo("
+<script>
+<!--
+  function send() {
+	if (form1.passwd.value== '')    {alert('비밀번호를 받드시 입력해야 합니다.');form1.passwd.focus();}
+	if (form1.passwd.value.length<3){alert('비밀번호는 3자이상입니다.');form1.passwd.focus();}
+	if (form1.passwd.value != form1.passwd2.value) {
+	  alert('비밀번호가 일치하지 않습니다.');form1.passwd.focus();}
+	if (form1.addr1.value=='')      {alert('주소를 기재해주세요');form1.addr2.focus();}
+	if (form1.addr2.value=='')      {alert('주소를 기재해주세요');form1.addr2.focus();}
+	if (form1.email.value== '')     {alert('Email 주소를 입력해주세요');form1.email.focus();}
+	else return true;
+	return false;
+  }
+  function zipopen() {
+	  var w;
+	  var cWidth  = (screen.width -450) /2 +50;
+	  var cHeight = (screen.height-100) /2 -200;
+	  w=window.open('mpost.htm','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left='+cWidth+',top='+cHeight+',width=450,height=300');
+	  w.focus();
+  }
+  function go_delete(id,name) {
+  	if (confirm(id+' ('+name+') 님을 삭제할까요?')) {
+		form1.cmd.value='delete';
+	        form1.submit();
+		return true;
+	}
+	return false;
+  }
+-->
+</script>
+<br>
+<table border=0 bordercolor=black cellpadding=0 cellspacing=0 width=600>
+<form name='form1' action='$PHP_SELF' method='post'>
+<input type=hidden name=cmd value='editsave'>
+<tr>
+<td>
+  <table border=0 cellpadding=0 cellspacing=0 width=100%>
+  <tr bgcolor=''>
+  <td colspan=2 align=center><font size=3><b>회 원 정 보 수 정</b></td>
+  </tr>
+  <tr>
+  <td width='20%'></td><td width='80%'></td>
+  </tr>
+  <tr>
+  <td colspan=2>&nbsp;</td>
+  </tr>
+  
+  <tr>
+  <td><LI><b>아이디*</td>
+  <td><input type=text name=user_id value='$user[id]' size=12></td>
+  </tr>
+  
+  <tr>
+  <td><LI><b>이름*</td>
+  <td><input type=text name=user_name value='$user[name]' size=12></td>
+  </tr>
+  
+  <tr>
+  <td><LI><b>등급*</td>
+  <td><input type=text name=user_type value='$user[type]' size=12>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*표 수정불가)
+  </td>
+  </tr>
+  
+  <tr>
+  <td><LI><b>주민등록번호*</td>
+  <td><input name='id_no' type=text value='$user[id_no]' size=12></td>
+  </tr>
+  
+  <tr>
+  <td><LI><b>별칭</td>
+  <td><input type='text' name='eid' value='$user[eid]' size='16'></td>
+  </tr>
+  
+  <tr>
+  <td colspan=2>&nbsp;</td>
+  </tr>
+  
+  <tr>
+  <td><LI><b>비밀번호</b></td>
+  <td>
+  <input type=password name=passwd size=20 maxlength=8 value='$user[passwd]'> (최소:4자, 최대:8자)
+  </td>
+  </tr>
+  <tr>
+  
+  <td><LI><b>비밀번호확인</td>
+  <td>
+  <input type=password name=passwd2 size=20 maxlength=8 value='$user[passwd]'> (비밀번호 재확인)</td>
+  </tr>
+  
+  <tr>
+  <td><LI><b>Email</td>
+  <td>
+  <input name=email size=40 value='$user[email]'></td>
+  </tr>
+  
+  <tr>
+  <td colspan=2>&nbsp;</td>
+  </tr>
+
+  <tr>
+  <td><LI><b>면허번호</b></td>
+  <td width='450' height='25'>
+  <input type='text' name='memo4' value='$user[memo4]' size='7' maxlength='5'></td>
+  </tr>
+
+  <tr>
+  <td><LI><b>한의원명</b></td>
+  <td width='450' height='25'>
+  <input type='text' name='offi' value='$user[offi]' size='20'></td>
+  </tr>
+
+  <tr>
+  <td><LI><b>우편번호</td>
+  <td width=450 height=25>
+  <a href='javascript:zipopen()'><b>(우편번호찾기:자동주소입력)</B></A>
+  <input name='post' type='text' value='$user[post]' SIZE=10></td>
+  </tr>
+
+  <tr>
+  <td><LI><b>한의원 주소</td>
+  <td><a href='javascript:zipopen()'>(자동입력)</a><input type=text name=addr1 size=50 value='$user[addr1]'></td>
+  </tr>
+
+  <tr>
+  <td>&nbsp;</td>
+  <td><input type=text name=addr2 value='$user[addr2]' size=50>
+  (나머지 주소)</font>
+  </td>
+  </tr>
+
+  <tr>
+  <td><LI><b>한의원전화</td>
+  <td>
+  <input type=text name=tele size=20 value='$user[tele]'> </td>
+  </tr>
+
+  <tr>
+  <td><LI><b>직 책</b></td>
+  <td width='251'>
+  <input type='text' name='memo5' maxlength='6' size='15'>
+  </td>
+  </tr>
+
+  <tr>
+  <td><LI><b>자택주소</td>
+  <td>
+  <input type=text name=memo7 size=70 value='$user[memo7]'> </td>
+  </tr>
+
+  <tr>
+  <td><LI><b>자택전화</td>
+  <td>
+  <input type=text name=memo6 size=70 value='$user[memo6]'> </td>
+  </tr>
+
+  <tr>
+  <td><LI><b>소개1</td>
+  <td>
+  <input type=text name=memo1 size=70 value='$user[memo1]'> </td>
+  </tr>
+
+  <tr>
+  <td><LI><b>소개2</td>
+  <td>
+  <input type=text name=memo2 size=70 value='$user[memo2]'> </td>
+  </tr>
+
+  <tr>
+  <td colspan=2 align=center>
+  <BR>
+  <input type='submit' value='수정완료 '>&nbsp;&nbsp;&nbsp;
+  <input type=button value='취 소' onclick=window.open('akuser.htm','_self','')>&nbsp; &nbsp; &nbsp;
+  <input type=button value='삭 제' onclick=go_delete('$user[id]','$user[name]')>
+  </td>
+  </tr>
+  </table>
+</td>
+</tr>
+</form>
+</table>
+<script>document.form1.passwd.focus();</script>
+");
+if($cmd=="delete") {
+  $query = "select * from user where num = '$editnum'";
+  $result=mysql_db_query($DB_NAME,$query);
+  if(!$result) { echo mysql_error(); exit; }
+  $user=mysql_fetch_array($result);
+
+  $query="delete from user where num='$editnum'";
+  if(!$result) { echo mysql_error(); exit; }
+  if(!$result) { error("query erro"); exit; }
+  echo("<center><BR><BR><h2>$user[id] ($user[name]) 님의 정보가 삭제되었습니다. ");
+  mysql_close();
+  echo("<meta http-equiv='refresh' content='1 url=akuser.htm'>");
+  exit;
+}
+
+if($cmd =="editsave") {
+    $query = "update user set
+              id='$user_id',
+              name='$user_name',
+	      type='$user_type',
+	      id_no='$id_no',
+              eid='$eid',
+	      passwd ='$passwd',
+              email='$email',
+              memo4='$memo4',
+	      offi='$offi',
+              post='$post',
+              addr1='$addr1',
+              addr2='$addr2',
+              memo1='$memo1',
+              memo2='$memo2',
+	      memo6='$memo6',
+              memo7='$memo7',
+              tele='$tele'
+              where num=$editnum";
+  $result=mysql_db_query($DB_NAME,$query);
+  if(!$result) { mysql_error(); }
+  else {
+    echo("
+      <table border='0' width='626' height='300'>
+      <tr><td align='center' valign='center'>
+      <b>$user[name]</b>($user[id])님의 정보가 수정되었습니다.</td></tr>
+      </table>
+      <meta http-equiv='refresh' type='text/css' content='1; url=akuser.htm'>
+    ");
+  }
+  mysql_close($connect);
+} 
+
+  mysql_close($connect);
+?>

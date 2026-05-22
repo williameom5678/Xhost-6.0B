@@ -1,0 +1,78 @@
+
+<div align="center">{상단메뉴} </div>
+<table width="790" border="0" cellspacing="0" cellpadding="0" align="center">
+  <tr>
+<td width=130 valign=top>
+
+{hide_str1}
+<form action=/member/index.htm method=post>
+<input type=hidden name=cmd value=check_login>
+<input type=hidden name=ret value=main>
+아이디:<input type=text name='log_id' value='{cookie_id}' size=8><BR>
+암&nbsp;&nbsp;&nbsp;호:<input type=password name='log_passwd' value='' size=8><BR>
+<a href=/member/join.htm>[회원가입]</a>
+<input type=submit value='확인'>
+</form>
+{hide_str2}
+{hide_str3}
+<center>
+<BR>
+안녕하세요?<BR>
+{아이디}님<BR>
+등급:{등급}<BR>
+<a href=/member/index.htm?cmd=logout&ret=main>[로그아웃]</a>
+<a href=/member/index.htm>[회원정보]</a><BR>
+{hide_str4}
+{왼쪽메뉴}
+</center></td>
+    <td width=530 valign=top> <img src="img/gongji.gif" border="0"><BR>
+    <table border="0" cellpadding="0" cellspacing="1" width="504">
+	<!-- LOOP START 'notice' --> 
+	<tr>
+	<td width=400><a href='bbs/read.htm?code=notice&num={번호}'>{제목} </a></td>
+	<td width=80 align=center>{등록일}</td>
+	<td width=60 align=center>{조회}</td>
+	</tr>
+	<!-- LOOP END 'notice' --> 
+	</table>
+
+
+	  <img src="img/newboard.jpg" border="0"> 
+      <table border="0" cellpadding="0" cellspacing="1" width="504">
+    <tr>
+    <td width="63" align="center" bgcolor="#E6DBC9">
+    <p><font color="#463317"><b>가기코드</b></font></p>
+    </td>
+    <td width="93" align="center" bgcolor="#E6DBC9">
+    <p><font color="#463317"><b>작성자</b></font></p>
+    </td>
+    <td width="256" align="center" bgcolor="#E6DBC9">
+    <p><font color="#463317"><b>제목</b></font></p>
+    </td>
+    <td width="87" align="center" bgcolor="#E6DBC9">
+    <p><font color="#463317"><b>날짜</b></font></p>
+    </td>
+    </tr>
+	<!-- LOOP START 'list' --> 
+	<tr bgcolor=#F7F1E5>
+	<td width=63 align=center>
+	<a href='bbs/list.htm?club={club}&code={code}'>{code}</a>
+	</td>
+	<td width=93 align=center>{등록자}</td>
+	<td width=256>&nbsp;<a href='bbs/read.htm?club={club}&code={code}&num={번호}'>{제목} </a></td>
+	<td width=87 align=center>{등록일}</td>
+	</tr>
+	<!-- LOOP END 'list' --> 
+	</table>
+	<BR>
+</td>
+
+
+<td width="130" valign="top" align="center" bgcolor="#F1F6E9">
+접속자<font size=2> ({접속인원}명)</font><BR>
+{접속자}<BR>
+</td>
+
+</tr>
+</table>
+<div align="center">{하단메뉴}</div>

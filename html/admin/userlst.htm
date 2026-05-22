@@ -1,0 +1,74 @@
+<?
+  //include "db.htm";
+  //include "ut.htm";
+  //include "css.htm";
+  //$super_user=1235;
+    function disp_now_login() {
+      global $super_user,$userip,$userid,$userna,$count_login,$userbuy;
+      global $cfg_base;
+
+      $total=$total1=$total2=0;
+      if (!$cfg_base) $cfg_base="/nfs/akom";
+      $anum1[0]="";
+      $guest_count=0;
+      $user_count=0;
+      $tcount=0;
+      $handle=opendir("$cfg_base/userlist");
+      while ($tcount++<1000&&$file = readdir($handle)) {
+          //if ($super_user==1235) echo "$tcount, $file <BR>";
+          if (!strstr($file,".nip")) continue;
+          $filename="$cfg_base/userlist/$file";
+          $tt=filemtime($filename);
+          if ((time()-$tt)>5*60) {
+            unlink($filename);
+            continue;
+          }
+          $arr[0]=$arr[1]=$arr[2]=$arr[3]="";
+          $arr=file($filename);
+          $arr[0]=trim(str_replace("\n","",$arr[0]));
+          $arr[1]=trim(str_replace("\n","",$arr[1]));
+          $arr[2]=trim(str_replace("\n","",$arr[2]));
+          $arr[3]=trim(str_replace("\n","",$arr[3]));
+          if (!$arr[1]||$arr[1]=="guest") {
+            $guest_count++;
+            continue;
+          }
+          //$t2=intval(str2date(trim($arr[2])));
+          $t2=trim(substr($arr[2],2));
+          $anum1[$user_count]="$t2||$arr[0]||$arr[1]||".trim(substr($file,0,20))."||$arr[2]||$arr[3]";
+          //echo("$filename ,$arr[0],$anum1[$user_count],");flush();
+          $user_count++;
+      }
+      closedir($handle);
+      sort($anum1);
+
+      $total=$guest_count+$user_count;
+      $login_str=("<center>현재접속 : $total 명<BR>");
+      for ($i=0;$i<sizeof($anum1);$i++) {
+        //if ($super_user==1235) echo("$anum1[$i]<BR>");
+        //continue;
+        if (strlen($anum1[$i])<10) continue;
+        $abuff=explode("||",$anum1[$i]);
+        $i_id      =trim($abuff[1]);
+        $i_name    =trim($abuff[2]);
+        $i_ip      =trim($abuff[3]);
+        $i_time    =trim($abuff[4]);
+        $i_html    =trim($abuff[5]);
+        $i_how_old =intval(how_old_str($i_time)/60+1)."분";
+
+        if ($i_ip==$userip) $login_str.="@";
+        if ($super_user==1235) $login_str.="<a href=# title=\"$i_ip 접속시간:$i_how_old 현재위치:$i_html\">$i_id($i_name)</a><BR>";
+        else if ($userty>=15) $login_str.="<a href=# title=\"접속시간:$i_how_old 현재위치:$i_html\">$i_id($i_name)</a><BR>";
+        else $login_str.="<a href=# title=\"현재위치:$i_html\">$i_id($i_name)</a><BR>";
+        flush();
+      }
+
+      if ($userid=="guest") $login_str.="@";
+      if ($guest_count) $login_str.="guest ( $guest_count 명 )<BR>";
+      return $login_str;
+    }
+
+    $login_str=disp_now_login();
+    echo $login_str;
+
+?>

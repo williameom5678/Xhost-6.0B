@@ -1,0 +1,23 @@
+<?
+  
+  include "akom.inc";
+  include "sysop.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+if(!$super_user) echo("<meta http-equiv='refresh' type='text/css' content='0; url=main.htm'>");
+if($cmd=="delete") {
+  $query="delete from user where id='$delid'";
+  $result=mysql_db_query($DB_NAME,$query);
+  if(!$result) { echo mysql_error(); exit; }
+  if(!$result) { error("query erro"); exit; }
+  echo("<table border='0' width='500' height='500'>
+        <tr><td align='center' valign='middle'>
+	<h3>$delid ($delname) 님의 정보가 삭제되었습니다. 
+	</td></tr>
+	</table>
+	");
+  mysql_close();
+  echo("<meta http-equiv='refresh' content='1 url=akuser.htm'>");
+  exit;
+}
+?>

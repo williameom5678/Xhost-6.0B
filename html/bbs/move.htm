@@ -1,0 +1,120 @@
+<?
+  include "../db.htm";
+  include "../ut.htm";
+  $code=$new_code;
+  if (!$new_club) $new_club=$club;
+  setcookie("bbs_move_code",$new_code);
+  setcookie("bbs_move_club",$new_club);
+  setcookie("bbs_move_cmd" ,$cmd);
+  echo("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=euc-kr\">\n");
+
+  if (!$code) {echo("<script>history.go(-1)</script>");exit;}
+  if ($cmd=="move"&&$code==$old_code&&$club==$old_club) {alert3("같은코드로 이동이 안됩니다.");exit;}
+
+  //alert($cmd);exit;
+  if ($super_user!=1235&&$userty<15) exit;
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+  $old_table_name=$old_club."_".$old_code;
+  $query="select * from $old_table_name where num='$num'";
+  $result=mysql_db_query($DB_CM,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+  $table_name=$club."_".$code;
+
+  $old=mysql_fetch_array($result);
+  if (!$old) {echo "$old_table_name -> $num 없음";exit;}
+
+  $old[body]=addslashes($old[body]);
+  $old[title]=addslashes($old[title]);
+  $old[keyword]=addslashes($old[keyword]);
+  $old[homepage]=addslashes($old[homepage]);
+
+  $query="select max(pos) from $table_name";
+  $result=mysql_db_query($DB_CM,$query);
+  if(!$result) { $row[0]=0; }
+  else {$row=mysql_fetch_array($result);}
+  $newpos=$row[0]+1;
+
+  if ($old_code!="__backup"&&$old_code!="__notice") {
+      $old[tcode]=$old_code;
+      $old[tclub]=$old_club;
+      $old[tnum ]=$num;
+  }
+
+  $query = "
+  insert into $table_name (
+  pos,depth,
+  tnum,
+  id,name,passwd,
+  title,keyword,tcode,tclub,
+  date,date2,homepage,
+  email,userip,filename,
+  fcount,filesize,size,line,
+  hits,down,ok,no,good,
+  bgcolor,chcolor,
+  color,tag,note,
+  body
+  )
+  values (
+  '$newpos','0',
+  '$old[tnum]',
+  '$old[id]','$old[name]','$old[passwd]',
+  '$old[title]','$old[keyword]','$old[tcode]','$old[tclub]',
+  '$old[date]','$old[date2]','$old[homepage]',
+  '$old[email]','$old[userip]','$old[filename]',
+  '$old[fcount]','$old[filesize]','$old[size]','$old[line]',
+  '$old[hits]','$old[down]','$old[ok]','$old[no]','$old[good]',
+  '$old[bgcolor]','$old[chcolor]',
+  '$old[color]','$old[usetag]','$old[note]',
+  '$old[body]'
+  );";
+
+  //echo($query);
+
+  $result=mysql_db_query($DB_CM,$query);
+
+      if(!$result&&mysql_error()=="Unknown column 'goods' in 'field list'") {
+            $query2="ALTER TABLE $table_name ADD goods VARCHAR(15) NOT NULL";
+            $result2=mysql_db_query($DB_CM,$query2);
+            $result=mysql_db_query($DB_CM,$query);
+      }
+      if(!$result&&mysql_error()=="Unknown column 'face' in 'field list'") {
+            $query2="ALTER TABLE $table_name ADD face INT NOT NULL";
+            $result2=mysql_db_query($DB_CM,$query2);
+            $result=mysql_db_query($DB_CM,$query);
+      }
+      if(!$result&&mysql_error()=="Unknown column 'readopen' in 'field list'") {
+            $query2="ALTER TABLE $table_name ADD readopen ENUM('y','n') DEFAULT 'y' NOT NULL";
+            $result2=mysql_db_query($DB_CM,$query2);
+            $result=mysql_db_query($DB_CM,$query);
+      }
+      if(!$result&&mysql_error()=="Unknown column 'bgcolor' in 'field list'") {
+            $query2="ALTER TABLE $table_name ADD bgcolor VARCHAR(8) NOT NULL";
+            $result2=mysql_db_query($DB_CM,$query2);
+            $query2="ALTER TABLE $table_name ADD chcolor VARCHAR(8) NOT NULL";
+            $result2=mysql_db_query($DB_CM,$query2);
+            $result=mysql_db_query($DB_CM,$query);
+      }
+      if(!$result&&mysql_error()=="Unknown column 'tag' in 'field list'") {
+            $query2="ALTER TABLE $table_name ADD tag ENUM('y','n') DEFAULT 'n' NOT NULL";
+            $result2=mysql_db_query($DB_CM,$query2);
+            $result=mysql_db_query($DB_CM,$query);
+      }
+      if(!$result) {
+          echo $query,mysql_error(),mysql_errno();
+          exit;
+      }
+ 
+
+  if (!$result) {echo $query,mysql_error();exit;}
+
+  if ($cmd=="copy") {
+      go_url("read.htm?num=$num&code=$old_code&club=$club&page=$page&mo=$mo&field=$field&s_que=$s_que");
+  }
+  else {
+     $query="delete from $old_table_name where num='$num'";
+     $result=mysql_db_query($DB_CM,$query);
+     if (!$result) {echo $query,mysql_error();exit;}
+     go_url("list.htm?code=$old_code&club=$club&page=$page&mo=$mo&field=$field&s_que=$s_que");
+  }
+?>

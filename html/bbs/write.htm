@@ -1,0 +1,413 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+###  if ($sw__id=="akom"&&$userty<5)  {alert3("정식 회원만이 AKOM을 사용할수 있습니다. (ID:$userid 등급:$userty)","../index.htm");exit;}
+  $s_que=strip2($s_que);
+
+  $width1=650;   if ($bbs_width1    ) $width1=$bbs_width1;
+  $width2=650;   if ($bbs_width2    ) $width2=$bbs_width2;
+  $width3=640;   if ($bbs_width3    ) $width3=$bbs_width3;
+  $widthall=780; if ($bbs_widthall  ) $widthall=$bbs_widthall;
+  $widthleft=130;if ($bbs_widthleft ) $widthleft=$bbs_widthleft;
+  $widthbody=650;if ($bbs_widthbody ) $widthbody=$bbs_widthbody;
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if ($code=="good"&&$super_user!=1235) {
+    if ($cmd=="rebbs") $cmd="";
+    $code="guestbbs";
+    alert("평가게시판에 입력한 글은 방명록에 저장됩니다.");
+  }
+
+  if(!$code) {echo("게시판 CODE 필요") ; exit;}
+
+  $table_name="$club"."_"."$code";
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+  if ($super_user==1235) $ctype=$userty=999;
+  if ($super_user!=1235&&$bcfg[member_write]=='y'&&$userid=="guest") {echo ("<script>window.alert('죄송합니다. 회원전용 게시판입니다.\\n 먼저 로그인한뒤 글을 적으세요');history.go(-1)</script>");exit;}
+  if ($cfg[sysop1]&&$cfg[sysop1]==$userid||$userty>=15)   {$csuper_user=true;$bsuper_user=true;$userty=19;}
+
+  if ($club!="main") {
+	if ($bcfg[wctype]>0&&$bcfg[wctype]>$ctype) {echo ("<script>window.alert('동호등급 $bcfg[wctype] 이상 쓰기가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[wctype]>0&&$ccfg[wctype]>$ctype) {echo ("<script>window.alert('동호등급 $ccfg[wctype] 이상 쓰기가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[wtype]>0&&$ccfg[wtype]>$userty)  {echo ("<script>window.alert('메인등급 $ccfg[wtype]  이상 쓰기가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  }
+
+  if ($bcfg[wtype]>0&&$bcfg[wtype]>$userty)    {echo ("<script>window.alert('메인등급 $bcfg[wtype]  이상 쓰기가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  if ($cfg[wtype]>0&&$cfg[wtype]>$userty)	   {echo ("<script>window.alert('메인등급 $cfg[wtype]   이상 쓰기가능 (현재:$userty)');history.go(-1)</script>");exit;}
+
+  $oldnum="";
+  $olddate="";
+  $oldtitle="";
+
+  //답변일경우
+  if ($cmd=="rebbs"&&$num>0) {
+	$query="select * from $table_name where num=$num and del!='D'";
+	$result=mysql_db_query($DB_CM,$query);
+	if (!$result) echo("번호 오류 Q:$query, R:$result,".mysql_error()."<BR>");
+	$row=mysql_fetch_array($result);
+    if ($bcfg[bform]==2) {       //비공개
+        $row[id]="...";
+        $row[name]="...";
+    }
+	if (!$row||$row[num]<1) $cmd2="";
+	else {
+        if ($super_user!=1235&&!$csuper_user&&$row[readopen]=='n') $row[body]="*** 비공개 내용입니다. (관리자만 읽을 수 있습니다.) ***";
+		$row[title] = stripslashes($row[title]);
+		$row[body] = stripslashes($row[body]);
+		$row[body] = eregi_replace("<br>","",$row[body]);
+		$row[body] = eregi_replace("\"","＇",$row[body]);
+		$row[body] = eregi_replace("\'","＇",$row[body]);
+		$row[body]="\n\n".$row[name]."님의 글\n------------------------------------\n".$row[body]."\n------------------------------------\n";
+		//------------------------------------------------------
+		$row[body]=eregi_replace("<script>","&ltscript&gt",$row[body]);
+		$row[body]=eregi_replace("<applet>","&ltapplet&gt",$row[body]);
+		$row[title]=eregi_replace("<","&lt",$row[title]);
+		$row[name]=eregi_replace("<","",$row[name]);
+		$row[mail]=eregi_replace("<","",$row[mail]);
+		$row[home]=eregi_replace("<","",$row[home]);
+
+		$oldnum=$num;				//이전게시판
+		$olddate=$row[date];		//이전게시판
+		$oldtitle=$row[title];		//이전게시판
+		$title="[답변] ".$row[title];
+		$goods=$row[goods]; 		//이전 상품코드
+	}
+  }
+
+  if (!$write_name) $write_name=$userna;
+
+  if (is_super_user($userid)) {
+      if ($userid=="nabis") {$write_name="코디박";$write_email="nabis@xhost.co.kr";}
+      else if ($userid=="bosa") {$write_name="bosa";$write_email="bosa@xhost.co.kr";}
+      else if ($userid=="sysop") 
+{$write_name="관리자";$write_email="sysop@djschool.sc.kr";}
+  }
+
+  if ($write_name=="guest"&&strlen($cwrite_name)>1) $write_name=$cwrite_name;
+  if (!$write_email&&strlen($cwrite_email)>1) $write_email=$cwrite_email;
+  if (!$write_id)	$write_id=$userid;
+  if (!$write_name) $write_name=$userna;
+  if (!$write_id) $write_id="guest";
+  if ($write_name=="guest") $write_name="";
+
+  $body="";
+
+  //화면 삽입
+  if ($bcfg[body_only]!='y') {
+      $now_html="게시판쓰기 $code";
+      if (!$define_bbstop&&$bcfg[include_top]!='n') include "../bbstop.htm";
+      else include "../css.htm";
+      if ($bcfg[include_left]!='n') {
+        echo ("<table width='$widthall' border='0' cellspacing='0' cellpadding='0'>
+        <tr>
+        <td width=$widthleft valign=top>
+        <!---- 왼쪽 메뉴 시작 --->
+        ");
+        if ($define_left) ;
+        else if ($mo=="board") include "../board/left.htm";
+        else if ($mo&&$mo!="main") include "../$mo/left.htm";
+        else if ($club&&$club!="main") include "../$club/left.htm";
+        else include "../left.htm";
+        echo ("
+        $left_str
+        <!---- 왼쪽 메뉴 끝 --->
+        </td>
+        <td width=$widthbody valign=top>
+        <!---- 오른쪽 메뉴 시작 --->
+        ");
+      }
+  }
+  else include "../css.htm";
+
+echo ("
+  <script language='JavaScript' src='../include/iskorea.js'></script>
+  <script language='javascript'>
+  <!--
+    function check_submit(frm) {
+        if (iskorea_checkMinLength(frm.title,1,'제목이 필요합니다.\\n다시 입력하세요!') == false) return;
+        ");
+        if ($bcfg[use_body]!='n') echo ("if (iskorea_checkMinLength(frm.body ,1,'내용이 없습니다.\\n다시 입력하세요!') == false) return;");
+        echo ("
+        frm.submit();
+    }
+    function findcode() {
+        var w;
+        var cWidth  = (screen.width -450) /2 +50;
+        var cHeight = (screen.height-100) /2 -200;
+        w=window.open('findcode.htm','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left='+cWidth+',top='+cHeight+',width=600,height=300');
+        w.focus();
+    }
+    function facein() {
+        var w;
+        w=window.open('facein.htm','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left=0,top=0,width=400,height=500');
+        w.focus();
+    }
+    function colorin() {
+        var w;
+        var v1=document.form1.chcolor.value;
+        var v2=document.form1.bgcolor.value;
+        w=window.open('colorin.htm?chcolor='+v1+'&bgcolor='+v2,'pop_up','menubar=0, status=1, locationbar=1,toolbar=0,scrollbars=1,resizable=1,left=0,top=0,width=400,height=500');
+        w.focus();
+    }
+    function inputbody(mode,text) {
+        if (mode==1) document.form1.body.value=document.form1.body.value+'/'+text+'/';
+        else document.form1.body.value=document.form1.body.value+text;
+    }
+  -->
+  </script>
+
+  <form name='form1' ENCTYPE='multipart/form-data' action='insert.htm' method='POST'>
+  <input type=hidden name='cmd'  value='up'>
+  <input type=hidden name='cmd2' value='$cmd'>
+  <input type=hidden name='mn'   value='$mn'>
+  <input type=hidden name='code' value='$code'>
+  <input type=hidden name='goods' value='$goods'>
+  <input type=hidden name='goods_title' value='$goods_title'>
+  ");
+  if ($bcfg[use_keyword]!='y') echo ("<input type=hidden name='keyword' value='$keyword'>");
+  echo ("
+  <input type=hidden name='oldnum' value='$oldnum'>
+  <input type=hidden name='olddate' value='$olddate'>
+  <input type=hidden name='oldtitle' value='$oldtitle'>
+  <input type=hidden name='club' value='$club'>
+  <input type=hidden name='oldnum' value='$num'>
+  <input type=hidden name='page' value='$page'>
+  <input type=hidden name='field' value='$field'>
+  <input type=hidden name='s_que' value='$s_que'>
+  <input type=hidden name='sysop' value='$sysop'>
+  <input type=hidden name='mo'    value='$mo'>
+  <input type=Hidden name='hide'  value=\"$row[body]\">
+  <br>
+  <table width=$width1><tr><td>$bcfg[write_top]</td></tr></table>
+  <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+  <tr bgcolor='#FFB56D'><td height='3' colspan=0></td></tr>
+  <tr bgcolor='#E5E5E5' align='center'>
+  <td>
+  <br>
+  <table width='$width2' border='0' cellspacing='1' cellpadding='5'>
+    <tr><td width='10%'></td><td width='90%'></td></tr>
+  ");
+
+  if ($bcfg[use_name]=='y') echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>이름</td>
+    <td bgcolor='ffffff'><input type=text name='write_name' size=30 maxlength=30 value='$write_name' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+    </td>
+    </tr>
+  ");
+
+
+  if ($bcfg[bform]==15) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>북마크(주소)</td>
+    <td bgcolor='ffffff'>http://<input type=text name='note' size=50 value='' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+    </td>
+    </tr>
+  ");
+  if ($bcfg[use_keyword]=='y') {
+    echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>분류</td>
+    <td bgcolor='ffffff'>");
+    if ($bcfg[keyword_select1]) {
+      $arr1=explode(" ",$bcfg[keyword_select1]);
+      for ($i=0;$i<sizeof($arr1);$i++) {
+        if ($arr1[$i]) echo ("<input type=radio name=keyword value='$arr1[$i]'>$arr1[$i] &nbsp;\n");
+      }
+    }
+    else if ($bcfg[keyword_select2]) {
+      $arr1=explode(" ",$bcfg[keyword_select2]);
+      echo ("<select name=keyword>\n");
+      for ($i=0;$i<sizeof($arr1);$i++) {
+        if ($arr1[$i]) echo ("<option value='$arr1[$i]'> $arr1[$i] </option>\n");
+      }
+      echo ("</select>\n");
+    }
+    else {
+      echo ("<input type=text name='keyword' size=30 maxlength=30 value='$keyword' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >");
+    }
+    echo ("</td></tr>");
+  }
+
+  echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>제목</td>
+    <td bgcolor='ffffff'><input type=text name='title' size=80 value='$title' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+    </td>
+    </tr>
+  ");
+
+
+  if ($bcfg[use_face]=='y'||$csuper_user||$bsuper_user) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>표현</td>
+    <td bgcolor='ffffff'>
+    <input type=radio name=e_face value=156  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0156.gif>보통&nbsp;
+    <input type=radio name=e_face value=145  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0145.gif>땀땀&nbsp;
+    <input type=radio name=e_face value=141  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0141.gif>야호&nbsp;
+    <input type=radio name=e_face value=148  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0148.gif>반함&nbsp;
+    <input type=radio name=e_face value=157  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0157.gif>윙크&nbsp;
+    <input type=radio name=e_face value=152  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0152.gif>아하&nbsp;
+    <input type=radio name=e_face value=153  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0153.gif>궁금<BR>
+    <input type=radio name=e_face value=149  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0149.gif>잉잉&nbsp;
+    <input type=radio name=e_face value=150  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0150.gif>허걱&nbsp;
+    <input type=radio name=e_face value=155  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0155.gif>엉엉&nbsp;
+    <input type=radio name=e_face value=151  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0151.gif>화남&nbsp;
+    <input type=radio name=e_face value=161  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0161.gif>째려&nbsp;
+    <input type=radio name=e_face value=154  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0154.gif>부끄&nbsp;
+    <input type=radio name=e_face value=165  onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><img src=images/face/gima0165.gif>쿨쿨&nbsp;
+    </td>
+    </tr>
+  ");
+  if ($bcfg[use_goods]=='y') {
+    echo("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>상품코드</td>
+    <td bgcolor='ffffff'><input type=text name=e_goods size=20 maxlength=20 value='$goods' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+    &nbsp;<a href='javascript:findcode()'><b><img src=images/goods2.gif border=0></B></A>
+    (상품코드명으로 검색이 가능합니다.)
+    </td>
+    </tr>
+    ");
+  }
+
+  if ($super_user==1235||$bcfg[use_color]=='y'||$csuper_user||$bsuper_user) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center nowrap><font color=000000>
+    <div id=message1>
+    <table width=70 border=0><tr><td width=100% align=center><font>제목색상</font></td></tr></table>
+    </div>
+    </td>
+    <td bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;
+    글자색<input type=text name='chcolor' size=8 value='' class=input1 onchange=re_print()>
+    배경색<input type=text name='bgcolor' size=8 value='' class=input1 onchange=re_print()>
+    &nbsp;&nbsp;
+    <a href=javascript:colorin()><img src=images/pallet.gif border=0></a>
+    </td>
+    </tr>
+    <script>
+    function re_print() {
+      message1.innerHTML=\"<table width=70 border=0><tr><td width=100% align=center bgcolor=\"+document.form1.bgcolor.value+\"><font color=\"+document.form1.chcolor.value+\">제목색상</font></td></tr></table>\";
+    }
+    re_print();
+    </script>
+  ");
+
+  if ($bcfg[use_email]=='y'||$csuper_user||$bsuper_user) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>Email</td>
+    <td bgcolor='ffffff'><input type=text name='email' value='$write_email' size=40 class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+    ");
+    if ($bcfg[send_email]=='y') echo ("(Email로 답장메일을 받을수 있습니다.)");
+    echo ("
+    </td>
+    </tr>
+  ");
+
+  if ($bcfg[use_homepage]=='y'||$csuper_user||$bsuper_user) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center><font color=000000>Homepage</td>
+    <td bgcolor='ffffff'>http:// <input type=text name='homepage' size=50 onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+    </td>
+    </tr>
+  ");
+
+  if ($bcfg[use_body]!='n'||$csuper_user||$bsuper_user) {
+      if ($goods&&$cmd!="rebbs") {
+        $query2="select * from goods where code='$goods'";
+        $result2=mysql_db_query($DBNAME,$query2);
+        if ($result2) {
+            $row2=mysql_fetch_array($result2);
+            if ($row2) {
+              $body="\n ---- $row2[gname] 에 관한 질문입니다. ///$row2[code]/// ($row2[code])\n ";
+              $title="[질문] $row2[gname] ";
+            }
+        }
+        $keyword=$row2[gname];
+      }
+
+      echo ("
+        <tr>
+        <td bgcolor='f4f4f4' align=center>
+        <font color=000000>내용<BR>
+        </td>
+        <td bgcolor='ffffff' align=left>
+        &nbsp;&nbsp;
+        ");
+        if ($bcfg[use_tag]=='y') echo ("<input type=checkbox name='usetag' value='y'>HtmlTag사용");
+        echo ("
+        &nbsp;&nbsp;<input type=checkbox name='readopen' value='n' title=\"이 항목을 선택하시면 관리자만 내용을 읽을수 있게 됩니다.\">내용비공개
+        &nbsp;&nbsp;<a href=javascript:facein()><img src=\"images/facein.gif\" border=0 title=\"원하시는 아이콘을 내용에 추가할수 있습니다.\"></a>
+        ");
+        if ($cmd=="rebbs"&&$num>0) echo ("<input type='Button' name='quote' value='본문 인용' onClick=\"this.form.body.value=this.form.body.value + this.form.hide.value;\">");
+        echo ("
+        <BR><center>
+        <textarea name='body' cols=80 rows=17 wrap=off style='font-size:9pt ;border-width:1;border-color:gray;' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >$body</textarea>
+        </td></tr>
+      ");
+  }
+
+  if ($bcfg[use_passwd]=='y'||$csuper_user||$bsuper_user) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align='center'>비밀번호</td>
+    <td bgcolor='ffffff'><input type='password' name='passwd' size=12 maxlength=8 class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+    작성하신 게시물의 수정/삭제를 위해 필요합니다.
+    </td>
+    </tr>
+  ");
+
+  if ($bcfg[use_file]=='y'&&$cmd!="rebbs") echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center>첨부파일</td>
+    <td bgcolor='ffffff'><input type=file name='up_file' size=60 maxlength=100 class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ></td>
+    </tr>
+  ");
+
+  echo ("
+    </form>
+    </table>
+  </td>
+  </tr>
+
+  <tr bgcolor='#E5E5E5'><td height='20'></td></tr>
+  <tr bgcolor='#cccccc'><td width=100% colspan=5 height='3'></td></tr>
+
+  </table>
+  <BR>
+  <table width=$width1><tr><td align=center>
+  <a href='javascript:check_submit(document.form1)'><img src=images/upload.gif border=0></a>
+  &nbsp; &nbsp;
+  <a href='javascript:history.go(-1)'><img src=images/cancel.gif border=0></a>
+  </td></tr></table>
+  ");
+
+  if ($bcfg[body_only]!='y') {
+      if ($bcfg[include_left]!='n') {
+        echo ("
+        <!---- 오른쪽 메뉴 끝 --->
+        </td>
+        </tr>
+        </table>");
+      }
+  }
+
+  if ($bcfg[body_only]!='y'&&!$skip_include) {
+      if (!$define_bbsbottom&&$bcfg[include_bottom]=='y') include "../bottom2.htm";
+  }
+
+
+?>

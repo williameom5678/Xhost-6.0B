@@ -1,0 +1,151 @@
+<?
+  if (!$define_db) include "db.htm";
+  if (!$define_ut) include "ut.htm";
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!$userid) {echo("로그인필요");exit;}
+  if (!$super_user) {echo("관리자전용메뉴");exit;}
+  include "top.htm";
+
+  echo("
+  <form name=form1 action='$PHP_SELF' method=post>
+  <input type=hidden name=cmd value='view'>
+
+  시작:   <input type=text size=10 name=f_start value='$f_start'>
+  종료:   <input type=text size=10 name=f_end  value='$f_end'  >
+  <BR>
+  아이디: <input type=text size=10 name=f_id   value='$f_id'   >
+  이름:   <input type=text size=10 name=f_name value='$f_name' >
+  직업:   <input type=text size=10 name=f_job  value='$f_job'  >
+  IP:     <input type=text size=10 name=f_ip   value='$f_ip'   >
+  접속:   <input type=text size=10 name=f_login value='$f_login' > (1:WWW 2:telnet)
+  <BR>
+  <input type=submit value='검색'>
+  <a href=$PHP_SELF?cmd=userstat>사용자통계</a>
+  <a href=$PHP_SELF?cmd=bbsstat1>계시판통계</a>
+  </form>
+  ");
+  if ($cmd=="view") {
+    $filt="";                           //2999-12-31 12:59:59
+    $str1=substr($f_start." 00:00:00",0,19);
+    $str2=substr($f_end  ." 23:59:59",0,19);
+    if ($f_start  ) $filt.="and date>='$str1' ";
+    if ($f_end    ) $filt.="and date<='$str2' ";
+    if ($f_id     ) $filt.="and id = '$f_id' ";
+    if ($f_name   ) $filt.="and name = '$f_name' ";
+    if ($f_job    ) $filt.="and job='$f_job' ";
+    if ($f_ip     ) $filt.="and ip='$f_ip' ";
+    if ($f_login  ) $filt.="and login='$f_login' ";
+    if (substr($filt,0,4)=="and ") $filt=substr($filt,4);
+    if ($filt=="") $query="select * from loginrec";
+    else $query="select * from loginrec where $filt";
+
+    $result=mysql_db_query($DB_NAME,$query);
+    echo "<pre>
+    $query
+ date    time  ID   NAME   job  login  ip
+========================================================
+";
+    $count1=$count2=$count3=$count4=$count5=0;
+    $count_date=array();
+    while (($row=mysql_fetch_array($result))) {
+      $buff=("$row[date] $row[id] $row[name] $row[job] $row[login] $row[userip]");
+      echo ("$buff\n");
+      $count1++;
+      $abuff=explode(" ",$buff);
+      $date=$abuff[0];
+      if ($date) $count_date[$date]++;
+      if ($row[login]==1) $count2++;
+      if ($row[login]==2) $count3++;
+    }
+
+    echo "총 자료수 : $count1 ( WWW: $count2 TELNET: $count3 )\n";
+    for(reset($count_date); $key = key($count_date); next($count_date)) {
+      echo "$key = ".$count_date[$key]."\n";
+    }
+
+    echo "</pre>";
+  }
+
+  if ($cmd=="userstat") {
+    $query="select * from user";
+    $result=mysql_db_query($DB_NAME,$query);
+    echo "<pre>$query\n";
+    $count1=$count2=$count3=$count4=$count5=0;
+
+    $count_date=array();
+    $count_type=array();
+    $count_job=array();
+    while (($row=mysql_fetch_array($result))) {
+      $count1++;
+
+      //가입일
+      $date=substr($row[inday],0,10);
+      if ($date) $count_date[$date]++;
+
+      //등급순
+      $type=$row[type]+1;
+      $count_type[$type]++;
+
+      //직업순
+      $job=$row[job]+1;
+      if ((int)$row[type] > 4)
+      $count_job[$job]++;
+      //echo $row[id],$type,"\n";
+    }
+    echo ("총 인원 : $count1 \n");
+    ksort($count_date);
+    for(reset($count_date); $key = key($count_date); next($count_date)) {
+      echo "$key $count_date[$key]\n";
+    }
+
+    echo ("총 등급 : $count1 \n");
+    ksort($count_type);
+    for(reset($count_type); $key = key($count_type); next($count_type)) {
+      $key2=$key-1;
+      echo "$key2 $count_type[$key]\n";
+    }
+
+    echo ("총 직업 $count1 \n");
+    ksort($count_job);
+    for(reset($count_job); $key = key($count_job); next($count_job)) {
+      $key2=$key-1;
+      echo "$key2 $count_job[$key]\n";
+    }
+
+    echo "</pre>";
+  }
+
+  if ($cmd=="bbsstat1") {
+    $query="select * from main___backup";
+    $result=mysql_db_query($DB_CM,$query);
+    echo "<pre>$query\n";
+    $count1=$count2=$count3=$count4=$count5=0;
+
+    $count_date=array();
+    $count_code=array();
+    while (($row=mysql_fetch_array($result))) {
+      $count1++;
+
+      $date=substr($row[date],0,10);
+      if ($date) $count_date[$date]++;
+
+      $code=$row[tcode];
+      if ($code) $count_code[$code]++;
+
+    }
+    echo ("총 자료수 : $count1 \n");
+    ksort($count_date);
+    for(reset($count_date); $key = key($count_date); next($count_date)) {
+      echo "$key $count_date[$key]\n";
+    }
+
+    echo ("코드별 : $count1 \n");
+    ksort($count_code);
+    for(reset($count_code); $key = key($count_code); next($count_code)) {
+      echo "$key $count_code[$key]\n";
+    }
+    echo "</pre>";
+  }
+
+?>

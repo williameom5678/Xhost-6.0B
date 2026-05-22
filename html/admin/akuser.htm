@@ -1,0 +1,136 @@
+<?
+  if (!$define_db) include "db.htm";
+  if (!$define_ut) include "ut.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!$userid) {echo("로그인필요");exit;}
+  if (!$super_user) exit; 
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  if (!$super_user&&$userid==$cfg[sysop3]) {echo("관리자전용메뉴");exit;}
+
+  $PAGE=15;
+
+  $filt1="";$filt2="";
+  if ($sque&&$field!="num") {
+	$filt1=" where $field like '%$sque%' ";
+	$filt2=" and $field like '%$sque%' ";
+  }
+
+  if ($pos=="delete"&&$num) {
+	$query="delete from user where num=$num";
+	$result=mysql_db_query($DB_NAME,$query);
+	$pos="";
+  }
+
+  if ($field=="num"&&$sque) $query="select * from user where num<=$sque order by num DESC limit $PAGE" ;
+  else if ($pos=="now")     $query="select * from user where num<$start order by num DESC limit $PAGE" ;
+  else if ($pos==""||$pos=="top"||(!$start&&!$last)) $query="select * from user $filt1  order by num DESC limit $PAGE" ;
+  else if ($field=="memo4"&&$sque) $query="select * from user where $filt1 order by num desc limit $PAGE" ;
+  else if ($field=="offi"&&$sque) $query="select * from user where $filt1 order by num desc limit $PAGE" ;
+  else if ($field=="id_no"&&$sque) $query="select * from user where $filt1 order by num desc limit $PAGE" ;
+  else if ($pos=="back"&&$last) {
+	  $query="select * from user where num>=$start $filt2 order by num limit $PAGE" ;
+	  $result=mysql_db_query($DB_NAME,$query);
+	  for ($i=0;$i<$PAGE;$i++) {
+		if (($user=mysql_fetch_array($result))) {
+			$start=$user[num]+1;
+		}
+		else break;
+	  }
+	  $query="select * from user where num<$start $filt2 order by num DESC limit $PAGE" ;
+  }
+  else if ($pos=="next"&&$last) {
+	$start=$last;
+	$query="select * from user where num<$start  $filt2 order by num DESC limit $PAGE" ;
+  }
+  else {
+	$query="select * from user  $filt1 order by num DESC limit $PAGE" ;
+  }
+
+  $result=mysql_db_query($DB_NAME,$query);
+//	echo("$query,$result,".mysql_error().mysql_errno()."<BR>");
+  echo("
+  <link rel='stylesheet' type='text/css' href='font.css'>
+  <table border='0' width=626>
+  <tr><td align='center'>
+  <table width=626 bgcolor=CAC5A2 cellspacing=1 cellpadding=2 border=0>
+  <tr>
+  <td align=center bgcolor=7d6433 colspan=9><font color=ffffff><b>전체회원관리</b></font></td>
+  </tr>
+  </table>
+  <table width=626 cellspacing=0 cellpadding=0 border=1>
+  <tr bgcolor=e3e3bf>
+  <td width=36 align=center><font color=000000><b>번호</b></font></td>
+  <td width=100 align=center><font color=000000><b>ID</b></font></td>
+  <td width=50 align=center><font color=000000><b>이름</b></font></td>
+  <td width=55 align=center><font color=000000><b>가입날짜</b></font></td>
+  <td width=28 align=center><font color=000000><b>접속</b></font></td>
+  <td width=48 align=center><font color=000000><b>W/U/D</b></font></td>
+  <td width=30 align=center><font color=000000><b>생년</b></font></td>
+  <td width=55 align=center><font color=000000><b>구분</b></font></td>
+  <td width=175 align=center><font color=000000><b>주소</b></font></td>
+  <td width=30 align=center><font color=000000><b>등급</b></font></td>
+  </tr>
+  ");
+ while(($user=mysql_fetch_array($result))) {
+	  if (!$start||$start<=$user[num]) $start=$user[num]+1;
+	  $bgcolor="";
+	  if ($user[type]>15) $bgcolor="bgcolor=#f1d5d5";
+	  else if ($user[type]<5) $bgcolor="bgcolor=#e2f0f3";
+	  else $bgcolor="bgcolor=#f3f1de";
+	  echo("
+	  <tr $bgcolor>
+	  <td align=center><a href='medit.htm?editnum=$user[num]'>$user[num]</a></td>
+	  <td align=center><a href='medit.htm?editnum=$user[num]'>$user[id]</a></td>
+	  <td align=center><a href='medit.htm?editnum=$user[num]'>$user[name]</a></td>
+	  <td align=center>&nbsp;".substr($user[inday],2,8)."</td>
+	  <td align=center>$user[month_log]/$user[all_log]</td>
+	  <td align=center>$user[countw]/$user[countu]/$user[countd]</td>
+	  <td align=center>&nbsp;".substr($user[id_no],0,2)."</td>
+	  <td align=center>"); 
+	  if($user[job]=="1") echo("(재)학생");
+	  if($user[job]=="2") echo("교직원");
+	  if($user[job]=="3") echo("학부모");
+          if($user[job]=="4") echo("동문");
+          if($user[job]=="5") echo("관련인사"); 
+	  echo("</td>
+	  <td>&nbsp;".text_cut($user[addr1],20)."</td>
+	  <td align=center>&nbsp;$user[type]</td>
+	  </tr>
+	  ");
+	  $last=$user[num];
+  }
+  echo("</table>");
+  echo("
+  <form name=form1 action='$PHP_SELF' method=post>
+  <input type=hidden name=field value='$field'>
+  <input type=hidden name=sque value='$sque'>
+
+  &nbsp;<a href='$PHP_SELF?pos=next&start=$start&last=$last&field=$field&sque=$sque'><img src=images/bbs/next.gif border=0></a>
+  &nbsp;<a href='$PHP_SELF?pos=top'><img src='images/bbs/begin.gif' border=0></a>
+  &nbsp;<a href='$PHP_SELF?pos=back&start=$start&last=$last&field=$field&sque=$sque'><img src=images/bbs/back.gif border=0></a>
+  &nbsp;&nbsp;&nbsp;
+  <select name=field>
+  <option value=name" );if ($field=="name" ) echo " selected"; echo(">이름</option>
+  <option value=id"   );if ($field=="id"   ) echo " selected"; echo(">ID</option>
+  <option value=memo4"  );if ($field=="memo4"  ) echo " selected"; echo(">면허번호</option>
+  <option value=offi"  );if ($field=="offi"  ) echo " selected"; echo(">직장명</option>
+  <option value=id_no"  );if ($field=="id_no"  ) echo " selected"; echo(">주민등록번호</option>
+  <option value=num"  );if ($field=="num"  ) echo " selected"; echo(">번호</option>
+
+  </select>
+  <input type=text size=15 maxlength=30 name=sque value='$sque'>
+  <input type=submit value='검색'>
+  &nbsp; &nbsp;<input type=button value='신규' onclick=window.open('mjoin2.htm','_top','')>
+  &nbsp; &nbsp;<input type=button value='종료' onclick=window.open('main.htm','_top','')>
+  </form>
+</td></tr>
+</table>
+  ");
+  mysql_close();
+
+?>

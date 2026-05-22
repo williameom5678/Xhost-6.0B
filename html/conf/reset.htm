@@ -1,0 +1,23 @@
+<?
+  /*
+     회원정보를 전부 지우기 위한 기능임
+     회원삭제:cmd=deluser
+  */
+  include "../db.htm";
+  include "../ut.htm";
+  include "../css.htm";
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if ($cmd=="deluser") {
+      $query="delete from user";
+      $result=mysql_db_query($DB_NAME,$query);
+      if (!$result) {echo $query,mysql_error();exit;}
+      echo "$query<BR>";
+      $query = "insert into user (id,name,passwd,inday,type)
+          values
+          ('sysop','관리자','sysop','$now_date','19');";
+      $result=mysql_db_query($DB_NAME,$query);
+      if (!$result) {echo $query,mysql_error();exit;}
+      echo "$query<BR>";
+  }
+?>

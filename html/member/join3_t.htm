@@ -1,0 +1,154 @@
+{상단메뉴}
+<script>
+function send() {
+	 if (form1.id.value   == '')     {alert('아이디를 받드시 입력해야 합니다.');form1.id.focus();}
+else if (form1.name.value == '')     {alert('이름을 받드시 입력해야 합니다.');form1.name.focus();}
+	else if (form1.id.value.length<2)    {alert('아이디는 2자이상입니다.');form1.id.focus();}
+else if (form1.id_no.length== '')    {alert('주민등록번호를 입력하세요.');form1.id_no.focus();}
+else if (form1.passwd.value== '')    {alert('비밀번호를 받드시 입력해야 합니다.');form1.passwd.focus();}
+else if (form1.passwd.value.length<4){alert('비밀번호는 4자이상입니다.');form1.passwd.focus();}
+else if (form1.passwd.value != form1.passwd2.value) {alert('비밀번호가 일치하지 않습니다.');form1.passwd.focus();}
+else if (form1.addr1.value=='')      {alert('주소를 기재해주세요');form1.addr2.focus();}
+else if (form1.addr2.value=='')      {alert('주소를 기재해주세요');form1.addr2.focus();}
+else if (form1.email.value== '')     {alert('Email 주소를 입력해주세요');form1.email.focus();}
+else return true;
+return false;
+} 
+function search() {
+var parameter = document.forms[0].id.value ;
+var cWidth = (screen.width-380) / 2 ;
+var cHeight = (screen.height-150) /2 ;
+window.open('join3.htm?cmd=search_id&id='+document.forms[0].id.value,'pop_up','menubar=0, locationbar=0,toolbar=0,scrollbars=0,resizable=0,left='+cWidth+',top='+cHeight+',width=380,height=150');
+}
+function zipopen() {
+  var w;
+  var cWidth  = (screen.width -450) /2 +50;
+  var cHeight = (screen.height-100) /2 -200;
+  w=window.open('mpost.htm','pop_up','menubar=0, status=1, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left='+cWidth+',top='+cHeight+',width=450,height=300');
+  w.focus();
+}
+</script>
+<center>
+<table border='0' width=760>
+<form name=form1 action=join4.htm method=post onsubmit='return send()'>
+<input type=hidden name=cmd value='save'>
+
+<tr><td align='center'>
+
+<font face='굴림체' size=2><br>내용을 작성하신 후 &quot;등록신청&quot; 버튼을 누르십시오.<br>
+P/W(패스워드)는  모두 영문이나 숫자로 12자까지만  등록 하실수 있습니다.</font> <br>
+
+<table  width='742' align=center border='0' cellpadding='1' cellspacing='0' width='100%' bgcolor='#A38D54'>
+  <tr>
+  <td width='584' align=center >
+	<table width='742'  align=center >
+	<tr> 
+	<td  width='78' height='31' bgcolor='#DFC787' align='center'>ID(아이디)
+	</td>
+	<td  width='251' height='31' bgcolor='#EBD9A8'> 
+	&nbsp;<input name=id size='15' maxlength='12' value=''>
+	<font size=-1><a href='javascript:search()'><b>(ID중복확인) </font></b></a>
+	</td>
+	<td  width='107' height='31' bgcolor='#DFC787' align='center'>P/W(패스워드) </td>
+	<td  width='288' height='31' bgcolor='#EBD9A8'> 
+	&nbsp;<input type=password name=passwd size='15' maxlength=12 value=''> (최소:4자, 최대:12자)
+	</td>
+	</tr>
+	<tr> 
+	<td  width='78' bgcolor='#DFC787' align='center'>이 름</td>
+	<td  width='251' bgcolor='#EBD9A8'> 
+	&nbsp;<input name=name size=20 maxlength='10' value=''>
+	</td>
+	<td  width='107' bgcolor='#DFC787' align='center'>P/W 확인 
+	</td>
+	<td  width='288' bgcolor='#EBD9A8'> 
+	&nbsp;<input type=password name=passwd2 size='15' maxlength=8 value=''> (비밀번호 재확인)
+	</td>
+	</tr>
+	<tr> 
+	<td  width='78' bgcolor='#DFC787' align='center'>회원구분</td>
+	<td  width='251' bgcolor='#EBD9A8'>
+	&nbsp;<select name='job'>
+			<option value='1'>학생</option>
+			<option value='2'>교직원 </option>
+			<option value='3'>학부모 </option>
+			<option value='4'>동문 </option>
+			<option value='5'>관련인사 </option> 
+	</select>
+	</td>
+	<td  width='107' bgcolor='#DFC787' align='center'>주민등록번호</td>
+	<td  width='288' bgcolor='#EBD9A8'>
+	&nbsp;<input type=text name=id_no size='15'> (예:731231-1234567)
+	</td>
+	</tr>
+	<tr> 
+	<td  width='78' bgcolor='#DFC787' align='center'>직장명 </td>
+	<td  width='251' bgcolor='#EBD9A8'>
+	&nbsp;<input type='text' name='offi' maxlength='15' size='20'>
+	</td>
+	<td  width='107' bgcolor='#DFC787' align='center'>---- </td>
+	<td  width='288' bgcolor='#EBD9A8'>&nbsp;</td>
+	</tr>
+	<tr> 
+	<td  width='107' bgcolor='#DFC787' align='center'>전화번호</td>
+	<td  width='288' bgcolor='#EBD9A8'>
+	&nbsp;<input type='text' name='tele' size='20' maxlength='20'>
+	</td>
+	<td  width='107' bgcolor='#DFC787' align='center'>휴대폰</td>
+	<td  width='288' bgcolor='#EBD9A8'>
+	&nbsp;<input type='text' name='cellph' size='20' maxlength='20'>
+	</td>
+
+	</tr>
+	<tr>
+	<td  width='78' bgcolor='#DFC787' align='center'>우편번호</td>
+	<td  width='288' bgcolor='#EBD9A8'>
+	&nbsp;<input name='post' type='text' SIZE=10><a href='javascript:zipopen()'><font color='336699'><b>(우편번호찾기:자동주소입력)</B></font></A>
+	</td>
+	<td width='107' bgcolor='#DFC787' align='center'>별&nbsp;&nbsp;&nbsp;&nbsp; 칭</td>
+	<td width='288' bgcolor='#EBD9A8'>
+	&nbsp;<input type='text' name='eid' size='16'>
+	</td>
+	</tr>
+
+	<tr>
+	<td  width='78' height='46' rowspan='2' bgcolor='#DFC787' align='center'>주소</td>
+	<td  colspan='3' width='654' height='24' bgcolor='#EBD9A8'>
+	&nbsp;<input type=text name=addr1 size=60><a href='javascript:zipopen()'><font color='336699'>(자동입력)</font></a></td>
+	</tr>
+
+	<tr>
+	<td width='288' height='19' bgcolor='#EBD9A8'>
+	&nbsp;<input type=text name=addr2 size='30'>(나머지 주소)</td>
+	<td width='107' bgcolor='#DFC787' align='center'>E-MAIL</td>
+	<td width='288' bgcolor='#EBD9A8'>
+	&nbsp;<input type='text' name='email' size='20'>
+	</td>
+	</tr>
+
+	<tr> 
+	<td  width='78' height='30' bgcolor='#DFC787' align='center'>자기소개 1</td>
+	<td  colspan='3' width='654' height='30' bgcolor='#EBD9A8'>
+	&nbsp;<input type=text name=memo1 size=100 value=''>
+	</td>
+	</tr>
+	<tr> 
+	<td  width='78' height='30' bgcolor='#DFC787' align='center'>자기소개 2</td>
+	<td  colspan='3' width='654' height='30' bgcolor='#EBD9A8'>
+	&nbsp;<input type=text name=memo2 size=100 value=''>
+	</td>
+	</tr>
+	</table>
+  </td>
+  </tr>
+  </table>
+	  <br>
+  <p>가입 후, 승인을 위해 운영진이 상기 전화번호로 확인전화(24시간 이내, 주말제외)를 드리오니, 오기가 있는지 다시한번 확인바랍니다.</p>
+	<input type=submit value=' 회원가입 '>&nbsp;&nbsp;&nbsp;
+	<input type=button value=' 가입취소 ' onclick=window.open('index.htm','_self','')>
+	</form>
+</td></tr>
+</td>
+</tr>
+</table>
+{하단메뉴}

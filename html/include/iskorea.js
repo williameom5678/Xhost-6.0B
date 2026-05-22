@@ -1,0 +1,279 @@
+/**
+ * 사용법 onclick='SMallUtil_addNum(document.form1.num1, 1)
+ * @param name 필드명
+ * @param 증가치
+ * @최대치
+ */
+function iskorea_addNum (name, depth, max)
+{
+	var value = eval(name.value);
+	value++;
+	
+	if (value > max) value = max;
+		
+	name.value = value;
+}
+
+/**
+ * 사용법 onclick='SMallUtil_subNum(document.form1.num1, 1)
+ * @param name 필드명
+ * @param 증가치
+ * @param 최소치
+ */
+function iskorea_subNum (name, depth, min)
+{
+	var value = eval(name.value);
+	value -= depth;
+	
+	if (value < min) value = min;
+	
+	name.value = value;
+}
+
+/**
+ * 지금 입력되는 값이 숫자인지를 check한다.
+ * 사용법: onkeypress='iskorea_IsNumber()'
+ */
+function iskorea_isNumber ()
+{
+ 	if ((event.keyCode<48)||(event.keyCode>57)){
+  		alert("숫자만 가능합니다 다시 입력하세요!");
+  		event.returnValue=false;
+ 	}
+}
+
+/**
+ * 지정한 자라수다 되면 다음으로 이동한다.
+ * 사용법: onkeyup='SMallUtil_nextFocus (this,4,document.form1.zip1)"
+ */
+function iskorea_nextFocus (arg, len, nextname)
+{
+	if (arg.value.length == len)
+	{
+		nextname.focus ();
+		return;
+	}
+}
+
+//일자의 형식이 맞는지 비교한다.
+function iskorea_isDate(strDate)
+{
+    var year  = 0;
+    var month = 0;
+    var date  = 0;
+    if(strDate.substring(0,4)){
+        if(parseInt(strDate.substring(0,4)))
+            year  = parseInt(strDate.substring(0, 4))-1900;
+    }
+    if(strDate.substring(4,6)){
+        if(parseInt(zeroDefect(strDate.substring(4,6))))
+            month  = parseInt(zeroDefect(strDate.substring(4, 6)));
+    }
+    if(strDate.substring(6,8)){
+        if(parseInt(zeroDefect(strDate.substring(6,8))))
+            date  = parseInt(zeroDefect(strDate.substring(6, 8)));
+    }
+    return isDateInt(year, month, date);
+}
+//지정한 달의 일자수를 가져온다.
+function iskorea_getDayCount(strDate)
+{
+    var year = 0;
+    var month = 0;
+    if(strDate.substring(0,4)){
+        if(parseInt(strDate.substring(0,4)))
+            year  = parseInt(strDate.substring(0, 4));
+    }
+    if(strDate.substring(4,6)){
+        if(parseInt(strDate.substring(4,6)))
+            month = parseInt(strDate.substring(4, 6));
+    }
+    return getDayCountInt(year, month);
+}
+//from to의 조건에 맞는지 검색한다.
+function iskorea_isFromTo(strFromDate, strToDate){
+    var fromDate = 0;
+    var toDate   = 0;
+    if(isDate(strFromDate))
+        fromDate = parseInt(strFromDate);
+    else
+        return false;
+    if(isDate(strToDate))
+        toDate = parseInt(strToDate);
+    else
+        return false;
+    if(fromDate != 0 && toDate != 0 && fromDate <= toDate)
+        return true;
+    else
+        return false;
+}
+//입력한 문자열의 모든 공백문자를 제거한다.
+function iskorea_trim(str)
+{
+    var cnt = str.length;
+    for( var i=0 ; i < cnt ; i++){
+        str = str.replace(' ', '');
+    }
+    return str;
+}
+//입력한 문자열의 모든 선택문자를 다른문자로 바꾼다
+function iskorea_replace(strSource, oldStr, newStr)
+{
+    var cnt = str.length;
+    for( var i=0 ; i < cnt ; i++){
+        str = str.replace(oldStr, newStr);
+    }
+    return str;
+}
+//입력한 문자열이 숫자인지 비교한다.
+function iskorea_isDigit(str)
+{
+    if(parseInt(str) == NaN)        return false;
+    if((''+parseInt(str)) == 'NaN') return false;
+    if(str.length == 0)             return false;
+    if(parseInt(str) < 0)           return false;
+    return true;
+}
+//입력한 문자열의 앞의 '0'을 제거한다.
+function iskorea_zeroDefect(str)
+{
+    var length = str.length;
+    for(var i=0 ; i < length ; i++ ){
+        if(str.charAt(0) == '0')
+            str = str.substring(1,str.length);
+        else
+            continue;
+    }
+    if(str.length == 0) str='0';
+    return str;
+}
+//일자의 형식이 맞는지 비교한다.
+function iskorea_isDateInt(year, month, date)
+{
+    var maxDate = getDayCountInt(year, month);
+    if (year < 0)
+        return false;
+    if (!(1 <= month && month <= 12))
+        return false;
+    if (!(1 <= date && date <= maxDate))
+        return false;
+    return true;
+}
+//지정한 달의 일자수를 가져온다.
+function iskorea_getDayCountInt(year, month)
+{
+    var yyyy = 0;
+    var mm   = 0;
+    var days = new Array(31,28,31,30,31,30,31,31,30,31,30,31);
+    if(parseInt(year))
+        yyyy = parseInt(year);
+    if(parseInt(month))
+        mm = parseInt(month);
+    if((yyyy%4 == 0) && (mm == 2))
+        return 29;
+    return days[month-1];
+}
+//오늘날자를 가져온다.
+function iskorea_getToday(){
+    var date = new Date();
+    var strDate = '';
+    strDate = '' + getLengthString(''+date.getYear(),4) + getLengthString(''+(date.getMonth()+1),2) + getLengthString(''+date.getDate(),2);
+    return strDate;
+}
+//문자열 앞에 '0'을 채워 길이만큼의 문자를 반환한다.
+function iskorea_getLengthString(str, length){
+    var strTemp = '';
+    for(i=0 ; i < length ; i++){
+        strTemp += '0';
+    }
+    strTemp += str;
+    return strTemp.substring(strTemp.length-length, strTemp.length);
+}
+//숫자를 체크한다.onBlur시 실행
+function iskorea_checkDigit(obj){
+	if(obj){
+		if(!isDigit(obj.value)){
+			alert('숫자의 형식이 올바르지 않습니다.\n음수는 입력할 수 없습니다.');
+			if(isDigit(obj.defaultValue)) obj.value = obj.defaultValue;
+			else                          obj.value = '0';
+			obj.select();
+			obj.focus();
+		}
+		else{
+		    obj.value = parseInt(obj.value);
+		}
+	}
+}
+//문자열의 길이를 체크한다.onBlur시 또는 onKeyPress시 실행
+function iskorea_checkByteLength(obj, maxByteLength){
+	if(obj){
+		if(getByteLength(obj.value) > maxByteLength){
+			alert('입력한 문자열이 [' + maxByteLength + 'Byte]를 넘었습니다.');
+			obj.value = getByteLengthString(obj.value, maxByteLength);
+			obj.select();
+			obj.focus();
+		}
+	}
+}
+//문자열의 바이트길이만큼을 반환한다.(마지막이 한글일경우 1 Byte작게 반환한다.)
+function iskorea_getByteLengthString(str,maxByteLength){
+    var len = 0;
+    var i   = 0;
+    if(getByteLength(str) <= maxByteLength) return str;
+    for(i=0 ; len < maxByteLength ; i++, len++){
+        if(!str.substring(i, i+1)) break;
+        if(isHan(str.substring(i, i+1))) len++;
+    }
+    if(getByteLength(str.substring(0, i)) > maxByteLength) return str.substring(0, i-1);
+    return str.substring(0, i);
+}
+//입력한 문자열의 바이트길이를 가져온다.(한글 2Byte , 영문 1Byte)
+function iskorea_getByteLength(str){
+    var len=0;
+    if(str == null) return 0;
+    for(i=0 ; i < str.length ; i++, len++){
+        if(escape(str.substring(i, i+1)).length == 6) len++;
+    }
+    return len;
+}
+//입력한 문자가 한글인지 비교한다.(문자열일 경우 첫 문자의 한글여부를 반환)
+function iskorea_isHan(str){
+    if(str.length = 1){
+        return (escape(str).length == 6);
+    }
+    else if(str.length > 1){
+        return (escape(str.substring(0, 1)).length == 6);
+    }
+    else
+        return false;
+}
+
+//check max Length
+function iskorea_checkMaxLength (txtName, len, msg)
+{
+	var temp_len = iskorea_getByteLength (txtName.value);
+	
+	if (temp_len > len)
+	{
+		alert (msg);
+		txtName.focus ();
+		return false;
+	}
+	
+	return true;
+}
+// check min length
+function iskorea_checkMinLength (txtName, len, msg)
+{
+	var temp_len = iskorea_getByteLength (txtName.value);
+	
+	if (temp_len < len)
+	{
+		alert (msg);
+		txtName.focus ();
+		return false;
+	}
+	
+	return true;
+}
+

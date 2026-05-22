@@ -1,0 +1,31 @@
+<?
+  include "akom.inc";
+  include "sysop.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  function disp($table_name,$note) {
+      global $DB_NAME,$DB_USER,$DB_MAIL,$DB_PASS,$connect;
+	  $pResult = mysql_query( "show variables" );
+	  while( 1 ) {
+		  $rowArray = mysql_fetch_row( $pResult );
+		  if( $rowArray == false ) break;
+		  if( $rowArray[0] == "basedir" )
+			  $bindir = $rowArray[1]."bin/";
+	  }
+      echo "<h2>$table_name ($note)</h2><xmp>";
+      system($bindir."mysqldump -d --user=$DB_USER $DB_NAME $table_name" );
+      echo "</xmp>";
+  }
+
+  disp("cfg","메인 환경설정구조");
+  disp("bcfg","게시판 환경설정구조");
+  disp("ccfg","동호회 환경설정구조");
+  disp("user","회원구조");
+  disp("postno","우편번호구조");
+  disp("book","주소록기본구조");
+  disp("def_bbs","게시판/메일기본구조");
+  disp("def_bbs_rec","게시판 기록파일 기본구조");
+  disp("def_cuser","동호회 환경 기본구조");
+  mysql_close();
+
+phpinfo();
+?>

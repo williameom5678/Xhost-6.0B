@@ -1,0 +1,57 @@
+<?
+    if (!$cfg_base) $cfg_base="/nfs/akom";
+    if (!$userip) $userip=$REMOTE_ADDR;
+    $ffcode="akom";
+function count_inc($ffcode) {
+    global $count_today,$count_total,$cfg_base,$userip;
+    $ffcode="akom";
+    $filename1="$cfg_base/count/$ffcode".".dat";
+    $filename2="$cfg_base/count/$ffcode".".all";
+
+    //날짜바뀌면
+    $mtime=filemtime($filename1);        //변경시간
+    $date1=date("Y-m-d",$mtime);
+    $date2=date("Y-m-d");
+    if ($date1!=$date2) {
+        $count_today=$count_total=0;
+        if (($fp=fopen($filename1,"r+"))) {
+            if (($buff=fgets($fp,10))) $count_total=intval($buff);
+            if (($buff=fgets($fp,10))) $count_today=intval($buff);
+            fseek($fp,0);
+            $buff=sprintf("%d\n0\n",$count_total);
+            fputs($fp,$buff);
+            fclose($fp);
+        }
+    }
+
+    if (($fp=fopen($filename1,"r+"))) {
+        if (($buff=fgets($fp,10))) $count_total=intval($buff);
+        if (($buff=fgets($fp,10))) $count_today=intval($buff);
+        fseek($fp,0);
+    }
+    else {
+        $fp=fopen($filename1,"w+");
+    }
+    $count_today++;
+    $count_total++;
+    $buff=sprintf("%d\n%d\n",$count_total,$count_today);
+    fputs($fp,$buff);
+    fclose($fp);
+    if (!($fp=fopen($filename2,"a+"))) $fp=fopen($filename2,"w+");
+    $buff=sprintf("%s %s\n",date("y-m-d H:i:s"),$userip);
+    fputs($fp,$buff);
+    fclose($fp);
+}
+
+function count_read($ffcode) {
+    global $count_today,$count_total,$cfg_base;
+    $ffcode="akom";
+    $filename1="$cfg_base/count/$ffcode".".dat";
+    $filename2="$cfg_base/count/$ffcode".".all";
+    if (($fp=fopen($filename1,"r+"))) {
+      if (($buff=fgets($fp,10))) $count_total=intval($buff);
+      if (($buff=fgets($fp,10))) $count_today=intval($buff);
+      fclose($fp);
+    }
+}
+?>

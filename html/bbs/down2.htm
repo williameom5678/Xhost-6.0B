@@ -1,0 +1,154 @@
+<?
+  include "../db.htm";
+  include "../ut.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+
+  if (!$userid) $userid="guest";
+  $table_name="$club"."_"."$code";
+  $filename="";
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  if ($club!="main") {
+	$query="select * from ccfg where club='$club'" ;
+    $result=mysql_db_query($DB_CM,$query);
+	if ($result) $ccfg=mysql_fetch_array($result);
+  }
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+
+  if ($club!="main") {
+	if ($bcfg[dctype]>0&&$bcfg[dctype]>$ctype) {echo ("<script>window.alert('동호등급 $bcfg[dctype] 이상 다운가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[dctype]>0&&$ccfg[dctype]>$ctype) {echo ("<script>window.alert('동호등급 $ccfg[dctype] 이상 다운가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[dtype]>0&&$ccfg[dtype]>$userty)  {echo ("<script>window.alert('메인등급 $ccfg[dtype]  이상 다운가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  }
+
+  if ($bcfg[dtype]>0&&$bcfg[dtype]>$userty)    {echo ("<script>window.alert('메인등급 $bcfg[dtype]  이상 다운가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  if ($cfg[dtype]>0&&$cfg[dtype]>$userty)	   {echo ("<script>window.alert('메인등급 $cfg[dtype]   이상 다운가능 (현재:$userty)');history.go(-1)</script>");exit;}
+
+  //조회수 확인
+  if ($userid!=$row[id]) {
+	  $found=false;
+      if (!is_dir("$cfg_base/user")) mkdir("$cfg_base/user",0777);
+      if (!is_dir("$cfg_base/user/rec")) mkdir("$cfg_base/user/rec",0777);
+      $filename = "$cfg_base/user/rec/down_tag_$club.txt";
+	  $tag_str="$userid,$code,$num\n";
+	  $aread_tag=file($filename);
+	  for ($i=0;$i<500;$i++) {
+	//	  echo("$i,$tag_str,$aread_tag[$i],<BR>");
+		if ($tag_str==$aread_tag[$i]) {
+			$found=true;
+			break;
+		}
+	  }
+	  if (!$found) {
+		  $aread_tag[$i]=$tag_str;
+		  if (($fd = fopen( $filename, "w" ))==NULL) {
+              mkdir("$cfg_base/user/rec/",0777);
+			  $fd = fopen( $filename, "w" );
+		  }
+		  for ($i=0;$i<499;$i++) {
+			fputs($fd,$aread_tag[$i+1]);
+		  }
+		  fputs($fd,$tag_str);
+		  fclose( $fd );
+		  //============ 조회수 1 증가 =============
+		  $query="update $table_name set down=down+1 where num=$num";
+          $result=mysql_db_query($DB_CM,$query);
+	  }
+  }
+
+  if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+  $query="select * from $table_name where num=$num and del!='D' ";
+  $result=mysql_db_query($DB_CM,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+  $row=mysql_fetch_array($result);
+  $num=$row[num];
+  $tclub=$club;
+  $tcode=$code;
+  if ($code=="__backup"||$code=="__delete") {
+	$tcode=$row[tcode];
+	$tclub=$row[tclub];
+  }
+  $extend=get_extend($row[filename]);
+
+  if ($extend==".php"||$extend==".htm"||$extend==".html"||$extend==".php3"||
+      $extend==".cgi"||$extend==".asp"||$extend==".inc"||$extend==".java") {
+      echo ("<script>window.alert('이 파일확장자($extend)는 다운받을수 없습니다.');self.close();</script>");
+  }
+
+  if (!filetype("tmp/$userid")&&!@mkdir("tmp/$userid",0777)) {
+	echo("tmp 디렉토리 생성오류");
+	exit;
+  }
+
+  $filename=sprintf("$cfg_base/pds/$tclub/$tcode/%s.%x",$row[filename],$row[fcount]);
+  if (!file_exists($filename)) $filename=sprintf("$cfg_base/pds/$tclub/$tcode/%s",$row[filename]);
+
+  $filename=trim($filename);
+  $ori_filename=$filename;
+  $down_filename ="tmp/$userid/$row[filename]";
+  if (!is_file($down_filename)) symlink($ori_filename,$down_filename);
+
+  if (!$row[filename]||!file_exists($ori_filename)) {
+      echo("<BR><BR><h3><center>파일이 없습니다.<BR>($ori_filename)<BR>
+	  <input type=button value=' 창 닫 기 ' onclick='self.close()'>
+	  ");
+	  exit;
+  }
+
+echo("
+<body>
+<center>
+<table width=90% bgcolor=CAC5A2 cellspacing=0 cellpadding=0 border=1>
+<tr bgcolor=107cb3>
+<td colspan=2 align=center height=40><font size=4><b>다운로드</td>
+</tr>
+<tr bgcolor=e3e3bf>
+<td align=center width=20% height=30>등록</td>
+<td align=center width=80%>$row[id] ($row[name])</td>
+</tr>
+<tr bgcolor=e3e3bf>
+<td align=center height=30>파일명</td>
+<td align=center>$row[filename] &nbsp;&nbsp;( ".number_format($row[filesize])." Byte )</b></td>
+</tr>
+<tr bgcolor=e3e3bf>
+<td align=center height=30>제목</td>
+<td align=center><B>$row[title]</b></td>
+</tr>
+</table>
+
+<BR><BR>
+<h2>$row[filename] 다운로드 ... </h2><BR><BR>
+자동으로 다운로드가 되지 않을 경우에는 <br><br><b><a href='$down_filename'><u>여기</u></a></b>를 클릭하세요.
+<BR><BR>
+
+<form>
+<input type=button value=' 창 닫 기 ' onclick='self.close()'>
+</form>
+<BR>
+");
+
+//<script>document.location=\"$down_filename\";</script>
+echo ("
+
+<table width=90% bgcolor=CAC5A2 cellspacing=0 cellpadding=0 border=1>
+<tr>
+<td>
+$row[body]
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+");
+?>

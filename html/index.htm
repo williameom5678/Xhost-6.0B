@@ -1,0 +1,75 @@
+<?
+include "db.htm";
+include "/nfs/php/lib/ut.htm";
+include "utbase.htm";
+include "/nfs/php/lib/template2.htm";
+
+if (!$userid||$userid=="guest") {
+	$hide_str3="<!--";
+	$hide_str4="-->";
+}
+else {
+	$hide_str1="<!--";
+	$hide_str2="-->";
+}
+
+$connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+$tpl = new template("./"); 
+$tpl->define("main","index_t.htm");
+
+$club="main";
+$code="notice";
+$table_name="main_".$code;
+$query="select * from $table_name where good>0 order by date desc limit 10";
+$result=mysql_db_query($DB_CM,$query);
+$tpl->ddefine("notice","main"); 
+while ($row=mysql_fetch_array($result)) {
+	$tpl->dassign(array(
+	번호		=> $row[num],
+	제목		=> text_cut($row[title],50),
+	등록일		=> substr($row[date],2,8),
+	조회		=> $row[hits],
+	));
+	$tpl->dparse("notice","main"); 
+}
+
+$club="main";
+$code="__notice";
+$table_name="main_".$code;
+$query="select * from $table_name where good>0 order by date desc limit 10";
+$result=mysql_db_query($DB_CM,$query);
+$tpl->ddefine("list","main"); 
+while ($row=mysql_fetch_array($result)) {
+	$tpl->dassign(array(
+	번호		=> $row[num],
+	club		=> $row[tclub],
+	code		=> $row[tcode],
+	등록자		=> $row[id],
+	제목		=> text_cut($row[title],40),
+	등록일		=> substr($row[date],5,11),
+	));
+	$tpl->dparse("list","main"); 
+}
+
+$tpl->assign(  array(
+로그인				=> $login_form,
+상단메뉴			=> file2str("bbstop.htm"),
+왼쪽메뉴			=> file2str("left.htm"),
+하단메뉴			=> file2str("bottom.htm"),
+아이디				=> $userid,
+이름				=> $userna,
+등급				=> $userty,
+hide_str1			=> $hide_str1,
+hide_str2			=> $hide_str2,
+hide_str3			=> $hide_str3,
+hide_str4			=> $hide_str4,
+게시판1				=> $spec_bbs1,
+게시판2				=> $spec_bbs2,
+접속인원			=> $user_count,
+접속자				=> $user_list,
+)  );
+$tpl->parse("main"); 
+$tpl->tprint("main"); 
+
+?>

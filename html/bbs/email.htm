@@ -1,0 +1,193 @@
+<?
+  include "../db.htm";
+  include "../ut.htm";
+  if ($sw__id=="akom"&&$userty<5)  {alert3("정식 회원만이 AKOM을 사용할수 있습니다. (ID:$userid 등급:$userty)","../index.htm");exit;}
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+
+  if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+
+  $time_start1 = microtime(); // 속도 체크
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  if ($club!="main") {
+	$query="select * from ccfg where club='$club'" ;
+	$result=mysql_db_query($DB_CM,$query);
+	if ($result) $ccfg=mysql_fetch_array($result);
+  }
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+
+  if ($club!="main") {
+    if ($bcfg[rctype]>0&&$bcfg[rctype]>$ctype) {echo ("<script>window.alert('동호등급 $bcfg[rctype] 이상 읽기가능 (현재:$ctype)' );self.close(); </script>");exit;}
+    if ($ccfg[rctype]>0&&$ccfg[rctype]>$ctype) {echo ("<script>window.alert('동호등급 $ccfg[rctype] 이상 읽기가능 (현재:$ctype)' );self.close(); </script>");exit;}
+    if ($ccfg[rtype]>0&&$ccfg[rtype]>$userty)  {echo ("<script>window.alert('메인등급 $ccfg[rtype]  이상 읽기가능 (현재:$userty)');self.close(); </script>");exit;}
+  }
+
+  if ($bcfg[rtype]>0&&$bcfg[rtype]>$userty)    {echo ("<script>window.alert('메인등급 $bcfg[rtype]  이상 읽기가능 (현재:$userty)');self.close(); </script>");exit;}
+  if ($cfg[rtype]>0&&$cfg[rtype]>$userty)      {echo ("<script>window.alert('메인등급 $cfg[rtype]   이상 읽기가능 (현재:$userty)');self.close(); </script>");exit;}
+
+  $query="select * from $table_name where num=$num";
+  $result=mysql_db_query($DB_CM,$query);
+  //echo $query,$num;
+  if ($result) {
+      $row=mysql_fetch_array($result);
+      $num=$row[num];
+  }
+  if (!$result||!$row) {
+    echo ("<script>alert('이 게시물을 읽을수 없습니다.');self.close();</script>");
+    exit;
+  }
+  if ($bcfg[bform]==2) {       //비공개
+    echo ("<script>alert('이 게시물은 비공개입니다.');self.close();</script>");
+    exit;
+  }
+  if ($super_mode!=1235&&$bcfg[bform]==51&&$row[name]!="내용공개") {
+    echo ("<script>alert('이 게시물을 운영자만 읽을수 있습니다.');self.close();</script>");
+    exit;
+  }
+  if ($row[name]=="내용공개") ;
+  else if ($super_user!=1235&&$row[readopen]=='n') $row[body]="*** 비공개 내용입니다. (관리자만 읽을 수 있습니다.) ***";
+  else if ($bcfg[bform]==51&&$super_user!=1235) {
+      echo ("<script>alert('이 게시물을 운영자만 읽을수 있습니다.');history.back();</script>");
+      exit;
+  }
+
+    // =====================   화일표시 =====================
+
+    $tread_id="$row[id]($row[name])";
+
+    $row[body]=eregi_replace("<script","&ltscript",$row[body]);
+    $row[body]=eregi_replace("<applet","&ltapplet",$row[body]);
+    $row[body]=eregi_replace("<object","&ltobject",$row[body]);
+    $row[title] = htmlspecialchars($row[title]);
+
+    include "convert.htm";
+    $row[body]=convert_row();  //출력되는 모양 수정
+    $row[body]=convert_face($row[body]);
+    $row[body]=str_shcode($row[body]);
+    $row[body]=stripslashes($row[body]) ;
+
+
+    if ($bcfg[use_nl2br]!='n'&&$row[tag]!='y') $tread_body=nl2br($row[body]);
+    else $tread_body=$row[body];
+    $tread_date=$row[date];
+    $tread_date2=substr($row[date],0,16);
+
+    if ($bcfg[bform]==2) {  //비공개
+        $row[id]=$row[name]="...";
+        $tread_id="";
+    }
+    if ($bcfg[bform]==14) {  //사진뉴스
+      $tread_filesize="";
+      $tread_filename="";
+      $extend=substr(strrchr($row[filename], "."),1);
+      $ori_file=sprintf("$cfg_base/pds/%s/%s/%s.%x",$club,$code,$row[filename],$row[fcount]);
+      if (($extend=="jpg"||$extend=="gif")&&file_exists($ori_file))  {  //사진뉴스 일때는 그대로
+        if (!is_dir("tmp/$code")) mkdir("tmp/$code",0777);
+        system("ln -sf $ori_file tmp/$code/$row[filename]");
+        $tread_body="<img src='tmp/$code/$row[filename]' align=right border=0 valign=top>".$tread_body;
+      }
+    }
+
+    if ($bcfg[bform]==15) {  //링크
+      $tread_link="<tr bgcolor=CCCCCC>
+      <td colspan=10 align=center><font color=000000>
+      <b><a href=$link>$link</a></b></font>
+      </td></tr>";
+    }
+
+    if ($bcfg[use_xmp]) $tread_body="<XMP>".$tread_body."</XMP>";
+
+
+  echo ("<center>");
+  $email=trim($email);
+  if ($email&&(strlen($email)<5||!strstr($email,"@"))) {
+      echo("잘못된 Email입니다.<BR>");
+      $email="";
+  }
+
+  if (!$email) echo ("
+    $num 번 게시판을 전송할 Email주소를 입력하세요.
+    <table width=400>
+    <tr>
+    <form name=form1 action='$PHP_SELF' method=post>
+    <input type=hidden name=club value='$club'>
+    <input type=hidden name=code value='$code'>
+    <input type=hidden name=num  value='$num'>
+    <td align=center>
+    <input type=text size=30 name=email value='$user[email]' onchange=submit();>
+    <input type=submit value='확인'>
+    </td>
+    </tr>
+    </form>
+    </table>
+  ");
+  else echo ("$email 님에게 다음의 내용을 보냅니다.<BR>");
+
+  $mail_body="
+<META http-equiv=Content-Type content=\"text/html; charset=ks_c_5601-1987\">
+<STYLE type=text/css>TD {
+	FONT-SIZE: 9pt; 굴림: 
+}
+A:link {
+	FONT-SIZE: 9pt; COLOR: #5b5b5b; TEXT-DECORATION: none
+}
+A:visited {
+	FONT-SIZE: 9pt; COLOR: #5b5b5b; TEXT-DECORATION: none
+}
+A:hover {
+	FONT-SIZE: 9pt; COLOR: #553b6f; TEXT-DECORATION: underline
+}
+A:active {
+	FONT-SIZE: 9pt; COLOR: #34570a; TEXT-DECORATION: none
+}
+A.bb:hover {
+	COLOR: #553b6f
+}
+</STYLE>
+
+  <table width=600 bgcolor=107CB3 cellspacing=1 cellpadding=2 border=0>
+  <tr><td>
+  <table width=595 cellspacing=0 cellpadding=0 border=0>
+  <tr>
+  <td align=center bgcolor=99CCFF colspan=10><font color=black><b>$row[title]&nbsp;</b></font></td>
+  </tr>
+  $tread_file
+  $tread_link
+  <tr bgcolor=CCCCCC>
+  <td width=250 align=center>$tread_id</td>
+  <td width=250 align=center>$tread_date2</td>
+  <td width=250 align=center>조회수:$tread_hits $tread_ok $tread_no</td>
+  </tr>
+  <tr bgcolor=white>
+  <td colspan=5 height=200>
+    <table width=100%><tr><td>
+    $tread_body
+    </td></tr></table>
+  </td></tr>
+  <tr bgcolor=e3e3bf>
+  <td colspan=15 align=right>
+  $tread_line Line &nbsp;  $tread_size Byte &nbsp;
+  </td></tr></table>
+  </td></tr></table>
+  <center>
+  <a href=$home_url2/bbs/list.htm?code=$code>☞ $code 게시판 바로 가기</a><BR>
+  <a href=$home_url2>☞ $sw__name 바로 가기</a>
+  ";
+  echo $mail_body;
+
+  if ($email) {
+      send_email($email,$email,$user[email],"$userid($userna)",$row[title],$mail_body);
+  }
+
+  echo("<br><from><input type='button' value=' 닫 기 ' onclick=self.close()></form>");
+
+?>

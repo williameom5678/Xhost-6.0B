@@ -1,0 +1,47 @@
+<link rel='stylesheet' href='font.css'>
+<body bgcolor="#F4F8EE">
+<center>
+<table border="0" cellpadding="0" cellspacing="0" width="126">
+<tr><td height='10'>
+</td></tr>
+<tr>
+<td align="center">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="119" height="94" background="img/left_mem.gif">
+  <tr>
+  <td width="119" height='31' colspan="2"></td>
+  </tr>
+  <tr>
+  <td width="119" height='31' class="pad10"><a href='msearch.htm' target='f_body' class="left"><b>회원정보검색</b></a></td>
+  </tr>
+  <tr>
+  <td height='31' class='pad10'><a href='meduser.htm' target='f_body' class="left"><b>개인정보수정</b></a></td>
+  </tr>
+  </table>
+</td>
+</tr>
+<tr>
+<td height="12">
+</td>
+</tr>
+<tr>
+<td align="center">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="119" height="26" background="img/left_menub.gif">
+  <tr>
+  <td width="14" height='31'>
+  </td>
+  <td width="105" height='31' valign='center'><a href='sitemap.htm' target='f_body'><img src='img/sitemap.gif' border='0'></a>
+  </td>
+  </tr>
+  </table>
+</td>
+</tr>
+</table>
+<?
+  include ("akom.inc");
+  include ("sysop.htm");
+  if ($super_user) echo("
+     <a target=_top href=akcfg1.htm>[관리자 메뉴]</a><br><a href='bbs/list.htm?code=__backup' target='f_body'>[전체게시판]</a>
+  ");
+?>
+</center>
+</body>

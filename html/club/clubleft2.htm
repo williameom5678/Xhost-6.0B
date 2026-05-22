@@ -1,0 +1,75 @@
+<HTML>
+<HEAD>
+<TITLE></TITLE>
+<link rel="stylesheet" type="text/css" href="font.css">
+</HEAD>
+
+<body bgcolor="#F4F8EE">
+<center>
+<table border="0" cellpadding="0" cellspacing="0" width="115">
+<tr>
+<td width="115" height='26' background='images/leftmenubg.gif' valign='middle' class='leftmenu'>&nbsp;&nbsp;<b>동호회</b></td>
+</tr>
+<tr>
+<td width='115' align="center" bgcolor='#A5A299'>
+  <table border="0" cellpadding="0" cellspacing="1" width="100%">
+  <tr>
+  <td width="100%" bgcolor='#ECE5DD' height='26' class='pad10'><b><a href='bbs/list.htm?code=write' target='f_body'>그루터기</a></b></td>
+  </tr>
+  <tr>
+  <td width="100%" bgcolor='#ECE5DD' height='26' class='pad10'><a href='commain.htm' target='_parent'><b>컴사랑</b></a></td>
+  </tr>
+  <tr>
+  <td width="100%" bgcolor='#ECE5DD' height='26' class='pad10'><a href='carmain.htm' target='_parent'><b>꼬마차동</b></a></td>
+  </tr>
+  <tr>
+  <td width="100%" bgcolor='#ECE5DD' height='26' class='pad10'><a href='penmain.htm' target='_parent'><b>글사랑</b></a></td>
+  </tr>
+  <tr>
+  <td width="100%" bgcolor='#ECE5DD' height='26' class='pad10'><a href='budmain.htm' target='_parent'><b>불교동호회</b></a></td>
+  </tr>
+  <tr>
+  <td width="100%" bgcolor='#ECE5DD' height='26' class='pad10'><a href='saenalmain.htm' target='_parent'><b>의와창조</b></a></td>
+  </tr>
+  <tr>
+  <td width='100%' bgcolor='#ECE5DD' height='26' class='pad10'><a href='etcswmain.htm' target='_parent'><b>기타프로그램</b></a></td>
+  </tr>
+  </table>
+</td>
+</tr>
+<tr>
+<td height="12">
+</td>
+</tr>
+<tr>
+<td align="center" bgcolor='#A5A299'>
+  <table align="center" border="0" cellpadding="0" cellspacing="1" width="115" height="62">
+  <tr>
+  <td width="14" height='26'>
+  </td>
+  <td width="100%" bgcolor='#ECE5DD' height='26' valign='center'><a href='http://www.koma.or.kr/en' target='_blank'><img src='images/english.gif' border='0'></a>
+  </td>
+  </tr>
+  <tr>
+  <td width="14">
+  </td>
+  <td width="100%" bgcolor='#ECE5DD' valign='center'><a href='sitemap.htm' target='f_body'><img src='img/sitemap.gif' border='0'></a>
+  </td>
+  </tr>
+  </table>
+</td>
+</tr>
+<tr>
+<td align='center'><br>
+<a target=_top href=main.htm?cmd=logout><img src='images/menu/logout.gif' border=0></a>
+</td></tr>
+</table>
+<?
+  include ("akom.inc");
+  include ("sysop.htm");
+  if ($super_user) echo("
+     <a target=_top href=akcfg1.htm>[관리자 메뉴]</a><br><a href='bbs/list.htm?code=__backup' target='f_body'>[전체게시판]</a>
+  ");
+?>
+</center>
+</body>

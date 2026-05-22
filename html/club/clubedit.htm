@@ -1,0 +1,152 @@
+<?
+  if (!$club) $club="main";
+  $table_name="$club"."_"."$code";
+  $DB_NAME="xhost";
+  if (!$club) $club=$oldclub;
+  if (!$oldclub) $oldclub=$club;
+
+  $connect=mysql_connect("localhost","$DB_USER","");
+  if (!mysql_select_db("$DB_NAME",$connect)) {echo("DB OPEN ERR");exit;}
+
+  include "top.htm" ;
+
+if ($cmd=="cfgup") {
+	$date=date("Y-m-d H:i:s");
+	$now_allno=0;
+
+    $query="update ccfg set
+    club         = '$new_club',
+	sysop		 = '$sysop',
+	passwd		 = '$passwd',
+	enterp		 = '$enterp',
+	name		 = '$name',
+	date		 = '$date',
+	memo1		 = '$memo1',
+	memo2		 = '$memo2',
+	memo3		 = '$memo3',
+	memo4		 = '$memo4',
+	memo5		 = '$memo5',
+    disp_memo1   = '$disp_memo1',
+    disp_memo2   = '$disp_memo2',
+    disp_memo3   = '$disp_memo3',
+    disp_memo4   = '$disp_memo4',
+    disp_memo5   = '$disp_memo5',
+	autoguest	 = '$autoguest',
+    guesttype    = '$guesttype',
+	intro		 = '$intro',
+    guestok      = '$guestok',
+    guestin      = '$guestin'
+    where num='$num'";
+
+	$result=mysql_query($query,$connect );
+	if (!$result) {
+        echo("$query<BR>".mysql_error()."<BR>");
+        exit;
+	}
+	else {
+        echo("<center>수정 되었습니다.<BR>");
+        if (mode=="sys") echo("<meta http-equiv='Refresh' content='1; URL=sysop.htm?cmd=club'>");
+        else echo("<meta http-equiv='Refresh' content='1; URL=$PHP_SELF?club=$club'>");
+	}
+	exit;
+}
+
+if ($cmd==""||!$cmd||$cmd=="cfg") {
+  if ($num)  $query="select * from ccfg where num='$num'" ;
+  else $query="select * from ccfg where club='$club'" ;
+
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+  if (!$ccfg[autoguest]) $ccfg[autoguest]=0;
+  echo("
+  <form name='form1' action='$PHP_SELF' method=post>
+  <input  type=hidden name=cmd value='cfgup'>
+  <input  type=hidden name=num value='$ccfg[num]'>
+
+  <table width=750  cellspacing=0 cellpadding=3 border=0>
+  <tr bgcolor=#006699>
+  <td bgcolor=#113366 align=center><font color=white>$club ( $ccfg[name] )</td>
+  </tr>
+  </table>
+
+  <table width=750 cellspacing=0 cellpadding=1 border=1>
+  <tr>
+    <td bgcolor='#5485B6' align=center>동호회코드</td>
+    <td width=650>&nbsp;&nbsp;<input type=text name=new_club value='$ccfg[club]' size=20 maxlength=20></td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>동호회이름</td>
+    <td width=650>&nbsp;&nbsp;<input type=text name=name value='$ccfg[name]' size=90 maxlength=100></td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>시삽</td>
+    <td>&nbsp;&nbsp;<input type=text name=sysop value='$ccfg[sysop]' size=20></td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>진입암호</td>
+    <td>&nbsp;&nbsp;<input type=text name=passwd value='$ccfg[passwd]' size=20></td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>가입방법</td>
+    <td>
+    &nbsp;&nbsp;<input type=radio name=autoguest value=0 >자동가입
+    &nbsp;&nbsp;<input type=radio name=autoguest value=1 >수동가입
+    &nbsp;&nbsp;<input type=radio name=autoguest value=2 >가입신청금지
+  </tr>
+  <script>form1.autoguest[$ccfg[autoguest]].checked=true;</script>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>손님접속시</td>
+    <td>
+    &nbsp;&nbsp;<input type=radio name=guestin value=0 >접속허용
+    &nbsp;&nbsp;<input type=radio name=guestin value=1 >접속종료
+    &nbsp;&nbsp;<input type=radio name=guestin value=2 >재접속
+  </tr>
+  <script>form1.guestin[$ccfg[guestin]].checked=true;</script>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>가입등급</td>
+    <td>
+    &nbsp;&nbsp;<input type=text name=guesttype value='$ccfg[guesttype]' size=2> 가입시 설정 초기 등급(1:대기,2:금지,3:삭제,4~13:회원)
+  </tr>
+  <script>form1.autoguest[$ccfg[autoguest]].checked=true;</script>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>참고제목</td>
+    <td>
+    &nbsp;&nbsp;1<INPUT TYPE=CHECKBOX NAME=disp_memo1 value='1'");if ($ccfg[disp_memo1]=='1') echo(" checked");echo("><input type=text name=memo1 value='$ccfg[memo1]' size=20>
+    &nbsp;&nbsp;2<INPUT TYPE=CHECKBOX NAME=disp_memo2 value='1'");if ($ccfg[disp_memo2]=='1') echo(" checked");echo("><input type=text name=memo2 value='$ccfg[memo2]' size=20>
+    &nbsp;&nbsp;3<INPUT TYPE=CHECKBOX NAME=disp_memo3 value='1'");if ($ccfg[disp_memo3]=='1') echo(" checked");echo("><input type=text name=memo3 value='$ccfg[memo3]' size=20><BR>
+    &nbsp;&nbsp;4<INPUT TYPE=CHECKBOX NAME=disp_memo4 value='1'");if ($ccfg[disp_memo4]=='1') echo(" checked");echo("><input type=text name=memo4 value='$ccfg[memo4]' size=20>
+    &nbsp;&nbsp;5<INPUT TYPE=CHECKBOX NAME=disp_memo5 value='1'");if ($ccfg[disp_memo5]=='1') echo(" checked");echo("><input type=text name=memo5 value='$ccfg[memo5]' size=20>
+   </td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>가입신청설명</td>
+    <td>
+    &nbsp;&nbsp;<TEXTAREA NAME=intro ROWS=3 COLS=75>$ccfg[intro]</TEXTAREA>
+    </td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>신청후설명</td>
+    <td>
+    &nbsp;&nbsp;<TEXTAREA NAME=guestok ROWS=3 COLS=75>$ccfg[guestok]</TEXTAREA>
+    </td>
+  </tr>
+
+  </table>
+  <BR>
+  <input type=submit value=' 수 정 완 료 '>&nbsp; &nbsp;
+  <input type=button value=' 취 소 ' onclick=window.open('bbs/list.htm?code=$code&club=$club','_top','')>
+  </form>
+  ");
+}
+
+?>

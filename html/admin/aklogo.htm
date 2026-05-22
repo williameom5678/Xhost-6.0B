@@ -1,0 +1,103 @@
+<?
+  include "db.htm";
+  include "ut.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!$userid) {echo("로그인필요");exit;}
+  if (!$super_user&&$userid!=$cfg[sysop2]) {echo("관리자전용메뉴");exit;}
+
+/* Function text_cut($string, $length)
+{
+    $textout=$string;
+    $word_len=strlen($textout);             // 텍스트의 길리 측정
+    if($word_len < $length)                 // 텍스트가 고정길이 보다 작을 때
+    {
+        return $textout;
+    }
+    elseif($word_len > $length)             // 텍스트가 고정길이 보다 클 때
+    {
+        for($i=$length; $i < $word_len; $i--)
+        {
+            $lastword=substr($textout,$i,$i);
+            if(ord($lastword) < 127)
+            {
+                $textout=substr($textout,0, $i);
+                return $textout;
+                break;
+            }
+        }
+    }
+    return $textout;
+}  */
+
+  if (!$club) $club="main";
+  $table_name="$club"."_"."$code";
+  if (!$club) $club=$oldclub;
+  if (!$oldclub) $oldclub=$club;
+
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+//  echo("$result,$ccfg,$ccfg[club],$oldclub,");
+  if (!$result||!$ccfg||$ccfg[club]!=$oldclub) {
+      $query2="insert into ccfg (club,name) values ('$club','$name')";
+      $result=mysql_db_query($DB_CM,$query2);
+      if (!$result) {echo $query2,mysql_error();exit;}
+  }
+  include("top.htm");
+  echo("
+    <link rel='stylesheet' type='text/css' href='font.css'>
+	<table border='0' width='750'><tr><td align='center'>
+            <a href=akcfg.htm>환경설정</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=note     >popup공지사항</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=main_s1  >메인 상단</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=main_s2  >메인 하단</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=bbs_s1   >게시판 상단</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=bbs_s2   >게시판 하단</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=talkbody >토론장1</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=talkbody2>토론장1</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=hotnews  >도움말</a>
+          | <a href=$PHP_SELF?cmd=$cmd&editfile=sitemap  >사이트맵</a>
+    </td></tr></table>
+  ");
+
+$editfile=str_replace("..","",$editfile);
+$editfile=str_replace("/","",$editfile);
+
+$filename="$editfile".".htm";
+
+if($cmd2=="update") {
+    if ($passwd!="akom") {
+        echo("<script>alert('Check Update password!!');history.go(-1);</script>");
+        exit;
+	}
+	$fp=fopen($filename,"w");
+	$body=stripslashes($body);
+	fwrite($fp,$body);
+	fclose($fp);
+}
+
+if (file_exists($filename)) {
+	if (($fp=fopen($filename,"r"))) {
+		$body=fread($fp,filesize($filename));
+		fclose($fp);
+		$body=htmlspecialchars($body);
+	}
+}
+echo ("
+    <table width=660>
+	<form name='form1' ENCTYPE='multipart/form-data' action='$PHP_SELF' method='POST'>
+    <input type=hidden name=cmd value='$cmd'>
+    <input type=hidden name=cmd2 value='update'>
+    <input type=hidden name=editfile value='$editfile'>
+    <tr><td>
+    $filename (".filesize($filename)." byte)<BR>
+    <textarea name='body' cols=102 rows=30 wrap=off>$body</textarea><BR>
+	PASSWD:<input type='password' name='passwd' size='8' value=''>
+	<input type='submit' value=' UPDATE '>
+    </td></tr>
+    </table>
+	</form>
+");
+
+?>

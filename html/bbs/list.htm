@@ -1,0 +1,864 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+####  if ($sw__id=="akom"&&$userty<5)  {alert3("정식 회원만이 AKOM을 사용할수 있습니다. (ID:$userid 등급:$userty)","../index.htm");exit;}
+  $s_que=strip2($s_que);
+
+  $width1=650;   if ($bbs_width1    ) $width1=$bbs_width1;
+  $width2=650;   if ($bbs_width2    ) $width2=$bbs_width2;
+  $width3=640;   if ($bbs_width3    ) $width3=$bbs_width3;
+  $widthall=780; if ($bbs_widthall  ) $widthall=$bbs_widthall;
+  $widthleft=130;if ($bbs_widthleft ) $widthleft=$bbs_widthleft;
+  $widthbody=650;if ($bbs_widthbody ) $widthbody=$bbs_widthbody;
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+
+  //전체자료 PACK
+  //$query="delete from $table_name where del='D'";
+  //$result=mysql_db_query($DB_CM,$query);
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+  if ($cfg[sysop1]&&$cfg[sysop1]==$userid||$super_user==1235)   {$csuper_user=true;$userty=19;}
+  if ($super_user==1235||$csuper_user||$ctype>16||$userty>14||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop3]) {
+    $bsuper_user=true;
+    $can_write=true;
+  }
+
+/*
+  if ($club!="main") {
+	if ($bcfg[ictype]>0&&$bcfg[ictype]>$ctype) {echo ("<script>window.alert('동호등급 $bcfg[ictype] 이상 진입가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[ictype]>0&&$ccfg[ictype]>$ctype) {echo ("<script>window.alert('동호등급 $ccfg[ictype] 이상 진입가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[itype]>0&&$ccfg[itype]>$userty)  {echo ("<script>window.alert('메인등급 $ccfg[itype]  이상 진입가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  }
+
+  if ($bcfg[itype]>0&&$bcfg[itype]>$userty)    {echo ("<script>window.alert('메인등급 $bcfg[itype]  이상 진입가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  if ($cfg[itype]>0&&$cfg[itype]>$userty)	   {echo ("<script>window.alert('메인등급 $cfg[itype]   이상 진입가능 (현재:$userty)');history.go(-1)</script>");exit;}
+*/
+  $can_write=true;
+  if ($club!="main"&&$ctype&&$bcfg[wctype]>0&&$bcfg[wctype]>$ctype) $can_write=false;
+  if ($bcfg[wtype]>0&&$bcfg[wtype]>$userty)  $can_write=false;
+
+
+  $s_que=strip2($s_que);
+  $field=trim($field);
+  if ($field=="page") {$page=intval($s_que);$field="";$s_que="";}
+
+	   if (!$s_que) $filt1="";
+  else if ($field=="num") $filt1="where num<='$s_que'";
+  else if ($field=="etc") $filt1="where title  like '%$s_que%' or keyword like '%$s_que%' or userip like '%$s_que%' or body like '%$s_que%' or name like '%$s_que%' or id like '%$s_que%'";
+  else if ($field=="goods") $filt1="where goods='$s_que'";
+  else if ($field)		  $filt1="where $field like '%$s_que%'";
+
+  if ($super_user!=1235&&($bcfg[bform]==16||$bcfg[only_myid]=='y')) {
+      if (strstr($filt1,"where ")) $filt1.=" and id='$userid'";
+  }
+  if ($bcfg[use_answer]=='y') {
+      if (strstr($filt1,"where ")) $filt1.=" and depth='0'";
+      else $filt1.="where depth='0'";
+  }
+  if ($super_user!=1235&&$bcfg[bform]==2) { //비공개
+      $filt1=str_replace("id like ","title like ",$filt1);
+      $filt1=str_replace("name like ","title like ",$filt1);
+  }
+  if ($super_user!=1235&&$bcfg[bform]==16) {
+      if (strstr($filt1,"where ")) $filt1.=" and id='$userid'";
+  }
+
+  $query_list="select count(*) from $table_name $filt1";
+  $query_list=check_query($query_list);
+  $result=mysql_db_query($DB_CM,$query_list);
+  if ($result) {
+	$row=mysql_fetch_array($result);
+	mysql_free_result($result);
+  }
+
+  $count_all= $row[0]; //전체 글 수
+  $list_num = 5;	  //하단페이지목록 표시수
+  $per_page=15; 	 //한페이지당 수
+  if ($bcfg[line]) $per_page=$bcfg[line];
+  if ($bcfg[listnum]) $list_num=$bcfg[listnum]-2;
+  if ($list_num<2) $list_num=2;
+
+  # 보통 글 수를 페이지 당 글 수로 나누어 전체 페이지를 구함
+  # 나눈 값은 정수형으로 변환하며 정확히 나누어 떨어지지 않으면 1을 더함
+  if($count_all % $per_page) $pages[all] = intval($count_all / $per_page) + 1;
+  else $pages[all] = intval($count_all / $per_page);
+
+  # $page 값이 있으면 그 값을 $pages[cur] 값으로 대입함
+  if($page) $pages[cur] = $page;
+  if(!$pages[cur]) $pages[cur] = 1;
+  # $pages[cur] 값이 전체 페이지 수보다 클 경우 전체 페이지 값을 대입함
+  if($pages[cur] > $pages[all]) $pages[cur] = $pages[all];
+
+  # $pages[no] 값이 없으면 $pages[cur] 값을 참고하여 대입함. 목록에서
+  # 불러올 글의 시작 번호로 사용됨
+  if(!$pages[no]) $pages[no] = ($pages[cur] - 1) * $per_page;
+
+  # $pages[cur] 값에 따라 이전(pre), 다음(nex) 페이지 값을 대입함
+  $pages[pre] = $pages[cur] - 1;
+  $pages[nex] = $pages[cur] + 1;
+  if($pages[pre] < 1) $pages[pre] = 1;
+  if($pages[nex] > $pages[all]) $pages[nex] = $pages[all];
+  if (!$pages[cur]) $pages[cur]=1;
+  if (!$pages[all]) $pages[all]=1;
+
+  $d0 = $pages[cur] - $list_num - 1;
+  $d1 = $pages[all] - ($pages[cur] + $list_num);
+
+  if($d0 < 1) {
+	$list_num_p = $list_num - $d0;
+	$list_num_m = $list_num_p - ($list_num * 2);
+  } else if($d1 < 1) {
+	$list_num_p = $list_num + $d1;
+	$list_num_m = $list_num_p - ($list_num * 2);
+  } else {
+	$list_num_p = $list_num;
+	$list_num_m = -$list_num;
+  }
+
+
+  $pages_prev=0;
+  $pages_next=0;
+
+
+  # 지정된 수 만큼 페이지 링크
+  $num_str="";
+  $count_list=0;
+  if($pages[all] < $list_num*2+1) {
+	$pagechk = $list_num*2;
+	for($co = $list_num_m; $co <= $list_num_p; $co++) {
+	  $repages = $pages[cur] + $co;
+      if ($count_list++>0) $num_str.="|";
+	  if($repages > "0" && $repages > $list_num_p - $list_num * 2 && $repages <= $pages[all]) {
+		if($co) {
+		  $page = $pages[cur] + $co;
+          $num_str .= "<A HREF=\"list.htm?code=$code&club=$club&page=$page&field=$field&mo=$mo&s_ord=$s_ord&s_que=$s_que\"> $page </A>";
+		}
+		else {
+		  $page=$pages[cur];
+          $num_str .= "<B><font color=blue>[$page]</font></B>";
+		}
+		if (!$pages_prev) $pages_prev=$page-1;
+		$pages_next=$page+1;
+	  }
+	}
+  } else {
+	$pagechk = $pages[all];
+	for($co = $list_num_m; $co <= $list_num_p; $co++) {
+	  if($pages[cur] + $co <= $pages[all]) {
+        if ($count_list++>0) $num_str.="|";
+		if($co) {
+		  $page = $pages[cur] + $co;
+          $num_str .= "<A HREF=\"list.htm?code=$code&club=$club&page=$page&mo=$mo&field=$field&s_ord=$s_ord&s_que=$s_que\"> $page </A>";
+		} else {
+		  $page=$pages[cur];
+          $num_str .= "<B><font color=blue>[$page]</font></B>";
+		}
+		if (!$pages_prev) $pages_prev=$page-1;
+		$pages_next=$page+1;
+	  }
+	}
+  }
+
+  if ($pages_prev<1) $pages_prev=1;
+  if ($pages_next>$pages[all]) $pages_next=$pages[all];
+
+	   if ($field=="etc")    $i=1;
+  else if ($field=="title")  $i=2;
+  else if ($field=="id")     $i=3;
+  else if ($field=="name")   $i=4;
+  else if ($field=="num")    $i=5;
+  else if ($field=="page")   $i=6;
+  else if ($field=="body")   $i=7;
+  else if ($field=="keyword") $i=8;
+  else if ($field=="goods")  $i=9;
+  else $i=0;
+  $var="field$i";
+  $$var="selected";
+  $field_select="
+<option value=etc	  $field1>--검색--</option>
+<option value=title   $field2>제목</option>
+<option value=id	  $field3>아이디</option>
+<option value=name	  $field4>이름</option>
+<option value=num	  $field5>번호</option>
+<option value=page	  $field6>페이지</option>
+<option value=body	  $field7>내용</option>
+<option value=keyword $field8>키워드</option>
+";
+if ($bcfg[use_goods]=='y') $filed_select.="<option value=goods   $field9>상품</option>\n";
+
+
+  $order="order by pos DESC,depth";
+  if ($bcfg[use_answer]=='y') $order="order by pos DESC";
+  else if ($bcfg[order_num]==1) $order="order by pos,depth";
+  else if ($bcfg[order_num]==2) $order="order by date";
+  else if ($bcfg[order_num]==3) $order="order by date DESC";
+  else if ($bcfg[order_num]==4) $order="order by id";
+  else if ($bcfg[order_num]==5) $order="order by name";
+  else if ($bcfg[order_num]==6) $order="order by title";
+  else if ($bcfg[order_num]==7) $order="order by keyword";
+  else if ($bcfg[order_num]==8) $order="order by tclub,tcode,inday";
+  else if ($bcfg[order_num]==9) $order="order by tcode,inday";
+  $i=$per_page+5;
+  $query_list = "SELECT * FROM $table_name $filt1 $order LIMIT $pages[no],$i";
+  $result_list=mysql_db_query($DB_CM,$query_list);
+  //echo $query_list;
+
+  //echo $query;
+  //echo ("$query 총수 : $count_all / 페이지:$per_page / 목록수:$list_num <BR>");
+
+
+  //게시판의 항목을 출력한다
+  function disp_row($name,$align,$mode) {
+    global $cfg,$bcfg,$background;
+	global $pages,$page,$row,$code,$club,$skip,$now_allno;
+	global $field,$mo,$s_ord,$s_que,$filesize;
+    global $super_user,$bsuper_user,$csuper_user,$mn;
+	$old_row=$row;
+	$str="";
+    if ($super_user==1235||$bsuper_user||$csuper_user) {
+        $del="<a href=delete.htm?num=$row[num]&code=$code&mn=$mn&club=$club&skip=$skip&page=$pages[cur]&field=$field&s_que='$s_que'
+		onClick=\"return confirm('$row[num]번을 삭제할까요?')\">d</a>";
+        $edit="<a href=edit.htm?num=$row[num]&code=$code&mn=$mn&club=$club&skip=$skip&page=$pages[cur]&mo=$mo&s_ord=$s_ord&field=$field&s_que='$s_que'>e</a>";
+	}
+
+
+    if ($name=="title") {
+	  $title2=substr($row[body],0,300);
+	  $title2=str_replace("<BR>","\n",$title2);
+	  $title2=str_replace("<br>","\n",$title2);
+      $title2=str_replace("\r","\n",$title2);
+      $title2=str_replace("\n\n","\n",$title2);
+	  $title2=str_replace("'","",$title2);
+      $title2=str_replace("\"","",$title2);
+      if (strlen($row[body])>295) $title3=text_cut($title2,295)."...";
+      else $title3=text_cut($title2,295);
+      $body_title="title='$title3'";
+	  if ($super_user!=1235&&$row[readopen]=='n') $body_title="";
+    }
+
+    if ($name=="title"&&$mode==13) {
+        $buff=text_cut($row[body],295);
+        $buff=str_replace("'","",$buff);
+        $buff=str_replace("\"","",$buff);
+        $buff=str_replace("\r","\n",$buff);
+        $buff=str_replace("\n\n","\n",$buff);
+        //$buff=nl2br($buff);
+        $buff=str_replace("\n","<BR>",$buff);
+        $body_title=" onmousemove=\"msgposit2('$buff')\" onmouseout=\"msghide()\" ";
+        if ($super_user!=1235&&$row[readopen]=='n') $body_title="";
+    }
+
+    if ($bcfg[use_showbody]=='y'&&$bcfg[bform]!=51&&$name=="title")
+      $read="<a href=read.htm?num=$row[num]&code=$code&mn=$mn&club=$club&skip=$skip&page=$pages[cur]&mo=$mo&s_ord=$s_ord&field=$field&s_que='$s_que' $body_title>";
+    else
+      $read="<a href=read.htm?num=$row[num]&code=$code&mn=$mn&club=$club&skip=$skip&page=$pages[cur]&mo=$mo&s_ord=$s_ord&field=$field&s_que='$s_que'>";
+    $read2="<a href=read.htm?num=$row[tnum]&code=$row[tcode]&mn=$mn&club=$row[tclub]>";
+
+    if ($align=="c") $str.=("<td align=center nowrap $background>\n");
+    else if ($align=="r") $str.=("<td align=right nowrap $background>\n");
+    else $str.=("<td $background>\n");
+
+
+	$face="";
+	$is_face=false;
+    if ($name=="name"||$name=="id") $is_face=true;
+	else if ($mode==5) $is_face=true;
+	else if ($name=="name"&&is_super_user($row[id])) $is_face=true;
+	else if ($name=="id"&&$mode==10) $is_face=true;
+
+         if ($bcfg[name_type]==1) $id_name="$row[id]";
+    else if ($bcfg[name_type]==2) $id_name="$row[id]($row[name])";
+    else if ($bcfg[name_type]==3) $id_name="$row[name]($row[id])";
+    else if ($bcfg[name_type]==4) $id_name="...";
+    else $id_name="$row[name]";
+
+    if ($is_face&&$bcfg[use_face]=='y') {
+	  if ($row[face]) $face=sprintf(" <img src=images/face/gima%04d.gif border=0>",$row[face]);
+	  else if (is_super_user($row[id])) $face=" <img src=images/master.gif border=0>";
+	}
+    $show_goods=" onmousemove=\"msgposit('".strtolower($row[goods])."')\" onmouseout=\"msghide()\" ";
+
+    if ($name=="title"&&$row[goods]&&$row[depth]==0) $read="
+	<a href='list.htm?code=$code&mn=$mn&club=$club&goods=$goods&field=goods&s_que=$row[goods]&s_ord=$s_ord&page=$page&mo=$mo' $show_goods>
+	<img src=images/isgoods.gif border=0>".$read;
+
+	if ($name=="...") $row[$name]="...";
+	if ($name=="filesize") $row[$name]=$filesize;
+
+	if (strlen($row[chcolor])>3) $row[title]="<font color=$row[chcolor]>$row[title]</font>";
+    $is_file_icon="";
+    if ($row[filename]&&$row[filesize]) {
+        if ($bcfg[bform]==14) $is_file_icon="<img src=images/pallet.gif border=0>"; //사진자료실
+        else $is_file_icon="<img src=images/download.gif border=0>";
+    }
+    if ($bcfg[use_answer]=='y'&&$row[an]>0) {
+        $row[title].=" <img src='images/answer2.gif' border=0>";
+        if ($row[an]>1) $row[title].="(<B>$row[an]</B>)";
+    }
+
+         if ($name=="id"&&$mode==10&&$super_user==1235) $str.=("$face<a href=../admin/medit.htm?eid=$row[id]>$id_name</a>");
+    else if ($name=="id")            $str.=("$face$read$id_name</a>");
+    else if ($name=="name"&&$mode==10&&$super_user==1235) $str.=("$face<a href=../admin/medit.htm?eid=$row[id]>$id_name</a>");
+    else if ($name=="name")          $str.=("$face$read$id_name</a>");
+	else if ($name=="goods"&&$mode==10) $str.=("<a href=/goods/detail.htm?code=$row[goods]&mn=$mn>$row[goods]</a>");
+	else if ($name=="goods"&&$mode==11&&$row[depth]==0&&$row[goods]) $str.=("<a href=/goods/detail.htm?code=$row[goods] title=\"코드:$row[goods]\n품명:$row[keyword]\"><img src='/img/".strtolower($row[goods])."_s.jpg' width=40 border=0></a>");
+	else if ($name=="goods"&&$mode==12&&$row[depth]==0&&$row[goods]) $str.=("<a href=/goods/detail.htm?code=$row[goods] title=\"코드:$row[goods]\n품명:$row[keyword]\" $show_goods ><img src='/img/".strtolower($row[goods])."_s.jpg' width=40 border=0></a>");
+	else if ($name=="goods"&&$mode==11) $str.="&nbsp;";
+    else if ($name=="title"&&$mode==10) $str.=("$read$row[title]<BR>$row[note]</a>");
+    else if ($name=="title"&&$mode==11) $str.=("$read$row[$name]$is_file_icon </a>");
+    else if ($name=="title"&&$mode==12) $str.=("$read2$row[$name]$is_file_icon </a>");
+    else if ($name=="title"&&$mode==13) $str.=("$read$row[$name]$is_file_icon </a>");
+    else if ($name=="tcode"&&$mode==12) $str.=("$read2$row[$name]</a>");
+    else if ($name=="tclub"&&$mode==12) $str.=("$read2$row[$name]</a>");
+    else if ($name=="title"&&$mode==33) $str.=("$read$row[$name]$is_file_icon </a><a href=glist.htm?code=$code&tid=$row[tid]>[상담]</a>");
+	else if ($name=="date"&&$mode==10) $str.=("$read".substr($row[$name],0,10)."<BR>".substr($row[$name],11,8)."</a>");
+	else if ($name=="date"&&$mode==11) $str.=("$read".substr($row[$name],0,10)."<BR>".substr($row[$name],11,5)."</a>");
+	else if ($name=="pos"&&$mode==10) $str.=("P:$row[pos] D:$row[depth]");
+	else if ($mode==0 ) $str.=("$row[$name] ");
+	else if ($mode==1 ) $str.=("$read$row[$name]$face </a>");
+	else if ($mode==2 ) $str.=("$read$row[$name]$face </a>");
+    else if ($mode==3 ) $str.=("<input type=\"checkbox\" name=\"check[]\" value='$row[num]' class='frm2' >");
+	else if ($mode==4 ) $str.=("$read".substr($row[$name],0,10)."</a>");
+	else if ($mode==5 ) $str.=("$read$face$row[$name] </a>");
+	else if ($mode==7 ) $str.=("$read$row[$name]</a>");
+	else if ($mode==8 ) $str.=("$del$read$row[$name] </a>");
+	else if ($mode==9 ) $str.=("$edit$read$row[$name] </a>");
+	else if ($mode==10) $str.=("$edit$del$read$row[$name] </a>");
+    $str.=("</td>\n");
+
+	$row=$old_row;
+
+	return $str;
+  }
+
+  $now_html="게시판 $code";
+  if ($bcfg[body_only]!='y'&&!$skip_include) {
+      if (!$define_bbstop&&$bcfg[include_top]!='n') include "../bbstop.htm";
+      else include "../css.htm";
+      if ($bcfg[include_left]!='n') {
+        echo ("<table width='$widthall' border='0' cellspacing='0' cellpadding='0'>
+        <tr>
+        <td width='$widthleft' valign=top>
+        <!---- 왼쪽 메뉴 시작 --->
+        ");
+        if ($define_left) ;
+        else if ($mo=="board") include "../board/left.htm";
+        else if ($mo&&$mo!="main") include "../$mo/left.htm";
+        else if ($club&&$club!="main") include "../$club/left.htm";
+        else include "../left.htm";
+        echo ("
+        $left_str
+        <!---- 왼쪽 메뉴 끝 --->
+        </td>
+        <td width=$widthbody valign=top>
+        <!---- 오른쪽 메뉴 시작 --->
+        ");
+      }
+  }
+  else include "../css.htm";
+
+  echo ("
+  <div id=message3 style=\"position:absolute; left:0px; top:1px; width:1px; height:1px; z-index:1; border-width:1px; border-style:none;\">
+  <p>&nbsp;</p></div>
+  <script>
+  <!--
+  function msgposit(code){
+  message3.style.posLeft = event.x - 150 + document.body.scrollLeft
+  message3.style.posTop = event.y - 20 + document.body.scrollTop
+  message3.innerHTML='<img src=/img/'+code+'_s.jpg>';
+  }
+  function msgposit2(str){
+  message3.style.posLeft = event.x - 260 + document.body.scrollLeft
+  message3.style.posTop = event.y - 20 + document.body.scrollTop
+  message3.innerHTML='<table width=200 cellpadding=0 cellspacing=0 border=1><tr bgcolor=#ffEBf7><td>'+str+'</td></tr></table>';
+  }
+  function msghide(){
+  message3.innerHTML=''
+  }
+  //-->
+  </script>
+  ");
+
+  echo ("
+  <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+  <tr><td>$bcfg[head]</td></tr>
+  </table>
+  <!-- 게시물 리스트 -->
+  <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+  <tr>
+  <td width=50% align=left>
+  <a title='리스트' href='list.htm?code=$code&club=$club'><img src='images/list_i.gif' border=0></A>
+  ");
+  if($can_write) echo("<a title='글쓰기' href='write.htm?code=$code&club=$club&page=$page'><img src='images/write_i.gif' border=0></a>");
+  if ($pages[cur]!=$pages[pre]&&$page>1) echo("<a href='list.htm?code=$code&mn=$mn&club=$club&page=$pages[pre]&mo=$mo&field=$field&s_que=$s_que'><img src=images/prev9.gif border=0></a> ");
+  if ($pages[cur]!=$pages[nex]) echo("<a href='list.htm?code=$code&mn=$mn&club=$club&page=$pages[nex]&mo=$mo&field=$field&s_que=$s_que'><img src=images/next9.gif border=0></a>");
+  echo("
+  </td>
+  <td width=50% align=right>$pages[cur] / $pages[all] ");
+  if ($userty>=15||$bsuper_user||$csuper_user||$super_user==1235||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop3]) {
+    echo "<a href=cfg.htm?code=$code&mn=$mn&club=$club>[관리]</a>";
+  }
+  echo ("
+  </td>
+  </tr>
+  </table>
+  ");
+
+
+  echo ("
+  <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+    <tr bgcolor='#7d64ff'>
+	  <td height='1'><img src='images/blank.gif' width='1' height='1'></td>
+	</tr>
+    <tr bgcolor='#7d6433'>
+      <td height='3' align=center><font color=white>$bcfg[name]</td>
+	</tr>
+	<tr bgcolor='#E5E5E5' align='center'>
+	  <td>
+        <table width='$width2' border='0' cellspacing='1' cellpadding='4'>
+		  <span>
+          <tr>
+          ");
+    if ($bcfg[bform]<=1) {     //일반 게시판
+       echo ("
+          <td width='45'  align='center' background=images/bgbar1.gif>No</td>
+          <td width='400' align='center' background=images/bgbar1.gif>글제목</td>
+          <td width='90'  align='center' background=images/bgbar1.gif>글쓴이</td>
+          <td width='70'  align='center' background=images/bgbar1.gif>등록일</td>
+          <td width='25'  align='center' background=images/bgbar1.gif>hits</td>
+       ");
+    }
+    else if ($bcfg[bform]==2) {       //비공개
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=80 align=center><font color=000000><b>ID</b></font></td>
+        <td width=100 align=center><font color=000000><b>날짜</b></font></td>
+        <td width=40 align=center><font color=000000><b>줄수</b></font></td>
+        <td width=25 align=center><font color=000000><b>hits</b></font></td>
+        <td width=300 align=center><font color=000000><b>제  목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==3) {       //공지
+        echo("
+        <td width=50  align=center background=images/bgbar1.gif><font color=000000><b>번 호</b></font></td>
+        <td width=320 align=center background=images/bgbar1.gif><font color=000000><b>제  목</b></font></td>
+        <td width=90  align=center background=images/bgbar1.gif><font color=000000><b>날짜</b></font></td>
+        <td width=40  align=center background=images/bgbar1.gif><font color=000000><b>조회</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==4) {       //찬성/반대
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=80 align=center><font color=000000><b>ID</b></font></td>
+        <td width=90 align=center><font color=000000><b>날짜</b></font></td>
+        <td width=40 align=center><font color=000000><b>찬성</b></font></td>
+        <td width=40 align=center><font color=000000><b>반대</b></font></td>
+        <td width=300 align=center><font color=000000><b>제 목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==5) {       //방명록
+        echo("
+        <td width=50  align=center background=images/bgbar1.gif><font color=000000><b>번 호</b></font></td>
+        <td width=80  align=center background=images/bgbar1.gif><font color=000000><b>이  름</b></font></td>
+        <td width=90  align=center background=images/bgbar1.gif><font color=000000><b>날짜</b></font></td>
+        <td width=40  align=center background=images/bgbar1.gif><font color=000000><b>줄수</b></font></td>
+        <td width=40  align=center background=images/bgbar1.gif><font color=000000><b>조회</b></font></td>
+        <td width=400 align=center background=images/bgbar1.gif><font color=000000><b>제  목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==6) {       //참고자료
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=90 align=center><font color=000000><b>날짜</b></font></td>
+        <td width=500 align=center><font color=000000><b>제  목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==8) {       //강좌
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=80 align=center><font color=000000><b>등록자</b></font></td>
+        <td width=90 align=center><font color=000000><b>등록일</b></font></td>
+        <td width=40 align=center><font color=000000><b>Page</b></font></td>
+        <td width=400 align=center><font color=000000><b>제  목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==10) {       //뉴스
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=90 align=center><font color=000000><b>날짜</b></font></td>
+        <td width=40 align=center><font color=000000><b>조회</b></font></td>
+        <td width=400 align=center><font color=000000><b>제  목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==11) {      //자료실
+        echo("
+        <td width=30  align=center background=images/bgbar1.gif><font color=000000><b>번호</b></font></td>
+        <td width=60  align=center background=images/bgbar1.gif><font color=000000><b>ID</b></font></td>
+        <td width=60  align=center background=images/bgbar1.gif><font color=000000><b>날 짜</b></font></td>
+        <td width=120 align=center background=images/bgbar1.gif><font color=000000><b>파일명</b></font></td>
+        <td width=40  align=center background=images/bgbar1.gif><font color=000000><b>크기</b></font></td>
+        <td width=250 align=center background=images/bgbar1.gif><font color=000000><b>제 목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==12) {      //제목만
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=700 align=center><font color=000000><b>제 목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==14) {       //사진자료실
+        echo ("
+        <td width=50  align=center><font color=000000><b>번호</b></font></td>
+        <td width=80  align=center><font color=000000><b>이름</b></font></td>
+        <td width=80  align=center><font color=000000><b>날짜</b></font></td>
+        <td width=500 align=center><font color=000000><b>제목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==21) {       //전체
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=80 align=center><font color=000000><b>가기코드</b></font></td>
+        <td width=70 align=center><font color=000000><b>아이디</b></font></td>
+        <td width=90 align=center><font color=000000><b>날짜</b></font></td>
+        <td width=250 align=center><font color=000000><b>제  목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==22) {       //전체
+        echo("
+        <td width=50 align=center><font color=000000><b>번 호</b></font></td>
+        <td width=80 align=center><font color=000000><b>가기코드</b></font></td>
+        <td width=80 align=center><font color=000000><b>아이디</b></font></td>
+        <td width=90 align=center><font color=000000><b>날짜</b></font></td>
+        <td width=100 align=center><font color=000000><b>파일명</b></font></td>
+        <td width=250 align=center><font color=000000><b>제  목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==31) {       //상담게시판
+        echo ("
+        <td width=35  align=center nowrap background=images/bgbar1.gif><font color=000000><b>번호</b></font></td>
+        <td width=80  align=center background=images/bgbar1.gif><font color=000000><b>아이디</b></font></td>
+        <td width=80  align=center background=images/bgbar1.gif><font color=000000><b>날짜</b></font></td>
+        <td width=300 align=center background=images/bgbar1.gif><font color=000000><b>제목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==32) {       //상품게시판
+        echo ("
+        <td width=43  align=center background=images/bgbar1.gif nowrap><font color=000000><b>번호</b></font></td>
+        <td width=90  align=center background=images/bgbar1.gif><font color=000000><b>이름</b></font></td>
+        <td width=65  align=center background=images/bgbar1.gif><font color=000000><b>날짜</b></font></td>
+        <td width=380 align=center background=images/bgbar1.gif><font color=000000><b>제목</b></font></td>
+        <td width=35  align=center background=images/bgbar1.gif cellspacing=0 cellpadding=0><font color=000000><b>상품</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==33) {       //1:1게시판
+        echo ("
+        <td width=35  align=center background=images/bgbar1.gif nowrap><font color=000000><b>번호</b></font></td>
+        <td width=80  align=center background=images/bgbar1.gif><font color=000000><b>아이디</b></font></td>
+        <td width=70  align=center background=images/bgbar1.gif><font color=000000><b>날짜</b></font></td>
+        <td width=35  align=center background=images/bgbar1.gif><font color=000000><b>분류</b></font></td>
+        <td width=380 align=center background=images/bgbar1.gif><font color=000000><b>제목</b></font></td>
+        ");
+    }
+    else if ($bcfg[bform]==51) {       //비회원주문
+        echo ("
+        <td width=50  align=center background=images/bgbar1.gif><font color=000000><b>번호</b></font></td>
+        <td width=80  align=center background=images/bgbar1.gif><font color=000000><b>이름</b></font></td>
+        <td width=80  align=center background=images/bgbar1.gif><font color=000000><b>날짜</b></font></td>
+        <td width=500 align=center background=images/bgbar1.gif><font color=000000><b>제목</b></font></td>
+        ");
+    }
+    else {     //기타
+       echo ("
+          <td width='41'  align='center'>No</td>
+          <td width='89'  align='center'>분류</td>
+          <td width='350' align='center'>글제목</td>
+          <td width='71'  align='center'>등록일</td>
+          <td width='100' align='center'>글쓴이</td>
+          <td width='50'  align='center'>조회수</td>
+       ");
+    }
+    echo "</tr>";
+
+
+  $ans_num=0;
+  $table_body="";
+  $count=0;
+  while($result_list&&($row=mysql_fetch_array($result_list))) {
+      //echo "Q:$query N:$row[num],P:$row[pos],D:$row[depth],<BR>";
+	  if ($count++>=$per_page) {
+        if ($row[depth]<1) break;
+	  }
+	  $row_color="ffffff";
+      if ($color_count++%2 == 0) $row_color='#fffaff';
+	  if (strlen($row[bgcolor])>3) $row_color=$row[bgcolor];
+      if ($row[num]==$now_read_num) $row_color="#A8D4C8";
+      //제목길이 짜르기
+      if ($bcfg[title_len]) {
+          $old_title=$row[title];
+          $row[title]=text_cut($row[title],$bcfg[title_len]);
+          if ($row[title]!=$old_title) $row[title].="...";
+      }
+
+      $row[title] = " ".stripslashes($row[title]);
+	  $row[title] = ereg_replace( "'", "＇", $row[title] );
+      //$row[title]=eregi_replace("<","&lt;",$row[title]);
+      //$row[title]=eregi_replace(">","&gt;",$row[title]);
+      $row[str_date]=substr($row[date],2,14);
+	  $row[str_date2]=substr($row[date],0,16);
+	  $filesize=byte2str($row[filesize]);
+
+      $row[title] = stripslashes($row[title]);
+      $row[title] = htmlspecialchars($row[title]);
+      $row[title] = ereg_replace( "'", "＇", $row[title] );
+      if ($field=="etc"||$field=="title") $row[title] = ereg_replace( "$s_que", "<font color=4479b7>$s_que</font>", $row[title]);
+      if ($field=="etc"||$field=="name") $row[name] = ereg_replace( "$s_que", "<font color=4479b7>$s_que</font>", $row[name]);
+      if ($field=="etc"||$field=="id") $row[name] = ereg_replace( "$s_que", "<font color=4479b7>$s_que</font>", $row[id]);
+      if ($field=="etc"||$field=="body") $row[body] = ereg_replace( "$s_que", "<font color=4479b7>$s_que</font>", $row[body]);
+
+	  if ($row[depth]) {
+		$space="";
+		if ($row[depth]>2) $space="&nbsp;&nbsp;".$space;
+		if ($row[depth]>1) $space="&nbsp;&nbsp;".$space;
+        //$space.="<img src='images/answer2.gif' border=0>";
+        $space.="<img src='images/re.gif' border=0>";
+		if ($bcfg[use_char]=='y') $row[title]=" <font color=red size=2><B>Re:</b></font>".$row[title];
+		else $row[title]=$space.$row[title];
+	  }
+      if ($row[num]==$now_read_num) $row[title]="<img src=images/answer2.gif border=0><u><B>$row[title]</B></u>";
+	  if ($bcfg[num_hits]&&$row[hits]>=$bcfg[num_hits]) {
+		 if ($bcfg[use_char]=='y') $row[title]=$row[title]." <font color=red size=2><B>hot</b></font>";
+		 else $row[title]=$row[title]." <img src=images/hot.gif border=0>";
+	  }
+	  if ($bcfg[num_new]>0) {
+		$how_old=(int)(how_old_str($row[date])/3600);
+		if ($how_old<=$bcfg[num_new]) {
+		  if ($bcfg[use_char]=='y') $row[title]=$row[title]." <font color=107cb3 size=2><B>new</b></font>";
+		  else $row[title]=$row[title]." <img src=images/new.gif border=0>";
+		  }
+	  }
+	  if ($row[readopen]=='n') $row[title].="<img src=images/passwd.gif border=0>";
+
+	  $table_body="";
+
+	  $now_botpos=$row[pos];
+
+      echo ("<tr bgcolor='$row_color' onMouseOver=\"this.style.backgroundColor='#dfEBf7';return true;\" onMouseOut=\"this.style.backgroundColor='';return true;\">\n");
+      if ($bcfg[bform]<=1) {     //일반 게시판
+          echo disp_row("num","c",10);
+          echo disp_row("title","",11);
+          echo disp_row("id","c",1);
+          echo disp_row("str_date2","c",4);
+          echo disp_row("hits","c",1);
+      }
+      else if ($bcfg[bform]==2) {  //비공개
+        if($super_user!=1235) {
+          $row[id]="...";
+          $row[name]="...";
+        }
+        echo disp_row("num","c",10);
+        echo disp_row("name","c",1);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("line","c",1);
+        echo disp_row("hits","c",1);
+        echo disp_row("title","",11);
+      }
+      else if ($bcfg[bform]==3) {  //공지
+        echo disp_row("num","c",10);
+        echo disp_row("title","",11);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("hits","c",1);
+      }
+      else if ($bcfg[bform]==4) {  //찬성반대
+        echo("
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[num]</a></td>
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[name]</td>
+        <td align=center>$row[str_date]</td>
+        <td align=center>$row[ok]</td>
+        <td align=center>$row[no]</td>
+        <td class='pad10'><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[title]</a></td>
+        ");
+      }
+      else if ($bcfg[bform]==5) {  //방명록
+        echo("
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[num]</a></td>
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[name]</td>
+        <td align=center>$row[str_date]</td>
+        <td align=center>$row[line]</td>
+        <td align=center>$row[hits]</td>
+        <td class='pad10'><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$title</a></td>
+        ");
+      }
+      else if ($bcfg[bform]==6) {  //참고자료
+        echo("
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[num]</a></td>
+        <td align=center>$row[str_date]</td>
+        <td class='pad10'><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$title2</a></td>
+        ");
+      }
+      else if ($bcfg[bform]==8) {  //강좌
+        echo("
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[num]</a></td>
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[id]</td>
+        <td align=center>$row[str_date]</td>
+        <td align=center>".(int)($row[line]/16+1)."</td>
+        <td class='pad10'><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$title</a></td>
+        ");
+      }
+      else if ($bcfg[bform]==10) {
+        echo disp_row("num","c",10);
+        echo disp_row("str_date","c",5);
+        echo disp_row("hits","c",1);
+        echo disp_row("title","",11);
+      }
+      else if ($bcfg[bform]==11) {  //자료실
+        if (strlen($row[filename])>20) $row[filename]=text_cut($row[filename],17)."~";
+        echo disp_row("num","c",10);
+        echo disp_row("id","c",1);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("filename","c",1);
+        echo disp_row("filesize","c",1);
+        echo disp_row("title","",11);
+      }
+      else if ($bcfg[bform]==12) {  //제목만
+        echo("
+        <td align=center><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$row[num]</a></td>
+        <td class='pad10'><a href='bbsread.htm?num=$row[num]&code=$code&club=$club&skip=$skip&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno&field=$field&s_que=$s_que'>$title</a></td>
+        ");
+      }
+      else if ($bcfg[bform]==14) {  //사진
+        echo disp_row("num","c",10);
+        echo disp_row("id","c",1);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("title","",11);
+      }
+      else if ($bcfg[bform]==21) {  //전체게시판
+        echo disp_row("num","c",10);
+        echo disp_row("tcode","c",12);
+        echo disp_row("id","c",1);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("title","",11);
+      }
+      else if ($bcfg[bform]==22) {  //전체자료실
+        echo disp_row("num","c",10);
+        echo disp_row("tcode","c",12);
+        echo disp_row("id","c",1);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("filename","c",1);
+        echo disp_row("title","",11);
+      }
+	  else if ($bcfg[bform]==31) {	   //고객상담
+        echo disp_row("num","c",7);
+        echo disp_row("id","c",10);     //고객ID
+        echo disp_row("str_date2","c",1);
+        echo disp_row("title","",10);
+	  }
+	  else if ($bcfg[bform]==32) {	   //상품게시판
+        echo disp_row("num","c",10);
+        echo disp_row("id","c",10);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("title","",11);
+        echo disp_row("goods","c",12);
+	  }
+      else if ($bcfg[bform]==33) {     //상품게시판
+        echo disp_row("num","c",10);
+        echo disp_row("id","c",10);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("keyword","c",1);
+        echo disp_row("title","",33);
+	  }
+	  else if ($bcfg[bform]==51) {	   //비회원주문
+        echo disp_row("num","c",10);
+        echo disp_row("id","c",1);
+        echo disp_row("str_date2","c",4);
+        echo disp_row("title","",2);
+	  }
+      else {     //기타
+          echo disp_row("num","c",10);
+          echo disp_row("keyword","l",1);
+          echo disp_row("title","",11);
+          echo disp_row("str_date2","c",4);
+          echo disp_row("name","c",1);
+          echo disp_row("hits","c",1);
+      }
+      echo ("</tr>\n");
+  }
+
+  echo ("
+		  </span>
+		  </table>
+		  <!--리스트끝-->
+
+          <table width=$width2 cellpadding=0 cellspacing=0 border=0>
+			<tr>
+			<td align=center>
+            <a href='list.htm?code=$code&mn=$mn&club=$club&page=$pages[pre]&mo=$mo&field=$field&s_que=$s_que'><img src=images/prev3.gif border=0></a>
+            <a href='list.htm?code=$code&mn=$mn&club=$club&page=$pages_prev&mo=$mo&field=$field&s_que=$s_que'><img src=images/prev2.gif border=0></a>
+			$num_str
+            <a href='list.htm?code=$code&mn=$mn&club=$club&page=$pages_next&mo=$mo&field=$field&s_que=$s_que'><img src=images/next2.gif border=0></a>
+            <a href='list.htm?code=$code&mn=$mn&club=$club&page=$pages[nex]&mo=$mo&field=$field&s_que=$s_que'><img src=images/next3.gif border=0></a>
+			</td>
+			</tr>
+		  </table>
+
+		</td>
+	  </tr>
+      <tr bgcolor='#cccccc'><td width=100% colspan=8 height='3'></td></tr>
+	</table>
+    <BR>
+
+  <!--하단검색-->
+  <table width=$width1 cellpadding=0 cellspacing=0 border=0>
+    <form name=form2 action='list.htm' method=post>
+	<input type=hidden name=cmd value=''>
+	<input type=hidden name=mn	value='$mn'>
+	<input type=hidden name=club value='$club'>
+	<input type=hidden name=code value='$code'>
+	<input type=hidden name=sysop value='$sysop'>
+	<tr>
+    <td width=50% align=center>
+	  <A href=write.htm?code=$code&mn=$mn&club=$club&page=$pages[all]&mo=$mo&field=$field&s_que=$s_que><img src=images/write.gif border=0></A>
+      <A href=list.htm?code=$code&mn=$mn&club=$club                                                  ><img src=images/top.gif border=0></A>
+      <A href=list.htm?code=$code&mn=$mn&club=$club&page=$pages[all]&mo=$mo&field=$field&s_que=$s_que><img src=images/end.gif border=0></A>
+	</td>
+    <td width=50% align=center>
+	  <select name=field>
+		$field_select
+	  </select>
+	  <input type=text size=15 maxlength=30 name=s_que value='$s_que' onchange=submit(); class='frm2'>
+	  <input type=submit value='검색' class='frm4'>
+	</td>
+	</tr>
+	</form>
+  </table>
+  <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+  <tr><td>$bcfg[foot]</td></tr>
+  </table>
+  ");
+  if ($bcfg[body_only]!='y'&&!$skip_include) {
+      if ($bcfg[include_left]!='n') {
+        echo ("
+        <!---- 오른쪽 메뉴 끝 --->
+        </td>
+        </tr>
+        </table>");
+      }
+  }
+  if ($bcfg[body_only]!='y'&&!$skip_include) {
+      if (!$define_bbsbottom&&$bcfg[include_bottom]=='y') include "../bottom.htm";
+  }
+?>

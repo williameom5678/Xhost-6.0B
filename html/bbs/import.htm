@@ -1,0 +1,98 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+
+  echo("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=euc-kr\">\n");
+  if ($super_mode!=1235) exit;
+  if (!$data_db) $data_db=$DB_CM;
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+
+  if ($cmd=="import"&&$code&&$date_filename) {
+    $query="insert into $table_name select * from $data_filename";
+    $result=mysql_db_query($DB_CM,$query);
+    if (!$result) echo $query,mysql_error();
+  }
+  if ($cmd=="import2"&&$code&&$data_filename&&$data_db) {
+
+    $query1="select * from $data_filename";
+    $result1=mysql_db_query($data_db,$query1);
+    if (!$result1) echo $query1,mysql_error();
+    echo $query1;
+    while(($row=mysql_fetch_array($result1))) {
+
+        //$query2="select max(pos) from $table_name";
+        //$result2=mysql_db_query($DB_CM,$query2);
+        //if(!$result2) { $row2[0]=0; }
+        //else { $row2=mysql_fetch_array($result2);}
+
+        //$newpos=$row2[0]+1;$newdepth=intval($row[depth])-1;$del=$row[del];
+        $newpos=$row[pos];$newdepth=intval($row[depth])-1;$del=$row[del];
+        if ($newdepth<1) $newdepth=0;
+        $tnum=0;
+        $row[body]=stripslashes($row[body]);
+        $row[body]=stripslashes($row[body]);
+        $id=addslashes($row[id]);$name=addslashes($row[name]);$passwd=addslashes($row[passwd]);
+        $title=addslashes($row[title]);$keyword=addslashes($row[keyword]);$tcode="";$tclub="";
+        $date1=$row[date];$date2=$row[date2];$homepage=$row[home];
+        $email=addslashes($row[mail]);$userip=$row[user_ip];$filename=$row[filename];
+        $fcount=0;$filesize=$row[filesize];$size=strlen($row[body]);$line=sizeof(explode("\n",$row[body]));
+        $hits=$row[hits];$down=$row[down];$ok=$row[ok];$no=$row[no];$good=$row[good];
+        $color=$row[color];$tag=$row[tag];$note=$row[note];
+        $body=addslashes($row[body]);
+
+        $query2 ="
+        insert into $table_name (
+        pos,depth,del,
+        tnum,
+        id,name,passwd,
+        title,keyword,tcode,tclub,
+        date,date2,homepage,
+        email,userip,filename,
+        fcount,filesize,size,line,
+        hits,down,ok,no,good,
+        color,tag,note,
+        body
+        )
+        values (
+        '$newpos','$newdepth','$del',
+        '$tnum',
+        '$id','$name','$passwd',
+        '$title','$keyword','$tcode','$tclub',
+        '$date1','$date2','$homepage',
+        '$email','$userip','$filename',
+        '$fcount','$filesize','$size','$line',
+        '$hits','$down','$ok','$no','$good',
+        '$color','$tag','$note',
+        '$body'
+        );";
+        $result2=mysql_db_query($DB_CM,$query2);
+        if (mysql_errno()==1146) {
+           create_db($DB_CM,"def_bbs",$table_name);
+           $result2=mysql_db_query($DB_CM,$query2);
+        }
+        echo htmlspecialchars($query2),"<BR>";
+    }
+  }
+
+    echo ("
+    <center>
+    <form name='form1' ENCTYPE='multipart/form-data' action='$PHP_SELF' method='POST'>
+    <input type=hidden name='cmd'  value='$cmd'>
+    <input type=hidden name='code' value='$code'>
+    <input type=hidden name='club' value='$club'>
+    CMD:$cmd<BR>
+    TABLE 명:$table_name<BR>
+    IMPORT할 DB:
+    <input type=text name='data_db' size=10 value='$data_db'>
+    table:
+    <input type=text name='data_filename' size=30 maxlength=30 value='$data_filename'>
+    <input type=submit value='GO'>
+    </form>
+    ");
+
+  echo ("
+  <A HREF=list.htm?code=$code&club=$club&field=$field&sque=$sque>LIST</A>
+  <A HREF=cfg.htm?code=$code&club=$club&field=$field&sque=$sque>CFG</A>
+  ");
+

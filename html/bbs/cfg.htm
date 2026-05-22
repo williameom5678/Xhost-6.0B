@@ -1,0 +1,727 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+  $date30=$now_date=date("Y-m-d H:i:s",time()-30*24*3600);
+  $date60=$now_date=date("Y-m-d H:i:s",time()-60*24*3600);
+
+  $width=600;    if ($bbs_width     ) $width=$bbs_width;
+  $width2=600;   if ($bbs_width2    ) $width2=$bbs_width2;
+  $width3=590;   if ($bbs_width3    ) $width3=$bbs_width3;
+  $widthall=780; if ($bbs_widthall  ) $widthall=$bbs_widthall;
+  $widthleft=130;if ($bbs_widthleft ) $widthleft=$bbs_widthleft;
+  $widthbody=600;if ($bbs_widthbody ) $widthbody=$bbs_widthbody;
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+  $table_name=$club."_".$code;
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+
+  if ($userty>=15||$super_user==1235||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop2]||$userid==$bcfg[sysop3]);
+  else exit;
+
+
+  if (!$define_bbstop) include2("../bbstop.htm");
+
+  if ($cmd==delete_all&&$super_user==1235) {
+	$query="delete from $table_name";
+	$result=mysql_db_query($DB_CM,$query);
+    //echo "$query<BR>";
+  }
+  if ($cmd==delete_60&&$super_user==1235) {
+    $query="delete from $table_name where date<'$date60'";
+    $result=mysql_db_query($DB_CM,$query);
+    echo "$query<BR>";
+  }
+  if ($cmd==delete_30&&$super_user==1235) {
+    $query="delete from $table_name where date<'$date30'";
+    $result=mysql_db_query($DB_CM,$query);
+    echo "$query<BR>";
+  }
+  if ($cmd==pack&&$super_user==1235) {
+    $query="delete from $table_name del='D'";
+	$result=mysql_db_query($DB_CM,$query);
+    echo "$query<BR>";
+  }
+  if ($cmd==resetline&&$super_user==1235) {
+	//총수구하기
+	$now_allno=0;
+	$query="select count(*) from $table_name";
+	$result2=mysql_db_query($DB_CM,$query);
+	if ($result2) {
+		$row=mysql_fetch_array($result2);
+		$now_allno=$row[0];
+	}
+	$query="select * from $table_name";
+	$result=mysql_db_query($DB_CM,$query);
+	if (!$result) {echo $query,mysql_error();}
+	$count=0;
+	while (($row=mysql_fetch_array($result))) {
+		$line=calc_line($row[body]);
+        $size=strlen($row[body]);
+		$query2="update $table_name set size='$size',line='$line' where num=$row[num]";
+		$result2=mysql_db_query($DB_CM,$query2);
+		if ($count++%100==0) echo "$count / $now_allno : $query2<BR>";
+	}
+	echo "총 $count 자료 번호 재정리<BR>";
+  }
+
+  if ($cmd==date_order&&$super_user==1235) {
+	$pos=1;
+	$query="select * from $table_name order by date";
+	$result=mysql_db_query($DB_CM,$query);
+	if (!$result) {echo $query,mysql_error();}
+	while (($row=mysql_fetch_array($result))) {
+		$query2="update $table_name set pos='$pos',depth=0 where num=$row[num]";
+		$result2=mysql_db_query($DB_CM,$query2);
+		echo "$query2<BR>";
+		$pos++;
+	}
+  }
+
+  if ($cmd==directquery&&$super_user==1235) {
+	echo ("
+	<form name=form2 action=$PHP_SELF method=post>
+	<input type=hidden name=club value=$club>
+    <input type=hidden name=mn   value=$mn>
+    <input type=hidden name=mo   value=$mo>
+	<input type=hidden name=code value=$code>
+	<input type=hidden name=cmd value=$cmd>
+	Query:<input type=text name=d_query value='$d_query' size=70>
+	<input type=submit value='GO'>
+	</form>
+	");
+	if ($d_query) {
+		$result=mysql_db_query($DB_CM,$d_query);
+		echo "Q:$d_query<BR>R:$result<BR>";
+	}
+  }
+
+  if ($cmd=="dump") {
+	header("Content-disposition: filename=$table_name.sql");
+	header("Content-type: application/octetstream");
+	header("Pragma: no-cache");
+	header("Expires: 0");
+
+	$pResult = mysql_query( "show variables" );
+	while( 1 ) {
+		$rowArray = mysql_fetch_row( $pResult );
+		if( $rowArray == false ) break;
+		if( $rowArray[0] == "basedir" )
+			$bindir = $rowArray[1]."bin/";
+	}
+	passthru( $bindir."mysqldump --user=$DB_USER --password='' $DB_NAME $table_name" );
+	exit;
+  }
+
+
+  if ($mode=="insert") {
+	$reg_date=date("Y-m-d H:i:s");
+	$table_name="$new_club"."_"."$new_code";
+	$query = "
+	insert into bcfg (table_name,code,club,name,reg_date)
+	values ('$table_name','$new_code','$new_club','$name','$reg_date')
+	";
+	$result=mysql_db_query($DB_CM,$query);
+	if($result) $mode="";
+	else {
+		echo("CREATE ERR Q:$query, R:$result,".mysql_error()."<BR>");
+		exit;
+	}
+  }
+
+  if($mode=='update') {
+	$head=addslashes($head);
+	$foot=addslashes($foot);
+	$date=date("Y-m-d H:i:s");
+	$now_allno=0;
+
+	if ($cmd!="insert") {       //자료없을때
+		$query="select * from bcfg where table_name='$table_name'" ;
+		$result=mysql_db_query($DB_CM,$query);
+		if ($result) $bcfg=mysql_fetch_array($result);
+		if (!$result||!$bcfg) $cmd="insert";//자료없다.
+	}
+
+	if ($cmd=="insert") {
+		$query2="insert into bcfg (table_name,club,code,date) values ('$table_name','$club','$code','$date')";
+		$result2=mysql_db_query($DB_CM,$query2);
+		if (!$result2) {
+			echo("INSERT ERR Q:$query,".mysql_error()."<BR>");
+		}
+	}
+
+	if($admin_pw2) $admin_pw=$admin_pw2;
+	if ($new_code) $code=$new_code;
+	if ($new_club) $club=$new_club;
+	$new_table_name="$club"."_"."$code";
+
+	//총수구하기
+	$now_allno=0;
+	$query="select count(*) from $table_name";
+	$result2=mysql_db_query($DB_CM,$query);
+	if ($result2) {
+		$row=mysql_fetch_array($result2);
+		$now_allno=$row[0];
+	}
+
+	$last_date="";
+	$query="select * from $table_name order by date desc limit 1";
+	$result2=mysql_db_query($DB_CM,$query);
+	if ($result2&&(($row=mysql_fetch_array($result2)))) {
+		$last_date=$row[date];
+	}
+
+	$query="update bcfg set
+     club         = '$club'
+    ,code         = '$code'
+    ,table_name   = '$new_table_name'
+    ,name         = '$name'
+    ,head         = '$head'
+    ,foot         = '$foot'
+    ,body_sign    = '$body_sign'
+    ,write_top    = '$write_top'
+    ,bform        = '$bform'
+    ,order_num    = '$order_num'
+    ,formnum      = '$formnum'
+    ,num_hits     = '$num_hits'
+    ,num_new      = '$num_new'
+    ,sysop        = '$new_sysop'
+    ,sysop1       = '$new_sysop1'
+    ,sysop2       = '$new_sysop2'
+    ,sysop3       = '$new_sysop3'
+    ,passwd       = '$new_passwd'
+    ,read_passwd  = '$read_passwd'
+    ,write_passwd = '$write_passwd'
+    ,admin_mail   = '$admin_mail'
+    ,body_home    = '$body_home'
+    ,html_top     = '$html_top'
+    ,html_end     = '$html_end'
+    ,use_jpg      = '$use_jpg'
+    ,use_name     = '$use_name'
+    ,use_email    = '$use_email'
+    ,use_tag      = '$use_tag'
+    ,use_good     = '$use_good'
+    ,use_good3    = '$use_good3'
+    ,use_goods    = '$use_goods'
+    ,answer_time  = '$answer_time'
+    ,disp_goods   = '$disp_goods'
+    ,use_xmp      = '$use_xmp'
+    ,use_convert  = '$use_convert'
+    ,use_ok       = '$use_ok'
+    ,use_answer   = '$use_answer'
+    ,use_answer2  = '$use_answer2'
+    ,use_nl2br2   = '$use_nl2br2'
+    ,use_showbody = '$use_showbody'
+    ,use_passwd   = '$use_passwd'
+    ,use_keyword  = '$use_keyword'
+    ,use_keyword2 = '$use_keyword2'
+    ,keyword_num  = '$keyword_num'
+    ,use_myread   = '$use_myread'
+    ,use_list     = '$use_list'
+    ,use_words    = '$use_words'
+    ,keyword_select1 = '$keyword_select1'
+    ,keyword_select2 = '$keyword_select2'
+    ,use_body     = '$use_body'
+    ,use_body2    = '$use_body2'
+    ,not_convert1 = '$not_convert1'
+    ,not_convert2 = '$not_convert2'
+    ,not_convert3 = '$not_convert3'
+    ,use_background  = '$use_background'
+    ,use_char     = '$use_char'
+    ,use_color    = '$use_color'
+    ,use_del      = '$use_del'
+    ,tpl_list     = '$tpl_list'
+    ,tpl_write    = '$tpl_write'
+    ,tpl_read     = '$tpl_read'
+    ,only_myid    = '$only_myid'
+    ,include_top  = '$include_top'
+    ,include_left = '$include_left'
+    ,include_bottom = '$include_bottom'
+    ,template_num = '$template_num'
+    ,member_read  = '$member_read'
+    ,member_write = '$member_write'
+    ,body_only    = '$body_only'
+    ,check_file   = '$check_file'
+    ,itype        = '$itype'
+    ,rtype        = '$rtype'
+    ,dtype        = '$dtype'
+    ,wtype        = '$wtype'
+    ,ictype       = '$ictype'
+    ,rctype       = '$rctype'
+    ,dctype       = '$dctype'
+    ,wctype       = '$wctype'
+    ,line         = '$line'
+    ,tline        = '$tline'
+    ,total        = '$now_allno'
+    ,last_date    = '$last_date'
+    ,date2        = '$date'
+    ,send_email   = '$send_email'
+    ,send_mail    = '$send_mail'
+    ,use_face     = '$use_face'
+    ,name_type    = '$name_type'
+    ,title_len    = '$title_len'
+    ,use_file     = '$use_file'
+    ,use_model    = '$use_model'
+    ,use_brand    = '$use_brand'
+    ,body_hide    = '$body_hide'
+    ,body_icon    = '$body_icon'
+
+	where table_name='$table_name'" ;
+
+	$result=mysql_db_query($DB_CM,$query);
+
+    if(!$result&&mysql_error()=="Unknown column 'body_sign' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD body_sign TEXT NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'order_num' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD order_num TINYINT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_good' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_good ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_good3' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_good3 ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_goods' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_goods ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_xmp' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_xmp ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_convert' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_convert ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_answer' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_answer ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_answer2' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_answer2 ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_nl2br2' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_nl2br2 ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_showbody' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_showbody ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_keyword' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_keyword ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_keyword2' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_keyword2 ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'keyword_num' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD keyword_num TINYINT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_myread' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_myread ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'keyword_select1' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD keyword_select1 TEXT NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'keyword_select2' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD keyword_select2 TEXT NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_body' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_body ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_body2' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_body2 ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_color' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_color ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'member_read' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD member_read ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'include_top' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD include_top ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'include_left' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD include_left ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'include_bottom' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD include_bottom ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'member_write' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD member_write ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'tpl_list' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD tpl_list INT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'not_convert1' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD not_convert1 ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'not_convert2' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD not_convert2 ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'not_convert3' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD not_convert3 ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_list' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_list ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_words' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_words ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_background' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_background ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'template_num' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD template_num INT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'tpl_write' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD tpl_write INT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'tpl_read' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD tpl_read INT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'body_only' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD body_only ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'check_file' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD check_file ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'only_myid' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD only_myid ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'answer_time' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD answer_time ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'disp_goods' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD disp_goods ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+	if(!$result&&mysql_error()=="Unknown column 'use_del' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_del ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'send_email' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD send_email ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'send_mail' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD send_mail ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_face' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_face ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'name_type' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD name_type INT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'title_len' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD title_len INT DEFAULT '0' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_jpg' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_jpg ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_model' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_model ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'use_brand' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD use_brand ENUM('y','n') DEFAULT 'n' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'body_hide' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD body_hide ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+    if(!$result&&mysql_error()=="Unknown column 'body_icon' in 'field list'") {
+        $query2="ALTER TABLE bcfg ADD body_icon ENUM('y','n') DEFAULT 'y' NOT NULL";$result2=mysql_db_query($DB_CM,$query2);$result=mysql_db_query($DB_CM,$query);}
+
+    if (!$result) {
+		echo("UPDATE ERR Q:$query,".mysql_error()."<BR>");
+		exit;
+	}
+	else {
+		mysql_close( $connect);
+		echo("수정 되었습니다.<BR>");
+		if ($cmd2=="all") echo("<meta http-equiv='Refresh' content='1; URL=bbsadsys.htm'>");
+        else echo("<meta http-equiv='Refresh' content='0; URL=$PHP_SELF?mo=$mo&mn=$mn&club=$club&code=$code'>");
+	}
+	exit;
+  }
+
+
+  $table_name="$club"."_"."$code";
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+  if (!$result) {
+	echo $query,mysql_error();
+  }
+  if ($bcfg[bform]<1) $bcfg[bform]=1;
+  if (!$bcfg[club]) $bcfg[club]="main";
+  $bform=$bcfg[bform]-1;
+  if (!$bform||$bform<0) $bform=0;
+  if (!$bcfg[code]) $bcfg[code]=$code;
+
+$confirm="
+<table width=$width cellspacing=0 cellpadding=0 border=0>
+<tr><td align=center>
+<input type=submit value='&nbsp;  수 정 완 료 &nbsp; '>&nbsp; &nbsp;
+<input type=button value='&nbsp;  메 인 복 귀 &nbsp; ' onclick=window.open('list.htm?mn=$mn&mo=$mo&code=$code&club=$club','_self','')>
+</td></tr>
+</table>
+";
+
+echo("
+<form name='form1' action='$PHP_SELF' method=post>
+<input	type=hidden name=club value='$club'>
+<input	type=hidden name=code value='$code'>
+<input	type=hidden name=cmd value='$cmd'>
+<input  type=hidden name=mo value='$mo'>
+<input  type=hidden name=mn value='$mn'>
+<input	type=hidden name=cmd2 value='$cmd2'>
+<input	type=hidden name=mode value='update'>
+<input	type=hidden name=mode2 value='$mode2'>
+$confirm
+<table width=$width  cellspacing=0 cellpadding=0 border=0>
+<tr bgcolor=#006699>
+<td bgcolor=#113366 align=left><font color=white><b>&nbsp;&nbsp;$bcfg[name]</b></font></td>
+<td bgcolor=#113366 align=right><font color=white>DB:$DB_NAME Table:$table_name CLUB: $bcfg[club] / CODE:$bcfg[code]</font></td>
+</tr>
+</table>
+
+
+<table width=$width cellspacing=0 cellpadding=1 border=1>
+<tr>
+  <td width=10% bgcolor=#5485B6 align=center>가기코드</td>
+  <td width=90%>
+  &nbsp;&nbsp;<input type=text name=new_code value='$bcfg[code]' size=70 maxlength=30></td>
+</tr>
+<tr>
+  <td bgcolor='#5485B6' align=center>제목</td>
+  <td>
+  &nbsp;&nbsp;<input type=text value='$bcfg[name]' size=70 maxlength=100 name=name></td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>담당</td>
+  <td>
+  &nbsp;<input type=text name=new_sysop value='$bcfg[sysop]' size=20>
+  &nbsp;<input type=text name=new_sysop1 value='$bcfg[sysop1]' size=20>
+  &nbsp;<input type=text name=new_sysop2 value='$bcfg[sysop2]' size=20>
+  &nbsp;<input type=text name=new_sysop3 value='$bcfg[sysop3]' size=20>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>목록형식($bcfg[bform])</td>
+  <td>
+  &nbsp;<input type=radio name=bform value=1 >기본
+  &nbsp;<input type=radio name=bform value=2 >비공개
+  &nbsp;<input type=radio name=bform value=3 >공지
+  &nbsp;<input type=radio name=bform value=4 >찬/반대
+  &nbsp;<input type=radio name=bform value=5 >방명록
+  &nbsp;<input type=radio name=bform value=6 >참고
+  &nbsp;<input type=radio name=bform value=7 >.
+  &nbsp;<input type=radio name=bform value=8 >강좌
+  &nbsp;<input type=radio name=bform value=9 >.
+  &nbsp;<input type=radio name=bform value=10>뉴스<BR>
+  &nbsp;<input type=radio name=bform value=11>자료실
+  &nbsp;<input type=radio name=bform value=12>제목전용
+  &nbsp;<input type=radio name=bform value=13>제목전용자료
+  &nbsp;<input type=radio name=bform value=14>사진뉴스
+  &nbsp;<input type=radio name=bform value=15>링크
+  &nbsp;<input type=radio name=bform value=16>정보자료
+  &nbsp;<input type=radio name=bform value=17>앨범
+  &nbsp;<input type=radio name=bform value=18>.<BR>
+  &nbsp;<input type=radio name=bform value=19>
+  &nbsp;<input type=radio name=bform value=20>
+  &nbsp;<input type=radio name=bform value=21>전체게시판
+  &nbsp;<input type=radio name=bform value=22>전체자료실
+  &nbsp;<input type=radio name=bform value=23>
+  &nbsp;<input type=radio name=bform value=24>
+  &nbsp;<input type=radio name=bform value=25>
+  &nbsp;<input type=radio name=bform value=26>
+  &nbsp;<input type=radio name=bform value=27>
+  &nbsp;<input type=radio name=bform value=28>
+  &nbsp;<input type=radio name=bform value=29>
+  &nbsp;<input type=radio name=bform value=30><BR>
+  &nbsp;<input type=radio name=bform value=31>※고객상담
+  &nbsp;<input type=radio name=bform value=32>※상품게시판
+  &nbsp;<input type=radio name=bform value=33>※1:1게시판
+  &nbsp;<input type=radio name=bform value=34>※법률1
+  &nbsp;<input type=radio name=bform value=35>※법률2<BR>
+  &nbsp;<input type=radio name=bform value=36>
+  &nbsp;<input type=radio name=bform value=37>
+  &nbsp;<input type=radio name=bform value=38>
+  &nbsp;<input type=radio name=bform value=39>
+  &nbsp;<input type=radio name=bform value=40><BR>
+  &nbsp;<input type=radio name=bform value=41>
+  &nbsp;<input type=radio name=bform value=42>
+  &nbsp;<input type=radio name=bform value=43>
+  &nbsp;<input type=radio name=bform value=44>
+  &nbsp;<input type=radio name=bform value=45>
+  &nbsp;<input type=radio name=bform value=46>
+  &nbsp;<input type=radio name=bform value=47>
+  &nbsp;<input type=radio name=bform value=48>
+  &nbsp;<input type=radio name=bform value=49>
+  &nbsp;<input type=radio name=bform value=50>
+  &nbsp;<input type=radio name=bform value=51>비회원주문
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>목록모양</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=only_myid value='y'");if ($bcfg[only_myid]=='y') echo(" checked");echo(">본인것만보임
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_good3 value='y'");if ($bcfg[use_good3  ]=='y') echo(" checked");echo(">3번추천보이기
+  &nbsp;&nbsp;이름<INPUT TYPE=text NAME=name_type value='$bcfg[name_type]' size=2>0:이름 1:ID 2:id(이름) 3:이름(ID) 4:...<BR>
+  &nbsp;&nbsp;제목길이<INPUT TYPE=text NAME=title_len value='$bcfg[title_len]' size=2>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_words value='y'");if ($bcfg[use_words  ]=='y') echo(" checked");echo(">하단명언보이기
+  &nbsp;&nbsp;TEXT목록<input type=text name=formnum value='$bcfg[formnum]' size=3>
+  &nbsp;&nbsp;&nbsp;&nbsp;Web Line<input type=text name=line value='$bcfg[line]' size=3>
+  &nbsp;&nbsp;&nbsp;&nbsp;Text Line<input type=text name=tline value='$bcfg[tline]' size=3>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>순서($bcfg[order_num])</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=text NAME=order_num value='$bcfg[order_num]' size=2>
+  (0:pos 1:posD 2:date 3:dateD 4:id 5:name 6:title 7:keyword 8:tclub 9:tcode)
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>template</td>
+  <td>
+  &nbsp;&nbsp;목록<input type=text name=tpl_list  value='$bcfg[tpl_list]' size=3>
+  &nbsp;&nbsp;쓰기<input type=text name=tpl_write value='$bcfg[tpl_write]' size=3>
+  &nbsp;&nbsp;읽기<input type=text name=tpl_read  value='$bcfg[tpl_read]' size=3>
+  &nbsp;&nbsp;지정화면<input type=text name=template_num value='$bcfg[template_num]' size=3>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>강조모양</td>
+  <td>
+  &nbsp;&nbsp;New<input type=text value='$bcfg[num_new]'  size=3 name=num_new>H
+  &nbsp;&nbsp;Hit<input type=text value='$bcfg[num_hits]' size=3 name=num_hits>회
+  &nbsp;&nbsp;문자사용<INPUT TYPE=CHECKBOX NAME=use_char value='y'");if ($bcfg[use_char]=='y') echo(" checked");echo(">
+  &nbsp;&nbsp;색상사용<INPUT TYPE=CHECKBOX NAME=use_color value='y'");if ($bcfg[use_color]=='y') echo(" checked");echo(">
+ </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>쓰기항목</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_name     value='y'");if ($bcfg[use_name     ]=='y') echo(" checked");echo(">Name
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_email    value='y'");if ($bcfg[use_email    ]=='y') echo(" checked");echo(">Email
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_face     value='y'");if ($bcfg[use_face     ]=='y') echo(" checked");echo(">얼굴
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_keyword  value='y'");if ($bcfg[use_keyword  ]=='y') echo(" checked");echo(">키워드
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_tag      value='y'");if ($bcfg[use_tag      ]=='y') echo(" checked");echo(">Tag
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_passwd   value='y'");if ($bcfg[use_passwd   ]=='y') echo(" checked");echo(">암호
+  <BR>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_file     value='y'");if ($bcfg[use_file     ]=='y') echo(" checked");echo(">파일첨부
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_jpg      value='y'");if ($bcfg[use_jpg      ]=='y') echo(" checked");echo(">사진첨부
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_model    value='y'");if ($bcfg[use_model    ]=='y') echo(" checked");echo(">모델명
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_brand    value='y'");if ($bcfg[use_brand    ]=='y') echo(" checked");echo(">브랜드
+  <BR>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_body     value='n'");if ($bcfg[use_body     ]=='n') echo(" checked");echo(">내용감춤
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=body_hide    value='y'");if ($bcfg[body_hide    ]=='y') echo(" checked");echo(">비공개허용
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=body_icon    value='y'");if ($bcfg[body_icon    ]=='y') echo(" checked");echo(">아이콘허용
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=send_email   value='y'");if ($bcfg[send_email   ]=='y') echo(" checked");echo(">답변Email발송
+  <BR>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_goods    value='y'");if ($bcfg[use_goods    ]=='y') echo(" checked");echo(">※상품명
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=disp_goods   value='y'");if ($bcfg[disp_goods   ]=='y') echo(" checked");echo(">※상품출력
+  <BR>
+  &nbsp;&nbsp;키워드분류1<INPUT TYPE=text NAME=keyword_select1   value='$bcfg[keyword_select1]' size=70><BR>
+  &nbsp;&nbsp;키워드분류2<INPUT TYPE=text NAME=keyword_select2   value='$bcfg[keyword_select2]' size=70><BR>
+  &nbsp;&nbsp;※분류선택1<INPUT TYPE=text NAME=keyword_num  value='$bcfg[keyword_num]' size=5>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>저장시</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_convert value='y'");if ($bcfg[use_convert  ]=='y') echo(" checked");echo(">html문자변환
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=check_file value='y'");if ($bcfg[check_file ]=='y') echo(" checked");echo(">첨부필수
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=answer_time value='y'");if ($bcfg[answer_time ]=='y') echo(" checked");echo(">답변소요시간
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>화면모양</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=body_only value='y'");if ($bcfg[body_only]=='y') echo(" checked");echo(">BODY만사용
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=include_top value='n'");if ($bcfg[include_top]=='n') echo(" checked");echo(">top.htm삽입금지
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=include_left value='n'");if ($bcfg[include_left]=='n') echo(" checked");echo(">left.htm삽입금지
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=include_bottom value='y'");if ($bcfg[include_bottom]=='y') echo(" checked");echo(">bottom.htm삽입
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>쓰기첨부<BR>내용추가</td>
+  <td>
+  &nbsp;&nbsp;<TEXTAREA NAME=body_sign wrap=off ROWS=3 cols=75>$bcfg[body_sign]</TEXTAREA>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>읽기항목</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_ok		 value='y'");if ($bcfg[use_ok      ]=='y') echo(" checked");echo(">찬성/반대선택
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_showbody value='y'");if ($bcfg[use_showbody]=='y') echo(" checked");echo(">목록내용보임
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_keyword2 value='y'");if ($bcfg[use_keyword2]=='y') echo(" checked");echo(">키워드보임
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_body2    value='y'");if ($bcfg[use_body2   ]=='y') echo(" checked");echo(">내용보임
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_list     value='y'");if ($bcfg[use_list    ]=='y') echo(" checked");echo(">읽기후 목록표시<BR>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_good     value='y'");if ($bcfg[use_good    ]=='y') echo(" checked");echo(">추천/해제선택
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_answer2  value='y'");if ($bcfg[use_answer2 ]=='y') echo(" checked");echo(">답변 읽기에서보임
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_answer   value='y'");if ($bcfg[use_answer  ]=='y') echo(" checked");echo(">답변 목록에서감춤
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=send_mail    value='y'");if ($bcfg[send_mail   ]=='y') echo(" checked");echo(">회원클릭메일
+  </td>
+</tr>
+<tr>
+  <td bgcolor='#5485B6' align=center>읽기변환</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_nl2br2	 value='y'");if ($bcfg[use_nl2br2  ]=='y') echo(" checked");echo(">nl2br사용
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_xmp 	 value='y'");if ($bcfg[use_xmp     ]=='y') echo(" checked");echo(">xmp사용
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=not_convert1 value='y'");if ($bcfg[not_convert1]=='y') echo(" checked");echo(">script허용
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=not_convert2 value='y'");if ($bcfg[not_convert2]=='y') echo(" checked");echo(">applet,object허용<BR>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=not_convert3 value='y'");if ($bcfg[not_convert3]=='y') echo(" checked");echo(">xmp허용
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_background value='n'");if ($bcfg[use_background]=='n') echo(" checked");echo(">배경금지
+  </td>
+</tr>
+
+<!--
+<tr>
+  <td bgcolor='#5485B6' align=center>시스템</td>
+  <td>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_del  value='y'");if ($bcfg[use_del  ]=='y') echo(" checked");echo(">del='D'사용
+  </td>
+</tr>
+-->
+
+<tr>
+  <td bgcolor='#5485B6' align=center>암호인증</td>
+  <td>
+  &nbsp;&nbsp;읽기암호<input type=text	size=8 name=read_passwd value='$bcfg[read_passwd]'>
+  &nbsp;&nbsp;쓰기암호<input type=text	size=8 name=write_passwd value='$bcfg[write_passwd]'>
+  &nbsp;&nbsp;관리암호<input type=text	size=8 name=new_passwd value='$bcfg[passwd]'>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>등급인증</td>
+  <td>
+  &nbsp;&nbsp;진입등급<input type=text  size=3 name=itype value='$bcfg[itype]'>
+  &nbsp;&nbsp;읽기등급<input type=text  size=3 name=rtype value='$bcfg[rtype]'>
+  &nbsp;&nbsp;쓰기등급<input type=text  size=3 name=wtype value='$bcfg[wtype]'>
+  &nbsp;&nbsp;다운등급<input type=text  size=3 name=dtype value='$bcfg[dtype]'><BR>
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=member_read  value='y'");if ($bcfg[member_read] =='y') echo(" checked");echo(">회원전용읽기
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=member_write value='y'");if ($bcfg[member_write]=='y') echo(" checked");echo(">회원전용쓰기
+  &nbsp;&nbsp;<INPUT TYPE=CHECKBOX NAME=use_myread   value='y'");if ($bcfg[use_myread]=='y')   echo(" checked");echo(">본인글읽기,삭제
+");
+  if ($club!="main") echo("
+  <BR>
+  &nbsp;&nbsp;진입동호등급<input type=text	size=4 name=ictype value='$bcfg[ictype]'>
+  &nbsp;&nbsp;읽기동호등급<input type=text	size=4 name=rctype value='$bcfg[rctype]'>
+  &nbsp;&nbsp;쓰기동호등급<input type=text	size=4 name=wctype value='$bcfg[wctype]'>
+  &nbsp;&nbsp;다운동호등급<input type=text	size=4 name=dctype value='$bcfg[dctype]'>
+");
+echo("
+  </font></td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>상단메모</td>
+  <td>&nbsp;&nbsp;<TEXTAREA NAME=head wrap=off ROWS=3 cols=75>$bcfg[head]</TEXTAREA></td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>하단메모</td>
+  <td>&nbsp;&nbsp;<TEXTAREA NAME=foot wrap=off ROWS=3 cols=75>$bcfg[foot]</TEXTAREA></td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>쓰기메모</td>
+  <td>&nbsp;&nbsp;<TEXTAREA NAME=write_top wrap=off ROWS=3 cols=75>$bcfg[write_top]</TEXTAREA></td>
+</tr>
+
+</table>
+$confirm
+
+</form>
+<script>form1.bform[$bform].checked=true;</script>
+");
+
+  $query="select count(*),max(date) from $table_name" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $row=mysql_fetch_array($result);
+  $bcfg[total]=$row[0];
+  $bcfg[last_date]=$row[1];
+
+  $query="update bcfg set total='$row[0]',last_date='$row[1]' where table_name=$table_name";
+  $result=mysql_db_query($DB_CM,$query);
+
+  echo ("현재 게시물수 : $bcfg[total] 마지막:$bcfg[last_date]<BR>");
+
+if ($super_user==1235) {
+	echo ("
+	  <a href=import.htm?cmd=import&code=$code&club=$club>import(xw2)</a>
+	| <a href=import.htm?cmd=import2&code=$code&club=$club>import(xbbs)</a>
+	| <a href=import2.htm?code=$code&club=$club>import(xformat)</a>
+	| <a href=$PHP_SELF?cmd=date_order&code=$code&club=$club>날짜순정렬</a>
+	<BR>
+	  <a href=$PHP_SELF?cmd=directquery&code=$code&club=$club>query</a>
+	| <a href=$PHP_SELF?cmd=resetline&code=$code&club=$club onClick=\"return confirm('$table_name 테이블 전체 라인/페이지를 재정리 할까요?')\">line,page RESET</a>
+	| <a href=$PHP_SELF?cmd=delete_all&code=$code&club=$club onClick=\"return confirm('$table_name 테이블 전체를 삭제할까요?')\">전체자료삭제</a>
+    | <a href=$PHP_SELF?cmd=pack&code=$code&club=$club onClick=\"return confirm('$table_name 테이블의 삭제자료를 pack(완전삭제)할까요?')\">PACK</a>
+    | <a href=$PHP_SELF?cmd=delete_30&code=$code&club=$club onClick=\"return confirm('$date30 이전 자료를 전부 삭제할까요?')\">30일전삭제</a>
+    | <a href=$PHP_SELF?cmd=delete_60&code=$code&club=$club onClick=\"return confirm('$date60 이전 자료를 전부 삭제할까요?')\">60일전삭제</a>
+    <BR>
+	");
+}
+echo ("<B>※표시는 특수사이트용 기능으로 사이트에 따라 동작이 안될수도 있습니다.</B>");
+
+
+?>

@@ -1,0 +1,296 @@
+<?
+  //비회원인경우는 로그인화면바로 나온다.
+  if (!$userid||$userid=="guest") {include("login.htm");exit;}
+  include "akom.inc";
+  include "top.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+
+function check_bad($name)
+{
+	for ($i=0;$i<strlen($name);$i++) {
+		$ch=substr($name,$i,1);
+		$i2=ord($ch);
+		if ($ch=="_"||$ch=="-") continue;
+		if ($ch>="0"&&$ch<="9") continue;
+		if ($ch<"A") {echo("<script>window.alert('\" $name \" 에 금지된 문자가 사용되었습니다.');history.go(-1);</script>");exit;}
+	}
+}
+
+
+if ($cmd=="editsave") {
+	include("top.htm");
+    if ($syscmd&&$num) {
+        $query = "UPDATE user set
+                  id ='$new_id',
+                  name ='$new_name',
+                  type ='$new_type',
+                  passwd ='$passwd',
+                  post   ='$post',
+                  offi   ='$offi',
+                  addr1  ='$addr1',
+                  addr2  ='$addr2',
+                  email  ='$email',
+                  tele   ='$tele',
+                  hand   ='$hand'
+                  where num='$num' ";
+        $user[num]=$num;
+    }
+    else {
+        $query = "select * from user where id='$edit_id'";
+        if (!($result=mysql_db_query($DB_NAME,$query))) {echo mysql_error();exit;}
+        $user=mysql_fetch_array($result);
+        if (strlen($edit_id)<3||!$user) {
+         echo("<script>window.alert('사용할수 없는 ID입니다.');history.go(-1);</script>");
+         exit;
+        }
+        $query = "UPDATE user set
+                  id ='$new_id',
+                  name ='$new_name',
+                  type ='$new_type',
+                  passwd ='$passwd',
+                  post   ='$post',
+                  offi   ='$offi',
+                  addr1  ='$addr1',
+                  addr2  ='$addr2',
+                  email  ='$email',
+                  tele   ='$tele',
+                  hand   ='$hand'
+                  where id='$edit_id' ";
+     }
+     if (!($result=mysql_db_query($DB_NAME,$query))) {echo mysql_error();exit;}
+	 $user[id]=$new_id;
+	 $user[name]=$new_name;
+	 echo("
+		<BR><BR><BR><center>$user[id] ($user[name])님의<BR><BR>정보가 변경되었습니다.<br><BR>
+		<form>
+	 ");
+	 $start=$user[num]+1;
+     if ($syscmd) echo("<input type=button value=' 확인 ' onclick=window.open('sysop.htm?cmd=member&pos=now&start=$start','_top','')>");
+	 else echo("<input type=button value=' 확인 ' onclick=window.open('member.htm','_top','')>");
+	 echo("</form>");
+	 exit;
+}
+
+  if (!$edit_id) $edit_id=$userid;
+
+  $found=0;
+  if ($syscmd&&$num) $query = "select * from user where num='$num'";
+  else $query = "select * from user where id='$edit_id'";
+  if (!($result=mysql_db_query($DB_NAME,$query))) {echo mysql_error();exit;}
+  if (!$result) {
+	 echo("<script>window.alert('$edit_id ID검색실패');history.go(-1);</script>");
+	 exit;
+  }
+  $user=mysql_fetch_array($result);
+  if ($syscmd&&$num) $edit_id=$user[id];
+  if (!$syscmd&&$user[passwd]!=$edit_passwd) {
+		echo("
+		<center>
+		<BR>");
+		if ($edit_passwd&&$user[passwd]!=$edit_passwd) {
+			echo("$edit_id 님의 암호가 일치하지 않습니다.<BR>");
+		}
+		echo("
+		<BR>
+		회원정보 변경을 위해<BR><BR>
+		비밀번호를 입력해주세요.<BR><BR>
+		<form name=form1 action='$PHP_SELF' method=post>
+		<input type=hidden name=syscmd value='$syscmd'>
+		<table width=200>
+		<tr>
+		<td width=30%>
+		아이디
+		</td>
+		<td width=70%>
+		<input type=text name='edit_id' size=12 maxlength=12 value='$edit_id'>
+		</td></tr>
+		<tr>
+		<td width=30%>
+        비밀번호
+		</td>
+		<td width=70%>
+		<input type=password name='edit_passwd' size=12 maxlength=12 >
+		</td></tr>
+		</table>
+		<input type=submit value=' 확 인 '>
+		&nbsp;&nbsp;&nbsp;<input type=button value=' 취 소 ' onclick=window.open('member.htm','_top','')>
+		</form>
+		<script>document.form1.edit_passwd.focus();</script>
+	  ");
+      include("bottom.htm");
+	  exit;
+  }
+
+  echo("
+
+<script>
+  function send() {
+		 if (form1.passwd.value== '')    {alert('비밀번호를 받드시 입력해야 합니다.');form1.passwd.focus();}
+	else if (form1.passwd.value.length<3){alert('비밀번호는 3자이상입니다.');form1.passwd.focus();}
+	else if (form1.passwd.value != form1.passwd2.value) {alert('비밀번호가 일치하지 않습니다.');form1.passwd.focus();}
+	else if (form1.addr1.value=='')      {alert('주소를 기재해주세요');form1.addr2.focus();}
+	else if (form1.addr2.value=='')      {alert('주소를 기재해주세요');form1.addr2.focus();}
+	else if (form1.email.value== '')     {alert('Email 주소를 입력해주세요');form1.email.focus();}
+	else return true;
+	return false;
+  }
+  function zipopen() {
+	  var w;
+	  var cWidth  = (screen.width -450) /2 +50;
+	  var cHeight = (screen.height-100) /2 -200;
+	  w=window.open('mpost.htm','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left='+cWidth+',top='+cHeight+',width=450,height=300');
+	  w.focus();
+  }
+</script>
+
+  <center><br>
+  <table border=0 bordercolor=black cellpadding=0 cellspacing=0 width=750>
+  ");
+  if ($syscmd) echo("<form name='form1' action=$PHP_SELF method=post>");
+  else		   echo("<form name='form1' action=$PHP_SELF method=post onsubmit='return send()' >");
+  echo("
+  <input type=hidden name=cmd value='editsave'>
+  <input type=hidden name=edit_id value='$edit_id'>
+  <input type=hidden name=edit_passwd value='$edit_passwd'>
+  <input type=hidden name=num    value='$num'>
+  <input type=hidden name=syscmd value='$syscmd'>
+  <tr><td>
+
+	<table border=0 cellpadding=0 cellspacing=0 width=100%>
+	<tr bgcolor='#006699'>
+	<td colspan=2 align=center><font color=white size=3><b>회 원 정 보 수 정</b></td>
+	</tr>
+	<tr>
+	<td width=150></td><td></td>
+	</tr>
+
+	<tr>
+	<td colspan=2>&nbsp;</td>
+	</tr>
+	");
+	$readonly="readonly";
+	if ($syscmd||$userip=="211.196.212.60") {
+	  $readonly="";
+	  echo("
+	  <tr>
+	  <td><LI><b>아이디변경</td>
+	  <td><input type=text name=new_id value='$user[id]' size=12></td>
+	  </tr>
+
+	  <tr>
+	  <td><LI><b>이름변경</td>
+	  <td><input type=text name=new_name value='$user[name]' size=12></td>
+	  </tr>
+
+	  <tr>
+	  <td><LI><b>등급변경</td>
+	  <td><input type=text name=new_type value='$user[type]' size=12></td>
+	  </tr>
+	  ");
+	}
+	else echo("
+	  <tr>
+	  <td><LI><b>아이디*</td>
+	  <td><input type=text value='$user[id]' size=12 readonly></td>
+	  </tr>
+
+	  <tr>
+	  <td><LI><b>이름*</td>
+	  <td><input type=text value='$user[name]' size=12 readonly></td>
+	  </tr>
+
+	  <tr>
+	  <td><LI><b>등급*</td>
+	  <td><input type=text value='$user[type]' size=12 readonly>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*표 수정불가)</td>
+	  </tr>
+	");
+
+	echo("
+	<tr>
+	<td colspan=2>&nbsp;</td>
+	</tr>
+
+	<tr>
+	<td><LI><b>비밀번호</b></td>
+	<td>
+	<input type=password name=passwd size=20 maxlength=8 value='$user[passwd]'> (최소:4자, 최대:8자)
+	</td>
+	</tr>
+
+	<tr>
+	<td><LI><b>비밀번호확인</td>
+	<td>
+	<input type=password name=passwd2 size=20 maxlength=8 value='$user[passwd]'> (비밀번호 재확인)</td>
+	</tr>
+
+	<tr>
+	<td><LI><b>Email</td>
+	<td>
+	<input name=email size=40 value='$user[email]'></td>
+	</tr>
+
+	<tr>
+	<td colspan=2>&nbsp;</td>
+	</tr>
+
+	<tr>
+	<td><LI><b>우편번호</td>
+	<td width=450 height=25>
+	<a href='javascript:zipopen()'><b>(우편번호찾기:자동주소입력)</B></A>
+	<input name='post' type='text' value='$user[post]' SIZE=10 $readonly></td>
+	</tr>
+
+	<tr>
+	<td><LI><b>주소</td>
+	<td><a href='javascript:zipopen()'>(자동입력)</a><input type=text name=addr1 size=70 value='$user[addr1]' $readonly></td>
+	</tr>
+
+	<tr>
+	<td>&nbsp;</td>
+	<td><input type=text name=addr2 value='$user[addr2]' size=70>
+	(나머지 주소)</font>
+	</td>
+	</tr>
+
+	<tr>
+	<td><LI><b>전화번호</td>
+	<td>
+	<input type=text name=tele size=20 value='$user[tele]'> </td>
+	</tr>
+
+	<tr>
+	<td><LI><b>핸드폰</td>
+	<td>
+	<input type=text name=hand size=20 value='$user[hand]'> </td>
+	</tr>
+
+	<tr>
+	<td><LI><b>직장명</td>
+	<td>
+	<input type=text name=offi size=70 value='$user[offi]'> </td>
+	</tr>
+
+	<tr>
+	<td colspan=2 align=center>
+	<BR>
+	<input type=submit value=' 수정완료 '>
+	&nbsp;&nbsp;&nbsp;");
+	if ($syscmd) {
+		$start=$user[num]+1;
+		echo("<input type=button value=' 취 소 ' onclick=window.open('sysop.htm?start=$start','_top','')>");
+	}
+	else echo("<input type=button value=' 취 소 ' onclick=window.open('member.htm','_top','')>");
+	echo("
+	</td>
+	</tr>
+	</table>
+
+  </td>
+  </tr>
+  </form>
+  </table>
+  <script>document.form1.passwd.focus();</script>
+  ");
+  include("bottom.htm");
+?>

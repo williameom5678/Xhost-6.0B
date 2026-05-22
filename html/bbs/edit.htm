@@ -1,0 +1,493 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+  if ($sw__id=="akom"&&$userty<5)  {alert3("정식 회원만이 AKOM을 사용할수 있습니다. (ID:$userid 등급:$userty)","../index.htm");exit;}
+
+  $width1=650;   if ($bbs_width1    ) $width1=$bbs_width1;
+  $width2=650;   if ($bbs_width2    ) $width2=$bbs_width2;
+  $width3=640;   if ($bbs_width3    ) $width3=$bbs_width3;
+  $widthall=780; if ($bbs_widthall  ) $widthall=$bbs_widthall;
+  $widthleft=130;if ($bbs_widthleft ) $widthleft=$bbs_widthleft;
+  $widthbody=650;if ($bbs_widthbody ) $widthbody=$bbs_widthbody;
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+  if (!$num) exit;
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+  if ($cfg[sysop1]&&$cfg[sysop1]==$userid||$super_user==1235)   {$csuper_user=true;$userty=19;}
+  if ($super_user==1235||$csuper_user||$ctype>16||$userty>14||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop3]) {$csuper_user=true;$bsuper_user=true;$can_write=true;}
+
+  //화면 삽입
+  if ($bcfg[body_only]!='y') {
+      $now_html="게시판편집 $code";
+      if (!$define_bbstop&&$bcfg[include_top]!='n') include "../bbstop.htm";
+      else include "../css.htm";
+      if ($bcfg[include_left]!='n') {
+        echo ("<table width='$widthall' border='0' cellspacing='0' cellpadding='0'>
+        <tr>
+        <td width=$widthleft valign=top>
+        <!---- 왼쪽 메뉴 시작 --->
+        ");
+        if ($define_left) ;
+        else if ($mo=="board") include "../board/left.htm";
+        else if ($mo&&$mo!="main") include "../$mo/left.htm";
+        else if ($club&&$club!="main") include "../$club/left.htm";
+        else include "../left.htm";
+        echo ("
+        $left_str
+        <!---- 왼쪽 메뉴 끝 --->
+        </td>
+        <td width=$widthbody valign=top>
+        <!---- 오른쪽 메뉴 시작 --->
+        ");
+      }
+  }
+  else include "../css.htm";
+
+  if ($cmd=="update") {
+    if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+    $query="select * from $table_name where num=$num";
+    $result=mysql_db_query($DB_CM,$query);
+    if ($result) {
+        $row=mysql_fetch_array($result);
+        $num=$row[num];
+    }
+    if(!$row||$row[num]<1) {echo("게시판 번호 ERR");exit;}
+    if (!$row[num]) exit;
+
+    $size=strlen($body);
+    $line=0;
+    for ($i=0;$i<$size;$i++) {
+        if (ord(substr($body,$i,1))==13) $line++;
+    }
+    if ($line<1&&$size) $line=1;
+    //$title = addslashes($title);
+    //$body = addslashes($body);
+    //$mail=addslashes($mail);
+    //$home=addslashes($home);
+    //$keyword=addslashes($keyword);
+    if ($usetag!='y') {
+        if ($bcfg[use_convert]=='y') $body = htmlspecialchars($body) ;
+        if ($bcfg[use_nl2br]=='y') $body = nl2br($body);
+    }
+
+    if ($super_user==1235) $query = "
+    update $table_name set
+    id='$id',
+    name='$name',
+    passwd='$new_passwd',
+    title='$title',
+    keyword='$keyword',
+    homepage='$homepage',
+    email='$email',
+    tclub='$tclub',
+    tcode='$tcode',
+    face='$new_face',
+    date='$date',
+    date2='$date2',
+    pos='$pos',
+    depth='$depth',
+    tnum='$tnum',
+    hits='$hits',
+    down='$down',
+    tag='$usetag',
+    readopen='$readopen',
+    ok='$ok',
+    no='$no',
+    good='$good',
+    color='$color',
+    bgcolor='$bgcolor',
+    chcolor='$chcolor',
+    filename='$filename',
+    filesize='$filesize',
+    fcount='$fcount',
+    size='$size',
+    line='$line',
+    note='$note',
+    body='$body'
+    where num='$num'
+    ";
+    else $query = "
+    update $table_name set
+    passwd='$new_passwd',
+    title='$title',
+    homepage='$homepage',
+    email='$email',
+    size='$size',
+    line='$line',
+    tag='$usetag',
+    body='$body'
+    where num='$num'
+    ";
+
+    $result=mysql_db_query($DB_CM,$query);
+    //echo $query;
+    //echo("수정 Q:$query, R:$result,".mysql_error()."<BR>");
+    if (!$result) { echo $query,mysql_error();exit;}
+    echo("
+    <BR><h3> $row[num] . $row[title] 게시판 수정 완료<BR>
+    <meta http-equiv='Refresh' content='0; URL=list.htm?mn=$mn&code=$code&club=$club&page=$page&mo=$mo&field=$field&s_que=$s_que&s_ord=$s_ord'>
+    ");
+    exit;
+  }
+
+  if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+  $query="select * from $table_name where num=$num";
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) {
+      $row=mysql_fetch_array($result);
+      $num=$row[num];
+  }
+  if(!$row||$row[num]<1) {echo("게시판 번호 ERR");exit;}
+
+  if ($row[readopen]=='n') $readopen_checked="checked";
+  if ($row[tag]=='y'     ) $tag_checked="checked";
+  //echo "$readopen_checked,,$tag_checked,";
+
+  $edit_ok=false;
+
+  $error_message='암호를 입력하세요..';
+
+  if ($row[passwd]==""&&$userid!="guest"&&$userid==$row[id]) $edit_ok=true;
+  else if ($super_user==1235) $edit_ok=true;
+  else if ($csuper_user||$bsuper_user) $edit_ok=true;
+  else if ($userid!="guest"&&$userid==$row[id]) $edit_ok=true;
+  else if ($passwd) {
+     if ($row[passwd]&&$passwd!=$row[passwd]) $edit_ok=false;
+     else if ($row[passwd]&&$passwd==$row[passwd]) $edit_ok=true;
+     if(!$edit_ok) $error_message='<B>암호가 틀립니다.</B>';
+  }
+
+  if (!$edit_ok) {
+    echo("
+        <center><br><br>
+        $error_message<br>
+        <form name=edit_form action='$PHP_SELF' method=post>
+        <input type=hidden name=cmd  value=''>
+        <input type=hidden name=club value=$club>
+        <input type=hidden name=code value=$code>
+        <input type=hidden name=sysop value=$sysop>
+        <input type=hidden name=mn value=$mn>
+        <input type=hidden name=mo value=$mo>
+        <input type=hidden name=mode value=$mode>
+        <input type=hidden name=num value=$num>
+        <table width=100%  cellspacing=0 cellpadding=3 border=0>
+        <tr>
+        <td bgcolor=#113366 align=center>
+        <font color=white><B>
+        게시물 수정을 하려면 게시물등록시 입력한 암호가 필요합니다.</b>
+        </font>
+        </td>
+        </tr>
+        </table>
+        <BR>
+        <BR>
+        <BR>
+        $row[num]. $row[title]<BR><BR>
+        수정암호 : <input type=password  name=passwd size=20 maxlength=8>
+        <BR><BR>
+
+        <input type='submit' value=' 확인 ' >
+        &nbsp;&nbsp;&nbsp;
+        <input type='button' value=' 취소 ' onclick='history.go(-2)'>
+
+    </form>
+    <script>document.edit_form.passwd.focus();</script>
+    ");
+    exit;
+  }
+
+    $confirm="<table width=$width1><tr><td align=center>
+    <a href='javascript:check_submit(document.form1)'><img src=images/upload.gif border=0></a>
+    &nbsp; &nbsp;
+    <a href='javascript:history.go(-1)'><img src=images/cancel.gif border=0></a>
+    </td></tr></table>
+    ";
+
+    echo("
+    <script language='JavaScript' src='../include/iskorea.js'></script>
+    <script language='javascript'>
+    <!--
+    function check_submit(frm) {
+        if (iskorea_checkMinLength(frm.title,1,'제목이 필요합니다.\\n다시 입력하세요!') == false) return;
+        if (iskorea_checkMinLength(frm.body ,1,'내용이 없습니다.\\n다시 입력하세요!') == false) return;
+        frm.submit();
+    }
+    function findcode() {
+        var w;
+        var cWidth  = (screen.width -450) /2 +50;
+        var cHeight = (screen.height-100) /2 -200;
+        w=window.open('findcode.htm','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left='+cWidth+',top='+cHeight+',width=600,height=300');
+        w.focus();
+    }
+    function facein() {
+        var w;
+        w=window.open('facein.htm','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left=0,top=0,width=400,height=500');
+        w.focus();
+    }
+    function facein2() {
+        var w;
+        w=window.open('facein.htm?mode=2','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left=0,top=0,width=400,height=500');
+        w.focus();
+    }
+    function colorin() {
+        var w;
+        var v1=document.form1.chcolor.value;
+        var v2=document.form1.bgcolor.value;
+        w=window.open('colorin.htm?chcolor='+v1+'&bgcolor='+v2,'pop_up','menubar=0, status=1, locationbar=1,toolbar=0,scrollbars=1,resizable=1,left=0,top=0,width=400,height=500');
+        w.focus();
+    }
+    function inputbody(mode,text) {
+        if (mode==1) document.form1.body.value=document.form1.body.value+'/'+text+'/';
+        else document.form1.body.value=document.form1.body.value+text;
+    }
+    -->
+    </script>
+
+    <form name='form1' action='$PHP_SELF' method='POST'>
+    <input type=hidden name='cmd'  value='update'>
+    <input type=hidden name='code' value='$code'>
+    <input type=hidden name='mn' value='$mn'>
+    <input type=hidden name='mo' value='$mo'>
+    <input type=hidden name='field' value='$field'>
+    <input type=hidden name='s_que' value='$s_que'>
+    <input type=hidden name='page'  value='$page'>
+    <input type=hidden name='sysop' value='$sysop'>
+    <input type=hidden name='club' value='$club'>
+    <input type=hidden name='passwd' value='$passwd'>
+    <input type=hidden name='num' value=$num>
+    <table width=100%>
+    <TR><TD align=right>
+    <!--$cmd CLUB:$club CODE:$code-->
+    </td></tr>
+    </table>
+
+    <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+    <tr bgcolor='#FFB56D'><td height='3' colspan=5></td></tr>
+    <tr bgcolor='#E5E5E5'><td colspan=4 align=center><b>글 수정</b></td></tr>
+    ");
+    if ($bsuper_user||$csuper_user) echo ("
+    <tr>
+    <td width='10%' bgcolor='f4f4f4' align=center nowrap><font color=000000>등록자</td>
+    <td width='90%' bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;$row[id] $row[name] $row[userip]</td>
+    </td>
+    </tr>
+    ");
+    echo ("
+    <tr>
+    <td width='10%' bgcolor='f4f4f4' align=center nowrap><font color=000000>제목</td>
+    <td width='90%' bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;
+    <input type=text name='title' size=70 value='$row[title]' class=input1>
+    </td>
+    </tr>
+    ");
+
+    if ($bsuper_user||$csuper_user) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center nowrap><font color=000000>전자우편</td>
+    <td bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;
+    <input type=text name='email' size=40 value='$row[email]' class=input1>
+    </td>
+    </tr>
+    ");
+
+    if ($bsuper_user||$csuper_user||$bcfg[bform]==15) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center nowrap><font color=000000>홈페이지</td>
+    <td bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;
+    http:// <input type=text name='homepage' value='$row[homepage]' size=60 class=input1>
+    </td>
+    </tr>
+    ");
+
+    if ($bcfg[use_body]!='n'||$bsuper_user||$csuper_user) echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align=center nowrap><font color=000000>내 용</td>
+    <td bgcolor='ffffff'>
+    &nbsp;&nbsp;<input type=checkbox name='usetag' value='y' $tag_checked>HTML Tag사용
+    &nbsp;&nbsp;<input type=checkbox name='readopen' value='n' $readopen_checked>내용비공개
+    &nbsp;&nbsp;<a href=javascript:facein()><img src=images/facein.gif border=0></a><BR>
+    <center><textarea name='body' cols=77 rows=15 wrap=off class=input1>$row[body]</textarea>
+    </td>
+    </tr>
+    ");
+
+    if ($bsuper_user||$csuper_user||$bcfg[use_passwd]=='y') echo ("
+    <tr>
+    <td bgcolor='f4f4f4' align='center' nowrap>비밀번호</td>
+    <td bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;
+    <input type='password' name='new_passwd' size=12 maxlength=8 value='$row[passwd]' class=input1>
+    작성하신 게시물의 수정/삭제를 위해 필요합니다.
+    </td>
+    </tr>
+
+    <tr bgcolor='#E5E5E5'><td colspan=4 height=20></td></tr>
+
+    </table>
+    ");
+
+
+    if ($super_user==1235) {
+      echo("
+      $confirm
+      <BR>
+      <table width='$width1' border='0' cellspacing='0' cellpadding='0'>
+      <tr bgcolor='#FFB56D'><td height='3' colspan=5></td></tr>
+      <tr bgcolor='#E5E5E5'><td colspan=4 align=center><b>관리자 수정</b></td></tr>
+
+      <tr>
+      <td width='10%' bgcolor='f4f4f4' align=center nowrap><font color=000000>아이디</td>
+      <td width='90%' bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;<input type=text name='id' size=20 value='$row[id]' class=input1></td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td bgcolor='f4f4f4' align=center nowrap><font color=000000>이름</td>
+      <td bgcolor='ffffff'>&nbsp;&nbsp;&nbsp;<input type=text name='name' size=20 value='$row[name]' class=input1></td>
+      </tr>
+      ");
+
+      $real_filename=sprintf("$cfg_base/pds/$club/$code/%s.%x",$row[filename],$row[fcount]);
+      $real_filename_size=byte2str(filesize($real_filename));
+
+      if ($super_user==1235) echo("
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>TCODE</td>
+      <td>
+      TCLUB<input type=text name='tclub' size=15 value='$row[tclub]' class=input1>
+      &nbsp;&nbsp;&nbsp;TCODE<input type=text name='tcode' size=15 value='$row[tcode]' class=input1>
+      &nbsp;TNUM<input type=text name='tnum' size=10 value='$row[tnum]' class=input1>
+      &nbsp;POS<input type=text name='pos' size=10 value='$row[pos]' class=input1>
+      &nbsp;DEPTH<input type=text name='depth' size=10 value='$row[depth]' class=input1>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>HITS</td>
+      <td>
+      &nbsp;&nbsp;&nbsp;HIT<input type=text name='hits' size=10 value='$row[hits]' class=input1>
+      &nbsp;DOWN<input type=text name='down' size=10 value='$row[down]' class=input1>
+      &nbsp;GOOD<input type=text name='good' size=10 value='$row[good]' class=input1>
+      &nbsp;COLOR<input type=text name='color' size=10 value='$row[color]' class=input1>
+      </td>
+      </tr>
+
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>OK</td>
+      <td>
+      &nbsp;&nbsp;&nbsp;OK<input type=text name='ok' size=10 value='$row[ok]' class=input1>
+      &nbsp;&nbsp;&nbsp;NO<input type=text name='no' size=10 value='$row[no]' class=input1>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>파일명</td>
+      <td>&nbsp;&nbsp;&nbsp;
+      <input type=text name='filename' size=30 value='$row[filename]' class=input1>
+      $real_filename ($real_filename_size)
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>파일크기</td>
+      <td>&nbsp;&nbsp;&nbsp;
+      <input type=text name='filesize' size=10 value='$row[filesize]' class=input1>
+      &nbsp;FCOUNT<input type=text name='fcount' size=10 value='$row[fcount]' class=input1>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>등록일</td>
+      <td>&nbsp;&nbsp;&nbsp;
+      <input type=text name='date' size=20 value='$row[date]' class=input1>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>최종조회</td>
+      <td>&nbsp;&nbsp;&nbsp;
+      <input type=text name='date2' size=20 value='$row[date2]' class=input1>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>표현</td>
+      <td>&nbsp;&nbsp;&nbsp;
+      <input type=text name='new_face' size=10 value='$row[face]' class=input1>
+      ".sprintf(" <img src=images/face/gima%04d.gif border=0>",$row[face])."
+      &nbsp;&nbsp;<a href=javascript:facein2()><img src=images/facein.gif border=0></a>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>
+      <div id=message1>
+      <table width=100 border=0><tr><td width=100% align=center><font>제목색상</font></td></tr></table>
+      </div>
+      </td>
+      <td>&nbsp;&nbsp;&nbsp;
+      글자색<input type=text name='chcolor' size=8 value='$row[chcolor]' class=input1 onchange=re_print()>
+      배경색<input type=text name='bgcolor' size=8 value='$row[bgcolor]' class=input1 onchange=re_print()>
+      &nbsp;&nbsp;
+      <a href=javascript:colorin()><img src=images/pallet.gif border=0></a>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>키워드</td>
+      <td>&nbsp;&nbsp;&nbsp;
+      <input type=text name='keyword' size=70 value='$row[keyword]' class=input1>
+      </td>
+      </tr>
+
+      <tr bgcolor=F2FAFF>
+      <td align=center nowrap><font color=000000>노트</td>
+      <td>&nbsp;&nbsp;&nbsp;
+      <input type=text name='note' size=70 value='$row[note]' class=input1>
+      </td>
+      </tr>
+
+      <tr bgcolor='#E5E5E5'><td colspan=4 height=20></td></tr>
+
+      <script>
+      function re_print() {
+        message1.innerHTML=\"<table width=100 border=0><tr><td width=100% align=center bgcolor=\"+document.form1.bgcolor.value+\"><font color=\"+document.form1.chcolor.value+\">제목색상</font></td></tr></table>\";
+      }
+      re_print();
+      </script>
+      ");
+    }
+
+    echo("
+    $confirm
+    </form>
+    <script>
+    document.form1.title.focus();
+    </script>
+    </table>
+    ");
+
+    if ($bcfg[body_only]!='y') {
+        if ($bcfg[include_left]!='n') {
+          echo ("
+          <!---- 오른쪽 메뉴 끝 --->
+          </td>
+          </tr>
+          </table>");
+        }
+    }
+?>

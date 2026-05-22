@@ -1,0 +1,178 @@
+<?
+
+echo("
+<form method=post action=$PHP_SELF>
+<input type=hidden name=cmd value=save>
+변환 할 파일경로 : <input type=text name=list value=$list>&nbsp;&nbsp;<input type=submit value=확인>
+</form>
+");
+
+  
+   
+  
+if($cmd=="save") {
+
+  $dirhandle=opendir("/akom/akom_txtfile/논문정보/$list");
+  $filename=readdir($dirhandle);
+  $filename=readdir($dirhandle);
+
+  function xformat($file_name1)
+  {
+	  $file_name1=trim($file_name1);
+	  $file_name2=$file_name1.".out";  //결과
+	  $file_name1=$file_name1.".txt";  //소스
+	  if (file_exists($file_name2)) unlink($file_name2);
+	  $contents=file($file_name1);
+	  $n=count($contents);
+	  if ($n<1) {
+		  echo(" <script>window.alert('$file_name1 에 자료가 없습니다.');history.go(-1)</script>");
+		  exit;
+	  }
+	  $file_size=filesize($file_name1);
+	  echo(" 파일명: $file_name1 -> $file_name2  ( $file_size )\n");
+	  $ii=0;
+	  $now=0;
+	  $str1="";$str2="";$str3="";$str4="";$str5="";
+	  $str6="";$str7="";$str8="";$str9="";$str10="";
+	  $str11="";$str12="";$str13="";$str14="";$str15="";
+	  $str16="";$str18="";$str18="";
+	  for ($i=0;$i<$n;$i++) {
+		  $line=chop($contents[$i]);
+		  //echo $now,$line,"\n";
+		  if ($now==0&&substr($line,0,2)=="1.") {
+			  $str1=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==1&&substr($line,0,2)=="2.") {
+			  $str2=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==2&&substr($line,0,2)=="3.") {
+			  $str3=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==3&&substr($line,0,2)=="4.") {
+			  $str4=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==4&&substr($line,0,2)=="5.") {
+			  $str5=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==5&&substr($line,0,2)=="6.") {
+			  $str6=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==6&&substr($line,0,2)=="7.") {
+			  $str7=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==7&&substr($line,0,2)=="8.") {
+			  $str8=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==8&&substr($line,0,2)=="9.") {
+			  $str9=substr($line,3);
+			  $now++;
+		  }
+		  else if ($now==9&&substr($line,0,3)=="10.") {
+			  $str10=substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==10&&substr($line,0,3)!="11.") {  //10에서 계속이어짐
+			  $str10.=" ".trim($line);
+		  }
+		  else if ($now==10&&substr($line,0,3)=="11.") {
+			  $str11=substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==11&&substr($line,0,3)!="12.") {  //11에서 계속이어짐
+			  $str11.=" ".trim($line);
+		  }
+		  else if ($now==11&&substr($line,0,3)=="12.") {
+			  $str12=substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==12&&substr($line,0,3)=="13.") {
+			  $str13=substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==13&&substr($line,0,3)=="14.") {
+			  $str14=substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==14&&substr($line,0,3)=="15.") {
+			  $str15=substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==15&&substr($line,0,3)=="16.") {
+			  $str16=substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==16&&substr($line,0,3)=="17.") {
+			  $str17.="\n".substr($line,4);
+			  $now++;
+		  }
+		  else if ($now==17&&substr($line,0,3)!="18.") {
+			  $str17.="\n".trim($line);        //내용더함
+		  }
+		  else if ($now==17&&substr($line,0,3)=="18.") {  //종료
+			  $str18=substr($line,4);
+			  $now=0;
+			  $ii++;
+			  $fp2=fopen($file_name2,"a+");
+			  $buff="
+__[[아디[[master
+__[[이름[[관리자
+__[[문01[[$str1
+__[[문02[[$str2
+__[[문03[[$str3
+__[[문04[[$str4
+__[[문05[[$str5
+__[[문06[[$str6
+__[[문07[[$str7
+__[[문08[[$str8
+__[[문09[[$str9
+__[[문10[[$str10
+__[[문11[[$str11
+__[[문12[[$str12
+__[[문13[[$str13
+__[[문14[[$str14
+__[[문15[[$str15
+__[[문16[[$str16
+__[[문18[[$str18
+__[[내용[[$str17
+__[[완료[[	$ii ($file_name2);
+  ";
+			  fputs($fp2,$buff);
+			  fclose($fp2);
+			  echo "<HR>",$buff,"<BR>";
+			  $str1="";$str2="";$str3="";$str4="";$str5="";
+			  $str6="";$str7="";$str8="";$str9="";$str10="";
+			  $str11="";$str12="";$str13="";$str14="";$str15="";
+			  $str16="";$str17="";$str18="";
+		  }
+		  else if (substr($line,0,2)=="1.") {  //오류
+			  echo ("$file_name1 의 $i 번째 라인 오류<BR>");
+			  exit;
+		  }
+	  }
+  }
+
+
+  while($filename = readdir($dirhandle)) {
+	$filen=substr($filename,0,-4);
+	//AKOM 판례 정보 DB를 XFORMAT으로 변환
+	echo "<pre>";
+	xformat("akom_txtfile/논문정보/$list/$filen  ");
+	echo("akom_textfile/논문정보/$list $filen<br>");
+  }
+
+  closedir($dirhandle);
+}  
+   
+   
+   
+
+
+?>

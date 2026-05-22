@@ -1,0 +1,141 @@
+<?
+  include "../db.htm";
+  include "../ut.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+
+  if (!$userid) $userid="guest";
+  $table_name="$club"."_"."$code";
+  $filename="";
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  if ($club!="main") {
+	$query="select * from ccfg where club='$club'" ;
+    $result=mysql_db_query($DB_CM,$query);
+	if ($result) $ccfg=mysql_fetch_array($result);
+  }
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+
+  if ($club!="main") {
+	if ($bcfg[dctype]>0&&$bcfg[dctype]>$ctype) {echo ("<script>window.alert('동호등급 $bcfg[dctype] 이상 다운가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[dctype]>0&&$ccfg[dctype]>$ctype) {echo ("<script>window.alert('동호등급 $ccfg[dctype] 이상 다운가능 (현재:$ctype)' );history.go(-1)</script>");exit;}
+	if ($ccfg[dtype]>0&&$ccfg[dtype]>$userty)  {echo ("<script>window.alert('메인등급 $ccfg[dtype]  이상 다운가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  }
+
+  if ($bcfg[dtype]>0&&$bcfg[dtype]>$userty)    {echo ("<script>window.alert('메인등급 $bcfg[dtype]  이상 다운가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  if ($cfg[dtype]>0&&$cfg[dtype]>$userty)	   {echo ("<script>window.alert('메인등급 $cfg[dtype]   이상 다운가능 (현재:$userty)');history.go(-1)</script>");exit;}
+
+  //조회수 확인
+  if ($userid!=$row[id]) {
+	  $found=false;
+      if (!is_dir("$cfg_base/user")) mkdir("$cfg_base/user",0777);
+      if (!is_dir("$cfg_base/user/rec")) mkdir("$cfg_base/user/rec",0777);
+      $filename = "$cfg_base/user/rec/down_tag_$club.txt";
+	  $tag_str="$userid,$code,$num\n";
+	  $aread_tag=file($filename);
+	  for ($i=0;$i<500;$i++) {
+	//	  echo("$i,$tag_str,$aread_tag[$i],<BR>");
+		if ($tag_str==$aread_tag[$i]) {
+			$found=true;
+			break;
+		}
+	  }
+	  if (!$found) {
+		  $aread_tag[$i]=$tag_str;
+		  if (($fd = fopen( $filename, "w" ))==NULL) {
+              mkdir("$cfg_base/user/rec/",0777);
+			  $fd = fopen( $filename, "w" );
+		  }
+		  for ($i=0;$i<499;$i++) {
+			fputs($fd,$aread_tag[$i+1]);
+		  }
+		  fputs($fd,$tag_str);
+		  fclose( $fd );
+		  //============ 조회수 1 증가 =============
+		  $query="update $table_name set down=down+1 where num=$num";
+          $result=mysql_db_query($DB_CM,$query);
+	  }
+  }
+
+  if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+  $query="select * from $table_name where num=$num and del!='D' ";
+  $result=mysql_db_query($DB_CM,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+  $row=mysql_fetch_array($result);
+  $num=$row[num];
+  $tclub=$club;
+  $tcode=$code;
+  if ($code=="__backup"||$code=="__delete") {
+	$tcode=$row[tcode];
+	$tclub=$row[tclub];
+  }
+  $extend=get_extend($row[filename]);
+  /*
+  if ($extend==".php"||$extend==".htm"||$extend==".html"||$extend==".php3"||
+      $extend==".cgi"||$extend==".asp"||$extend==".inc"||$extend==".java") {
+      echo ("<script>window.alert('이 파일확장자($extend)는 다운받을수 없습니다.');self.close();</script>");
+  }
+  */
+
+  if (!filetype("tmp/$userid")&&!@mkdir("tmp/$userid",0777)) {
+	echo("tmp 디렉토리 생성오류");
+	exit;
+  }
+
+  $filename=sprintf("$cfg_base/pds/$tclub/$tcode/%s.%x",$row[filename],$row[fcount]);
+  if (!file_exists($filename)) $filename=sprintf("$cfg_base/pds/$tclub/$tcode/%s",$row[filename]);
+
+  $filename=trim($filename);
+  $ori_filename=$filename;
+  $down_filename ="$row[filename]";
+
+  if (!$row[filename]||!file_exists($ori_filename)) {
+      echo("<BR><BR><h3><center>파일이 없습니다.<BR>($ori_filename)<BR>
+	  <input type=button value=' 창 닫 기 ' onclick='self.close()'>
+	  ");
+	  exit;
+  }
+
+  $encode_file = urlencode($down_filename);
+  //echo "$filename,$ori_filename,$down_filename,$encode_file";exit;
+
+  if(strstr($HTTP_USER_AGENT, "MSIE 6.")) {
+    header("Content-disposition: filename=$encode_file");  //코딩된 문자열
+    header("Content-type: application/octetstream");
+    header("Content-Disposition: inline; filename=$encode_filename");
+    header("Content-Length: ".filesize($ori_filename));
+    header("Pragma: no-cache");
+    header("Expires: 0");
+  }
+  elseif(strstr($HTTP_USER_AGENT, "MSIE 5.5")) {
+    header("Content-disposition: filename=$down_filename");  //원래 파일이름
+    header("Content-type: application/octetstream");
+    header("Content-Disposition: inline; filename=$down_filename");
+    header("Content-Length: ".filesize($ori_filename));
+    header("Pragma: no-cache");
+    header("Expires: 0");
+  }
+  else {
+    header("Content-type: file/unknown");
+    header("Content-Disposition: attachment; filename=$down_filename");
+    header("Content-Description: PHP3 Generated Data");
+    header("Content-Disposition: inline; filename=$down_filename");
+    header("Content-Length: ".filesize($ori_filename));
+    header("Pragma: no-cache");
+    header("Expires: 0");
+  }
+
+  if (is_file("$ori_filename")) {
+    $fp = fopen("$ori_filename", "r");
+    if (!fpassthru($fp)) fclose($fp);
+  }
+?>

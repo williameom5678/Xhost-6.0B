@@ -1,0 +1,310 @@
+<?
+class FastTemplate {
+	var $FILELIST	=	array();
+	var $DYNAMIC	=	array();
+	var $PARSEVARS	=	array();	
+	var $LOADED		=	array();	
+	var $HANDLE		=	array();	
+	var $ROOT		=	"";			
+	var $ERROR		=	"";		
+	var $LAST		=	"";		
+	var $STRICT		=	false;		
+//	************************************************************
+
+	function FastTemplate ($pathToTemplates = "")
+	{
+		global $php_errormsg;
+
+		if(!empty($pathToTemplates))
+		{
+			$this->set_root($pathToTemplates);
+		}
+
+	}	// end (new) FastTemplate ()
+
+
+	function set_root ($root)
+	{
+		$trailer = substr($root,-1);
+
+			if( (ord($trailer)) != 47 )
+			{
+				$root = "$root". chr(47);
+			}
+
+			if(is_dir($root))
+			{
+				$this->ROOT = $root;
+			}
+			else
+			{
+				$this->ROOT = "";
+				$this->error("Specified ROOT dir [$root] is not a directory");
+			}
+
+	}	
+
+
+	function strict ()
+	{
+		$this->STRICT = true;
+	}
+
+
+	function no_strict ()
+	{
+		$this->STRICT = false;
+	}
+
+	function get_template ($template)
+	{
+		if(empty($this->ROOT))
+		{
+			$this->error("Cannot open template. Root not valid.",1);
+			return false;
+		}
+
+		$filename	=	"$this->ROOT"."$template";
+
+		$contents = implode("",(@file($filename)));
+		if( (!$contents) or (empty($contents)) )
+		{
+			$this->error("get_template() failure: [$filename] $php_errormsg",1);
+		}
+
+		return $contents;
+
+	} // end get_template
+
+	
+
+	function parse_template ($template, $tpl_array)
+	{
+		while ( list ($key,$val) = each ($tpl_array) )
+		{
+			if (!(empty($key)))
+			{
+				if(gettype($val) != "string")
+				{
+					settype($val,"string");
+				}
+
+				$get_key = "{".$key."}";
+				$template = str_replace($get_key,"$val","$template");
+			}
+		}
+
+		if(!$this->STRICT)
+		{
+
+			$template = ereg_replace("\{([A-Z0-9_]+)}","",$template);
+		}
+		else
+		{
+			if (ereg("(\{[A-Z0-9_]+})",$template))
+			{
+				$unknown = split("\n",$template);
+				while (list ($Element,$Line) = each($unknown) )
+				{
+					$UnkVar = $Line;
+
+				}
+			}
+		}
+		return $template;
+
+	}	// end parse_template();
+
+
+	function parse ( $ReturnVar, $FileTags )
+	{
+		$append = false;
+		$this->LAST = $ReturnVar;
+		$this->HANDLE[$ReturnVar] = 1;
+
+		if (gettype($FileTags) == "array")
+		{
+			unset($this->$ReturnVar);	// Clear any previous data
+
+			while ( list ( $key , $val ) = each ( $FileTags ) )
+			{
+				if ( (!isset($this->$val)) || (empty($this->$val)) )
+				{
+					$this->LOADED["$val"] = 1;
+					if(isset($this->DYNAMIC["$val"]))
+					{
+						$this->parse_dynamic($val,$ReturnVar);
+					}
+					else
+					{
+						$fileName = $this->FILELIST["$val"];
+						$this->$val = $this->get_template($fileName);
+					}
+				}
+
+
+				$this->$ReturnVar = $this->parse_template($this->$val,$this->PARSEVARS);
+
+
+				$this->assign( array( $ReturnVar => $this->$ReturnVar ) );
+
+			}
+		}	// end if FileTags is array()
+		else
+		{
+			// FileTags is not an array
+
+			$val = $FileTags;
+
+			if( (substr($val,0,1)) == '.' )
+			{
+				// Append this template to a previous ReturnVar
+
+				$append = true;
+				$val = substr($val,1);
+			}
+
+			if ( (!isset($this->$val)) || (empty($this->$val)) )
+			{
+					$this->LOADED["$val"] = 1;
+					if(isset($this->DYNAMIC["$val"]))
+					{
+						$this->parse_dynamic($val,$ReturnVar);
+					}
+					else
+					{
+						$fileName = $this->FILELIST["$val"];
+						$this->$val = $this->get_template($fileName);
+					}
+			}
+
+			if($append)
+			{
+				$this->$ReturnVar .= $this->parse_template($this->$val,$this->PARSEVARS);
+			}
+			else
+			{
+				$this->$ReturnVar = $this->parse_template($this->$val,$this->PARSEVARS);
+			}
+
+			//	For recursive calls.
+
+			$this->assign(array( $ReturnVar => $this->$ReturnVar) );
+
+		}
+		return;
+	}	//	End parse()
+
+
+//	************************************************************
+
+	function FastPrint ( $template = "" )
+	{
+		if(empty($template))
+		{
+			$template = $this->LAST;
+		}
+
+		if( (!(isset($this->$template))) || (empty($this->$template)) )
+		{
+			$this->error("Nothing parsed, nothing printed",0);
+			return;
+		}
+		else
+		{
+			print $this->$template;
+		}
+		return;
+	}
+
+//	************************************************************
+
+	function fetch ( $template = "" )
+	{
+		if(empty($template))
+		{
+			$template = $this->LAST;
+		}
+		if( (!(isset($this->$template))) || (empty($this->$template)) )
+		{
+			$this->error("Nothing parsed, nothing printed",0);
+			return "";
+		}
+
+		return($this->$template);
+	}
+
+
+//	************************************************************
+
+	function define ($fileList)
+	{
+		while ( list ($FileTag,$FileName) = each ($fileList) )
+		{
+			$this->FILELIST["$FileTag"] = $FileName;
+		}
+		return true;
+	}
+
+
+
+//	************************************************************
+
+	function assign ($tpl_array, $trailer="")
+	{
+		if(gettype($tpl_array) == "array")
+		{
+			while ( list ($key,$val) = each ($tpl_array) )
+			{
+				if (!(empty($key)))
+				{
+
+
+					$this->PARSEVARS["$key"] = $val;
+				}
+			}
+		}
+		else
+		{
+			// Empty values are allowed in non-array context now.
+			if (!empty($tpl_array))
+			{
+				$this->PARSEVARS["$tpl_array"] = $trailer;
+			}
+		}
+	}
+
+
+
+	function get_assigned($tpl_name = "")
+	{
+		if(empty($tpl_name)) { return false; }
+		if(isset($this->PARSEVARS["$tpl_name"]))
+		{
+			return ($this->PARSEVARS["$tpl_name"]);
+		}
+		else
+		{
+			return false;
+        }
+	}
+
+//	************************************************************
+
+	function error ($errorMsg, $die = 0)
+	{
+		$this->ERROR = $errorMsg;
+		echo "ERROR: $this->ERROR <BR> \n";
+		if ($die == 1)
+		{
+			exit;
+		}
+
+		return;
+
+	} // end error()
+
+
+} 
+
+?>

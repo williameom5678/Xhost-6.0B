@@ -1,0 +1,365 @@
+<?
+  include "db.htm";
+  include "ut.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!$userid) {echo("로그인필요");exit;}
+  if (!$club) $club="main";
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  function make_mail($id)
+  {
+      global $DB_NAME,$DB_USER,$DB_MAIL,$DB_PASS,$connect;
+      $filename=$id."__.tmp";
+
+	  $pResult = mysql_query( "show variables" );
+	  while( 1 ) {
+		  $rowArray = mysql_fetch_row( $pResult );
+		  if( $rowArray == false ) break;
+		  if( $rowArray[0] == "basedir" )
+			  $bindir = $rowArray[1]."bin/";
+	  }
+      @exec( $bindir."mysqldump -d --user=$DB_NAME $DB_NAME def_bbs > $filename" );
+
+      $table_name="mail".$id;
+	  if (($fp=fopen($filename,"r+"))==NULL) return;
+	  $start=false;
+	  $count=0;
+      $query="create table $table_name (";
+
+	  while ($buff = fgets($fp, 4096)) {
+		  $buff=ereg_replace("\n","",$buff);
+		  if (substr($buff,0,13)=="CREATE TABLE ") $start=true;
+		  else if ($start) {
+			  $query=$query.$buff;
+			  $count++;
+		  }
+	  }
+	  fclose($fp);
+	  if ($count>0) {
+          $result=mysql_db_query($DB_MAIL,$query);
+		  if (!$result) echo("$query<BR>".mysql_error()."<BR>");
+	  }
+	  unlink($filename);
+  }
+/*
+  function is_good_filename($filename) {
+	 $extend=strtolower(substr($filename,-4));
+	 if ($extend==".php"||$extend==".htm"||$extend=="html"||$extend=="php3"||
+		 $extend==".cgi"||$extend==".asp"||$extend==".inc"||$extend=="java") {
+		 echo ("<script>window.alert('이 파일확장자는 등록할수 없습니다.');history.go(-1);</script>");
+		 return 0;
+	 }
+	 if ( strstr($filename,"\..")||strstr($filename,"\|")||strstr($filename,"\&")||
+		  strstr($filename,"\;")||strstr($filename,"\/")||strstr($filename,"\\")||
+		  strstr($filename,"\'")||strstr($filename,"\"")) {
+		  echo ("<script>window.alert('다른 파일명을 선택하세요');history.go(-1);</script>");
+		  return 0;
+	 }
+	 return 1;
+  }
+*/
+  $table_name="mail".$userid;
+  if (!$mailcmd) $mailcmd="mail";
+
+if(!$cmd||$cmd=="write"||$cmd=="re"||$cmd=="rebbs") {
+  if ($cmd=="re") {
+	$query="select * from $table_name where num=$num";
+	$result=mysql_db_query($DB_MAIL,$query);
+	$row=mysql_fetch_array($result);
+	$title="[답변] ".$row[title];
+  }
+  if ($cmd=="rebbs") {
+	$table_name2="$club"."_"."$code";
+	$query="select * from $table_name2 where num=$num";
+	$result2=mysql_db_query($DB_CM,$query);
+    if (!$result2) {echo $query,mysql_error();exit;}
+	$row=mysql_fetch_array($result2);
+	$title="[답변] ".$row[title];
+  }
+
+  echo("
+      <link rel='stylesheet' type='text/css' href='font.css'>
+      <table border='0' width='626'>
+      <tr><td align='center'>
+	<form name='form1' ENCTYPE='multipart/form-data' action='$PHP_SELF' method='POST'>
+	<input type=hidden name='cmd'  value='up'>
+	<input type=hidden name='code' value='$code'>
+	<input type=hidden name='club' value='$club'>
+	<table width=100% bgcolor=CAC5A2 cellspacing=1 cellpadding=2 border=0>
+	<tr bgcolor=107cb3>
+	<td align=center bgcolor=7d6433 colspan=2><font color=ffffff>편지쓰기</font></td>
+	</tr>
+
+	<tr bgcolor=e3e3bf>
+	<td align=center width='180'><font color=000000>받는사람</td>
+	<td>&nbsp;&nbsp;
+	<input type=text name='toid' size=70 maxlength=70 value='$toid'>
+	</td>
+	</tr>
+
+	<tr bgcolor=e3e3bf>
+	<td align=center align='180'><font color=000000>제목</td>
+	<td>&nbsp;&nbsp;
+	<input type=text name='title' size=70 maxlength=70 value='$title'>
+	</td>
+	</tr>
+
+	<tr bgcolor=e3e3bf>
+	<td align=center align='180'><font color=000000>보내는사람</td>
+	<td>&nbsp;&nbsp;
+	<input type=text name='fromid' size=70 maxlength=70 value='$userid ( $userna )' readonly>
+	</td>
+	</tr>
+
+	<tr bgcolor=e3e3bf>
+	<td align=center align='180'><font color=000000>내 용</td>
+	<td>&nbsp;&nbsp;
+	<input type=checkbox name='usetag' value='Y'> HTML Tag 사용<BR>
+	&nbsp;&nbsp;
+	<textarea name='body' cols=70 rows=13 wrap=off></textarea>
+	</td>
+	</tr>
+	<tr bgcolor=e3e3bf>
+	<td align=center align='180'>첨부파일</td>
+	<td>&nbsp;&nbsp;
+	<input type=file name='up_file' size=50></td>
+	</tr>
+
+	<tr bgcolor=7d6433>
+	<td height=40 colspan=2 align=center>
+	<input type='submit' value='&nbsp;메일 전송&nbsp;'>
+	&nbsp;&nbsp;&nbsp;&nbsp;
+	<input type='button' value='&nbsp;취&nbsp;&nbsp;소&nbsp;' onclick='history.go(-1)'>
+	</td>
+	</tr>
+
+	</table>
+	</form>
+      </td></tr>
+      </table>
+
+  <script>form1.title.focus();</scropt>
+ ");
+	mysql_close();
+	exit;
+}
+
+if($cmd=="up") {
+	$err_msg="";
+	if(!$toid  ) $err_msg='받는사람을 입력해 주세요.';
+	if(!$title ) $err_msg='제목을 입력해 주세요.';
+	if(!$body  ) $err_msg='내용을 입력해 주세요.';
+	if(strlen($err_msg)>0) {echo(" <script>window.alert('$err_msg');history.go(-1)</script>"); exit; }
+	if(!$usetag) {
+	  $body = htmlspecialchars($body) ;
+//		$body = nl2br($body);
+	}
+	//받는사람 찾아보기
+	$query = "select * from user where id='$toid'";
+	$result2=mysql_db_query($DB_NAME,$query);
+	$touser=mysql_fetch_array($result2);
+	if (!$touser[id]) {
+	   echo("<script>window.alert('\"$toid\" 님은 가입되어 있지 않습니다.');history.go(-1)</script>");exit;
+	}
+
+	$tnum=0;
+	$line=$del=$tag=$tag2=0;
+	$hits=$down=$ok=$no=$good=$color=0;
+	$date1=date("Y-m-d H:i:s");$date2='0';
+	$filesize=0;
+	$fcount=0;
+	$filename = $up_file_name;
+	$filename = ereg_replace(" ","",$filename);
+
+    if ($up_file&&$filename&&!file_exists($up_file)) {
+        echo " $up_file이 없습니다. - 퍼미션확인<br>\n";
+    }
+    else if ($up_file&&$filename) {  //파일명있을때
+        $filesize=filesize($up_file);
+		if (!is_good_filename($up_file)) exit;
+		srand((double)microtime()*1000000);
+		$fcount=rand();
+		$dest=sprintf("$cfg[basedir]/mailbin/%s.%x",$filename,$fcount);
+		while(file_exists($dest)) {
+			$fcount=rand();
+			$dest=sprintf("$cfg[basedir]/mailbin/%s.%x",$filename,$fcount);
+		}
+        if(@exec("cp -f $up_file $dest")!=0) {
+			echo " $dest 를 만들수 없습니다. - 퍼미션확인<br>\n";
+		}
+        //echo(",$filesize,$dest,$up_file,");exit;
+		unlink($up_file);
+	}
+	//	  echo(",$up_file,$dest,$filesize");exit;
+	$row[title]=eregi_replace("<","&lt;",$row[title]);
+	$row[title]=eregi_replace(">","&gt;",$row[title]);
+	$row[mail]=eregi_replace("<","",$row[mail]);
+	$row[homepage]=eregi_replace("<","",$row[homepage]);
+
+	if (!mysql_select_db("$DB_MAIL",$connect)) {echo('db select error');exit;}
+
+	$size=strlen($body);
+	$line=0;
+	for ($i=0;$i<$size;$i++) {
+		if (ord(substr($body,$i,1))==13) $line++;
+	}
+	if ($line<1&&$size) $line=1;
+
+	//받는사람 저장
+	$table_name="mail".$toid;
+	$query="select max(pos) from $table_name";
+	$result=mysql_db_query($DB_MAIL,$query);
+	$row=mysql_fetch_array($result);
+	$newpos=$row[0]+1;
+	$depth=0;
+
+
+	$tcode='mail';
+    $query1 = "
+	insert into $table_name (
+	id,tid,name,
+	pos,depth,
+	title,keyword,tcode,
+	date,date2,homepage,
+	email,userip,filename,
+	fcount,filesize,size,line,
+	hits,down,ok,no,good,
+	del,color,tag,tag2,
+	body
+	)
+	values (
+	'$userid','$toid','$userna',
+	'$newpos','$depth',
+	'$title','$keyword','$tcode',
+	'$date1','$date2','$homepage',
+	'$email','$userip','$filename',
+	'$fcount','$filesize','$size','$line',
+	'$hits','$down','$ok','$no','$good',
+	'$del','$color','$tag','$tag2',
+	'$body'
+	);";
+    $result=mysql_db_query($DB_MAIL,$query1);
+	if (mysql_errno()==1146) {	//회원DB없다
+        make_mail($toid);
+        $result=mysql_db_query($DB_MAIL,$query1);
+	}
+//    echo("Q:$query1, R:$result,<BR>");
+	if(!$result) {
+		echo mysql_error();
+		echo("<script>window.alert('입력중 오류발생');history.go(-1)</script>");
+		exit;
+	}
+
+
+	$tcode='send';
+	$table_name="mail".$userid;
+	$query="select max(pos) from $table_name";
+	$result=mysql_db_query($DB_MAIL,$query);
+	$row=mysql_fetch_array($result);
+	$newpos=$row[0]+1;
+	$depth=0;
+
+    $query2 = "
+	insert into $table_name (
+	id,tid,name,
+	pos,depth,
+	title,keyword,tcode,
+	date,date2,homepage,
+	email,userip,filename,
+	fcount,filesize,size,line,
+	hits,down,ok,no,good,
+	del,color,tag,tag2,
+	body
+	)
+	values (
+	'$touser[id]','$userid','$touser[name]',
+	'$newpos','$depth',
+	'$title','$keyword','$tcode',
+	'$date1','$date2','$homepage',
+	'$email','$userip','$filename',
+	'$fcount','$filesize','$size','$line',
+	'$hits','$down','$ok','$no','$good',
+	'$del','$color','$tag','$tag2',
+	'$body'
+	);";
+
+    $result=mysql_db_query($DB_MAIL,$query2);
+//    echo("Q:$query, R:$result,<BR>");
+	if($result) {
+        $bbsnum=mysql_insert_id();
+        $filename="$cfg[basedir]/mail_back/$userid.$bbsnum";
+        if (($fp=fopen($filename,"w"))==NULL) {
+            echo("$temp_dir Write ERR");
+        }
+        else {
+            fwrite($fp,$query2);
+            fclose($fp);
+        }
+        mysql_close();
+        //echo("$query1,$query2");exit;
+        echo("
+		<center><BR><BR>메일이 등록되었습니다.<BR>
+        <meta http-equiv='Refresh' content='1; URL=mail.htm?mailcmd=send'>
+		");
+	}
+	else {
+		echo mysql_error();
+        mysql_close();
+		echo("<script>window.alert('입력중 오류발생');history.go(-1)</script>");
+		exit;
+	}
+    exit;
+}
+
+
+  if ($cmd=="delete") {
+	$tnum=0;
+	$line=$del=$tag=$tag2=0;
+	$hits=$down=$ok=$no=$good=$color=0;
+	$date1=date("Y-m-d H:i:s");$date2='0';
+	$filesize=0;
+	$fcount=0;
+
+	$table_name="mail".$userid;
+	if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+
+	if ($mailcmd=="delete") $query="delete from $table_name where num=$num " ;
+	else $query="update $table_name set tcode='delete' where num=$num";
+
+	$result=mysql_db_query($DB_MAIL,$query);
+	echo("
+	<center><BR><BR>메일이 삭제되었습니다.<BR>
+	<meta http-equiv='Refresh' content='1; URL=mail.htm?mailcmd=$mailcmd&code=$code&club=$club&now_page=$now_page&now_topno=$now_topno&now_botno=$now_botno&now_allno=$now_allno'>
+	");
+	mysql_close();
+	exit;
+  }
+
+  if ($cmd=="save") {
+	$tnum=0;
+	$line=$del=$tag=$tag2=0;
+	$hits=$down=$ok=$no=$good=$color=0;
+	$date1=date("Y-m-d H:i:s");$date2='0';
+	$filesize=0;
+	$fcount=0;
+
+	$table_name="mail".$userid;
+	if(!$num||$num<1) {echo("게시판 번호 ERR");exit;}
+
+	if ($mailcmd!="save") {
+	  $query="update $table_name set tcode='save' where num=$num";
+	  $result=mysql_db_query($DB_MAIL,$query);
+	}
+	echo("
+	<center><BR><BR>메일이 보관되었습니다.<BR>
+	<meta http-equiv='Refresh' content='1; URL=mail.htm?mailcmd=$mailcmd&code=$code&club=$club&now_page=$now_page&now_topno=$now_topno&now_botno=$now_botno&now_allno=$now_allno'>
+	");
+	mysql_close();
+	exit;
+  }
+
+?>

@@ -1,0 +1,189 @@
+<?
+  include "db.htm";
+  if (!$club) $club="main";
+  include "ut.htm";
+  if (!$userid||$userid=="guest"||$userty<5)  {echo("<meta http-equiv='refresh' content='0; url=index.htm'>");exit;}
+
+  if (!$club) $club=$oldclub;
+  if (!$oldclub) $oldclub=$club;
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+  $ccfg=mysql_fetch_array($result);
+
+       if ($super_user);
+  else if ($userty>=19);
+  else if ($ctype>=18);
+  else if (strlen($scfg.sysop)>1&&$userid==$ccfg[sysop]);
+  else {
+    echo ("<script>window.alert('$club 동호회 관리메뉴 사용등급이 아닙니다.');history.go(-1)</script>");exit;
+  }
+
+//	echo("$result,$ccfg,$ccfg[club],$oldclub,");
+  if (!$result||!$ccfg||$ccfg[club]!=$oldclub) {
+	  $query2="insert into ccfg (club,name) values ('$club','$name')";
+      $result=mysql_db_query($DB_CM,$query2);
+      if (!$result) {echo $query2,mysql_error();exit;}
+  }
+
+
+  if ($cmd=="cfgup") {
+	$date=date("Y-m-d H:i:s");
+	$now_allno=0;
+
+	$query="update ccfg set
+	club		 = '$club',
+	sysop		 = '$sysop',
+	passwd		 = '$passwd',
+	enterp		 = '$enterp',
+	name		 = '$name',
+	date		 = '$date',
+	memo1		 = '$memo1',
+	memo2		 = '$memo2',
+	memo3		 = '$memo3',
+	memo4		 = '$memo4',
+	memo5		 = '$memo5',
+	itype		 = '$itype',
+	dtype		 = '$dtype',
+	rtype		 = '$rtype',
+	wtype		 = '$wtype',
+	ictype		 = '$ictype',
+	dctype		 = '$dctype',
+	rctype		 = '$rctype',
+	wctype		 = '$wctype',
+	disp_memo1	 = '$disp_memo1',
+	disp_memo2	 = '$disp_memo2',
+	disp_memo3	 = '$disp_memo3',
+	disp_memo4	 = '$disp_memo4',
+	disp_memo5	 = '$disp_memo5',
+	autoguest	 = '$autoguest',
+	guesttype	 = '$guesttype',
+    club_help    = '$club_help',
+	intro		 = '$intro',
+	guestok 	 = '$guestok'
+	where club='$oldclub'";
+
+    $result=mysql_db_query($DB_CM,$query);
+    if (!$result) {echo $query,mysql_error();exit;}
+    echo("<table width='642' border='0'>
+	      <tr><td align='center'>
+	      <BR><BR><H3>수정 되었습니다.<BR>
+	      </td></tr>
+          </table>");
+    echo("<meta http-equiv='Refresh' content='0; URL=$PHP_SELF?club=$club'>");
+	exit;
+  }
+
+if (!$cmd||$cmd=="cfg") {
+if (!$ccfg[autoguest]) $ccfg[autoguest]=0;
+
+  echo("
+<style>
+<!--
+TD	{font-size:10pt;}
+-->
+</style>
+<form name='form1' action='$PHP_SELF' method=post>
+<input  type=hidden name=club value='$club'>
+<input  type=hidden name=oldclub value='$club'>
+<input  type=hidden name=cmd value='cfgup'>
+<table border='0' width='642'>
+<tr><td>
+  <table width='100%'  cellspacing=0 cellpadding=3 border=0>
+  <tr bgcolor=#006699>
+  <td bgcolor=#113366 align=center><font color=white>$club ( $ccfg[name] )</td>
+  </tr>
+  </table>
+
+  <table width=100% cellspacing=0 cellpadding=1 border=1>
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>동호회이름</td>
+  <td>&nbsp;&nbsp;<input type=text name=name value='$ccfg[name]' size=60 maxlength=100></td>
+  </tr>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>시삽</td>
+  <td>&nbsp;&nbsp;<input type=text name=sysop value='$ccfg[sysop]' size=20></td>
+  </tr>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>진입암호</td>
+  <td>&nbsp;&nbsp;<input type=text name=passwd value='$ccfg[passwd]' size=20></td>
+  </tr>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>가입방법</td>
+  <td>
+  &nbsp;&nbsp;<input type=radio name=autoguest value=0 >자동가입
+  &nbsp;&nbsp;<input type=radio name=autoguest value=1 >수동가입
+  &nbsp;&nbsp;<input type=radio name=autoguest value=2 >가입신청금지
+  </tr>
+  <script>form1.autoguest[$ccfg[autoguest]].checked=true;</script>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>가입등급</td>
+  <td>
+  &nbsp;&nbsp;<input type=text name=guesttype value='$ccfg[guesttype]' size=2> 가입시 설정 초기 등급(1:대기,2:금지,3:삭제,4~13:회원)
+  </tr>
+  <script>form1.autoguest[$ccfg[autoguest]].checked=true;</script>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>등급인증</td>
+  <td>
+  &nbsp;&nbsp;진입등급<input type=text	size=4 name=itype value='$ccfg[itype]'>
+  &nbsp;&nbsp;읽기등급<input type=text	size=4 name=rtype value='$ccfg[rtype]'>
+  &nbsp;&nbsp;쓰기등급<input type=text	size=4 name=wtype value='$ccfg[wtype]'>
+  &nbsp;&nbsp;다운등급<input type=text	size=4 name=dtype value='$ccfg[dtype]'>
+  <BR>
+  &nbsp;&nbsp;진입동호등급<input type=text	size=4 name=ictype value='$ccfg[ictype]'>
+  &nbsp;&nbsp;읽기동호등급<input type=text	size=4 name=rctype value='$ccfg[rctype]'>
+  &nbsp;&nbsp;쓰기동호등급<input type=text	size=4 name=wctype value='$ccfg[wctype]'>
+  &nbsp;&nbsp;다운동호등급<input type=text	size=4 name=dctype value='$ccfg[dctype]'>
+  </font></td>
+  </tr>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>참고제목</td>
+  <td>
+  &nbsp;1<INPUT TYPE=CHECKBOX NAME=disp_memo1 value='1'");if ($ccfg[disp_memo1]=='1') echo(" checked");echo("><input type=text name=memo1 value='$ccfg[memo1]' size=16>
+  &nbsp;2<INPUT TYPE=CHECKBOX NAME=disp_memo2 value='1'");if ($ccfg[disp_memo2]=='1') echo(" checked");echo("><input type=text name=memo2 value='$ccfg[memo2]' size=16>
+  &nbsp;3<INPUT TYPE=CHECKBOX NAME=disp_memo3 value='1'");if ($ccfg[disp_memo3]=='1') echo(" checked");echo("><input type=text name=memo3 value='$ccfg[memo3]' size=16><BR>
+  &nbsp;4<INPUT TYPE=CHECKBOX NAME=disp_memo4 value='1'");if ($ccfg[disp_memo4]=='1') echo(" checked");echo("><input type=text name=memo4 value='$ccfg[memo4]' size=16>
+  &nbsp;5<INPUT TYPE=CHECKBOX NAME=disp_memo5 value='1'");if ($ccfg[disp_memo5]=='1') echo(" checked");echo("><input type=text name=memo5 value='$ccfg[memo5]' size=16>
+  </td>
+  </tr>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>동호회소개</td>
+  <td>
+  &nbsp;&nbsp;<TEXTAREA NAME=club_help ROWS=3 COLS=75>$ccfg[club_help]</TEXTAREA>
+  </td>
+  </tr>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>가입신청설명</td>
+  <td>
+  &nbsp;&nbsp;<TEXTAREA NAME=intro ROWS=3 COLS=75>$ccfg[intro]</TEXTAREA>
+  </td>
+  </tr>
+
+  <tr>
+  <td width='80' bgcolor='#5485B6' align=center>신청후설명</td>
+  <td>
+  &nbsp;&nbsp;<TEXTAREA NAME=guestok ROWS=3 COLS=75>$ccfg[guestok]</TEXTAREA>
+  </td>
+  </tr>
+
+  </table>
+<BR><center>
+<input type=submit value=' 수 정 완 료 '>&nbsp; &nbsp;
+<input type=button value=' 동호회 메인' onclick=window.open('".$club."main.htm','_parent','')>
+</center>
+</form>
+</td></tr>
+</table>
+");
+}
+?>

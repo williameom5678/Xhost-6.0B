@@ -1,0 +1,644 @@
+<?
+  if (!$define_db) include "../db.htm";
+  if (!$define_ut) include "../ut.htm";
+  if (!$code) $code="change";
+
+  $width=650;    if ($bbs_width     ) $width=$bbs_width;
+  $width2=650;   if ($bbs_width2    ) $width2=$bbs_width2;
+  $width3=640;   if ($bbs_width3    ) $width3=$bbs_width3;
+  $widthall=780; if ($bbs_widthall  ) $widthall=$bbs_widthall;
+  $widthleft=130;if ($bbs_widthleft ) $widthleft=$bbs_widthleft;
+  $widthbody=650;if ($bbs_widthbody ) $widthbody=$bbs_widthbody;
+
+  if (!$tid||($tid&&$super_user!=1235)) $tid=$userid;
+  if ($userid=="guest") {alert3("회원전용기능입니다. 로그인을 하세요","../member/index.htm?return=glist&code=$code");exit;}
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $table_name="$club"."_"."$code";
+
+  //본인읽기
+  $query="select * from user where id='$userid'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $user=mysql_fetch_array($result);
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+  //동호회환경읽기
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+  //게시판환경읽기
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+  if ($cfg[sysop1]&&$cfg[sysop1]==$userid)   {$csuper_user=true;$userty=19;}
+
+  if ($bcfg[itype]>0&&$bcfg[itype]>$userty)    {echo ("<script>window.alert('메인등급 $bcfg[itype]  이상 진입가능 (현재:$userty)');history.go(-1)</script>");exit;}
+  if ($cfg[itype]>0&&$cfg[itype]>$userty)      {echo ("<script>window.alert('메인등급 $cfg[itype]   이상 진입가능 (현재:$userty)');history.go(-1)</script>");exit;}
+
+  if ($super_user||$csuper_user||$ctype>16||$userty>14||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop3]) {
+    $bsuper_user=true;
+    $can_write=true;
+  }
+
+  if ($bcfg[body_only]!='y'&&!$skip_include) {
+      $now_html="환불&교환";
+      if (!$define_bbstop&&$bcfg[include_top]!='n') include "../bbstop.htm";
+      else include "../css.htm";
+      if ($bcfg[include_left]!='n') {
+        echo ("<table width='$widthall' border='0' cellspacing='0' cellpadding='0'>
+        <tr>
+        <td width='$widthleft' valign=top>
+        <!---- 왼쪽 메뉴 시작 --->
+        ");
+        if ($define_left) ;
+        else if ($mo=="board") include "../board/left.htm";
+        else if ($mo&&$mo!="main") include "../$mo/left.htm";
+        else if ($club&&$club!="main") include "../$club/left.htm";
+        else include "../left.htm";
+        echo ("
+        $left_str
+        <!---- 왼쪽 메뉴 끝 --->
+        </td>
+        <td width=$widthbody valign=top>
+        <!---- 오른쪽 메뉴 시작 --->
+        ");
+      }
+  }
+  else include "../css.htm";
+
+  if ($cmd=="insert"&&$body) {
+	//답변 목록에 추가
+    $query="select max(pos) from $table_name";
+    $result=mysql_db_query($DB_CM,$query);
+    if(!$result) { $row[0]=0; }
+    else {$row=mysql_fetch_array($result);}
+    $newpos=$row[0]+1;
+
+    $title=text_cut(trim(substr($body,0,100)),70);
+    $title=str_replace("\n","",$title);
+	$query = "
+    insert into $table_name (pos,date,userip,id,tid,name,title,tag,body)
+    values ('$newpos','$now_date','$userip','$userid','$tid','$userna','$title','$tag','$body');";
+	$result=mysql_db_query($DB_NAME,$query);
+	if (!$result) {echo $query,mysql_error();exit;}
+    $cmd="";
+  }
+  if ($cmd=="delete"&&$num) {
+    $query="select * from $table_name where tid='$tid' and num='$num'";
+    $result=mysql_db_query($DB_NAME,$query);
+    if (!$result) {echo $query,mysql_error();exit;}
+    if ($super_user==1235||($row=mysql_fetch_array($result))) {
+        $query="delete from $table_name where num='$num'";
+        $result=mysql_db_query($DB_NAME,$query);
+        if (!$result) {echo $query,mysql_error();exit;}
+    }
+    $cmd="";
+  }
+
+  if ($cmd=="insert2") {
+
+    $return_type_str="대한통운 택배";
+    if ($return_type==2) $return_type_str="우체국 소포";
+
+    if ($cmd2=="change1") {
+    $keyword="환불";
+    $str="
+------------------- 환불요청 -----------------
+이름  :$write_name
+연락처:$phone
+email :$email
+반송  :$return_type_str
+계좌  :$rcash_bank $rcash_num $rcash_name
+내용:
+$body";
+}
+    else if ($cmd2=="change2") {
+    $keyword="교환";
+    $str="
+------------------- 교환요청 -----------------
+이름  :$write_name
+연락처:$phone
+email :$email
+반송  :$return_type_str
+주소  :($zipcode1"."-$zipcode2) $address1 $address2
+내용:
+$body";
+}
+    else if ($cmd2=="change3") {
+    $keyword="입금";
+    $str="
+------------------- 입금확인 -----------------
+이름  :$write_name
+연락처:$phone
+email :$email
+반송  :$return_type_str
+계좌  :$rcash_bank $rcash_num $rcash_name (".number_format($rcash_money)."원)
+내용:
+$body";
+}
+    $query="select max(pos) from $table_name";
+    $result=mysql_db_query($DB_CM,$query);
+    if(!$result) { $row[0]=0; }
+    else {$row=mysql_fetch_array($result);}
+    $newpos=$row[0]+1;
+
+    $title=text_cut(trim(substr($body,0,100)),70);
+    $title=str_replace("\n","",$title);
+	$query = "
+    insert into $table_name (pos,date,userip,id,tid,name,email,keyword,title,body)
+    values ('$newpos','$now_date','$userip','$userid','$tid','$userna','$email','$keyword','$title','$str');";
+	$result=mysql_db_query($DB_NAME,$query);
+	if (!$result) {echo $query,mysql_error();exit;}
+    $cmd="";
+  }
+
+  if ($super_user==1235) {
+      echo ("
+      ▶<a href=list.htm?code=$code>전체목록</a>
+      ▶<a href=list.htm?code=$code&field=keyword&s_que='환불'>전체환불</a>
+      ▶<a href=list.htm?code=$code&field=keyword&s_que='교환'>전체교환</a>
+      ▶<a href=list.htm?code=$code&field=keyword&s_que='입금'>전체입금</a>
+      ");
+  }
+
+  echo ("
+  <img src='images/blank.gif' width='1' height='5'><BR>
+  <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+    <tr bgcolor='#7d6433'>
+      <td height='3' colspan=3></td>
+    </tr>
+  </tr>
+  <table width='100%' border='1' cellspacing='0' cellpadding='0' align='center' bordercolordark='ffffff'>
+  <tr>
+  <td width=20% height=50 align=center valign=center bgcolor='#f7f7f7' onMouseOver=\"this.style.backgroundColor='#dfEBf7';return true;\" onMouseOut=\"this.style.backgroundColor='';return true;\">
+      <a href=$PHP_SELF?cmd=change1&code=$code><font size=4>환불</font></a>
+  </td>
+  <td width=20% height=50 align=center valign=center bgcolor='#F1F1E4' onMouseOver=\"this.style.backgroundColor='#dfEBf7';return true;\" onMouseOut=\"this.style.backgroundColor='';return true;\">
+      <a href=$PHP_SELF?cmd=change2&code=$code><font size=4>교환</font></a>
+  </td>
+  <td width=20% height=50 align=center valign=center bgcolor='#f7f7f7' onMouseOver=\"this.style.backgroundColor='#dfEBf7';return true;\" onMouseOut=\"this.style.backgroundColor='';return true;\">
+      <a href=$PHP_SELF?cmd=change3&code=$code><font size=4>입금확인</font></a>
+  </td>
+  <td width=20% height=50 align=center valign=center bgcolor='#f1f1E4' onMouseOver=\"this.style.backgroundColor='#dfEBf7';return true;\" onMouseOut=\"this.style.backgroundColor='';return true;\">
+      <a href=glist.htm?code=$code#input><font size=4>1:1상담 입력</font></a>
+  </td>
+  <td width=20% height=50 align=center valign=center bgcolor='#f7f7f7' onMouseOver=\"this.style.backgroundColor='#dfEBf7';return true;\" onMouseOut=\"this.style.backgroundColor='';return true;\">
+      <a href=../notfound.htm><font size=4>미확인<BR>입금리스트</font></a>
+  </td>
+  </tr>
+  <tr>
+  <td colspan=5 align=center bgcolor='#f7f7f7'>
+  </td>
+  </tr>
+  </table>
+  <center>
+    <a href=/guide/return.htm#change1>▶교환 방법안내</A>
+    <a href=/guide/return.htm#change2>▶환불 방법안내</A>
+    <a href=/guide/delivery.htm>▶구매&발송안내</A>
+  ");
+
+
+  if ($cmd=="change1") {
+    echo ("
+      <script language='JavaScript' src='../include/iskorea.js'></script>
+      <script language='javascript'>
+      <!--
+        function check_submit(frm) {
+            if (iskorea_checkMinLength(frm.write_name,1,'이름이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.phone,1,'연락처가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.email,1,'Email이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.rcash_num,1,'환불계좌가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.rcash_bank,1,'환불은행명이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.rcash_name,1,'예금주가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.body ,1,'내용이 없습니다.\\n다시 입력하세요!') == false) return;
+            frm.submit();
+        }
+        function clearField(field){
+            if (field.value == field.defaultValue) {
+                field.value = '';
+            }
+        }
+        function checkField(field){
+            if (field.value == '') {
+                field.value = field.defaultValue;
+            }
+        }
+      -->
+      </script>
+
+      <form name='form1' ENCTYPE='multipart/form-data' action='$PHP_SELF' method='POST'>
+      <input type=hidden name='cmd'  value='insert2'>
+      <input type=hidden name='cmd2' value='$cmd'>
+      <input type=hidden name='code' value='$code'>
+      <input type=hidden name='tid'  value='$tid'>
+      <input type=hidden name=field value='$field'>
+      <input type=hidden name=s_que value='$s_que'>
+      <table width=$width2><tr><td>$bcfg[write_top]</td></tr></table>
+
+      <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+      <tr bgcolor='#FFB56D'><td height='3' colspan=0></td></tr>
+      <tr bgcolor='#E5E5E5' align='center'>
+      <td>
+
+      <br>
+      <table width='$width2' border='0' cellspacing='1' cellpadding='5'>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>이름</td>
+        <td width='85%' bgcolor='ffffff'><input type=text name='write_name' size=40 value='$userna' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>연락처</td>
+        <td width='85%' bgcolor='ffffff'><input type=text name='phone' size=40 value='$user[cellph] $user[phone]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        (연락가능한 전화, 핸드폰을 입력하세요)
+        </td>
+        </tr>
+
+        <tr>
+        <td bgcolor='f4f4f4' align=center><font color=000000>Email</td>
+        <td bgcolor='ffffff'><input type=text name='email' value='$user[email]' size=40 class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        (Email로 확인메일을 받을수 있습니다.)
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>반송방법</td>
+        <td width='85%' bgcolor='ffffff'>
+        <input type=radio name='return_type' value='1' checked>대한통운 택배를 이용합니다. &nbsp; &nbsp;
+        <input type=radio name='return_type' value='2'        >우체국 소포를 이용합니다.<BR>
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>환불계좌</td>
+        <td width='85%' bgcolor='ffffff'>
+        은행<input type=text name='rcash_bank' size=10 value='$user[rcash_bank]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        계좌<input type=text name='rcash_num' size=30 value='$user[rcash_num]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        예금주<input type=text name='rcash_name' size=10 value='$user[rcash_name]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        </td>
+        </tr>
+
+        <tr>
+        <td bgcolor='ffffff' align=left colspan=3>
+        <center>
+        환불하실 내용을 자세하게 적어주세요. (상품코드, 이름, 색깔, 사이즈 기타 내용등)<BR>
+        <textarea name='body' cols=98 rows=13 wrap=off style='font-size:9pt ;border-width:1;border-color:gray;' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\"></textarea><BR>
+        <center>
+      <a href='javascript:check_submit(document.form1)'><img src=images/upload.gif border=0></a>
+      &nbsp; &nbsp;
+      <a href='javascript:history.go(-1)'><img src=images/cancel.gif border=0></a>
+        </td>
+        </tr>
+
+        </form>
+        </table>
+      </td>
+      </tr>
+
+      <tr bgcolor='#E5E5E5'><td height='15' align=center valign=bottom>
+      </td></tr>
+      <tr bgcolor='#cccccc'><td width=100% colspan=5 height='3'></td></tr>
+
+      </table>
+      ");
+  }
+
+  if ($cmd=="change2") {
+    echo ("
+      <script language='JavaScript' src='../include/iskorea.js'></script>
+      <script language='javascript'>
+      <!--
+        function check_submit(frm) {
+            if (iskorea_checkMinLength(frm.write_name,1,'이름이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.phone,1,'연락처가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.email,1,'Email이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.address1,1,'교환받는 주소가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.body ,1,'내용이 없습니다.\\n다시 입력하세요!') == false) return;
+            frm.submit();
+        }
+        function clearField(field){
+            if (field.value == field.defaultValue) {
+                field.value = '';
+            }
+        }
+        function checkField(field){
+            if (field.value == '') {
+                field.value = field.defaultValue;
+            }
+        }
+        function zipopen()
+        {
+            var w;
+            var cWidth  = (screen.width -450) /2 +50;
+            var cHeight = (screen.height-100) /2 -200;
+            w=window.open('../member/post.htm?mode=0','pop_up','menubar=0, status=0, locationbar=0,toolbar=0,scrollbars=1,resizable=1,left='+cWidth+',top='+cHeight+',width=450,height=300');
+            w.focus();
+        }
+      -->
+      </script>
+
+      <form name='form1' ENCTYPE='multipart/form-data' action='$PHP_SELF' method='POST'>
+      <input type=hidden name='cmd'  value='insert2'>
+      <input type=hidden name='cmd2' value='$cmd'>
+      <input type=hidden name='code' value='$code'>
+      <input type=hidden name='tid'  value='$tid'>
+      <input type=hidden name=field value='$field'>
+      <input type=hidden name=s_que value='$s_que'>
+      <table width=$width2><tr><td>$bcfg[write_top]</td></tr></table>
+
+      <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+      <tr bgcolor='#FFB56D'><td height='3' colspan=0></td></tr>
+      <tr bgcolor='#E5E5E5' align='center'>
+      <td>
+
+      <br>
+      <table width='$width2' border='0' cellspacing='1' cellpadding='5'>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>이름</td>
+        <td width='85%' bgcolor='ffffff'><input type=text name='write_name' size=40 value='$userna' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>연락처</td>
+        <td width='85%' bgcolor='ffffff'><input type=text name='phone' size=40 value='$user[cellp] $user[phone]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        (연락가능한 전화, 핸드폰을 입력하세요)
+        </td>
+        </tr>
+
+        <tr>
+        <td bgcolor='f4f4f4' align=center><font color=000000>Email</td>
+        <td bgcolor='ffffff'><input type=text name='email' value='$user[email]' size=40 class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        (Email로 확인메일을 받을수 있습니다.)
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>반송방법</td>
+        <td width='85%' bgcolor='ffffff'>
+        <input type=radio name='return_type' value='1' checked>대한통운 택배를 이용합니다. &nbsp; &nbsp;
+        <input type=radio name='return_type' value='2'        >우체국 소포를 이용합니다.<BR>
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>교환주소</td>
+        <td width='85%' bgcolor='ffffff'>
+        우편번호<input type=text name='zipcode1' size=3 value='$user[r_zip1]' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+              - <input type=text name='zipcode2' size=3 value='$user[r_zip2]' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        <a href='javascript:zipopen()'>▶(우편번호,주소 찾기)</a><BR>
+        기본주소<input type=text name='address1' size=60 value='$user[r_addr1]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" ><BR>
+        세부주소<input type=text name='address2' size=60 value='$user[r_addr2]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        </td>
+        </tr>
+
+        <tr>
+        <td bgcolor='ffffff' align=left colspan=3>
+        <center>
+        교환하실 내용을 자세하게 적어주세요. (상품코드, 이름, 색깔, 사이즈 기타 내용등)<BR>
+        <textarea name='body' cols=98 rows=13 wrap=off style='font-size:9pt ;border-width:1;border-color:gray;' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\"></textarea><BR>
+        <center>
+      <a href='javascript:check_submit(document.form1)'><img src=images/upload.gif border=0></a>
+      &nbsp; &nbsp;
+      <a href='javascript:history.go(-1)'><img src=images/cancel.gif border=0></a>
+        </td>
+        </tr>
+
+        </form>
+        </table>
+      </td>
+      </tr>
+
+      <tr bgcolor='#E5E5E5'><td height='15' align=center valign=bottom>
+      </td></tr>
+      <tr bgcolor='#cccccc'><td width=100% colspan=5 height='3'></td></tr>
+
+      </table>
+      ");
+  }
+
+  if ($cmd=="change3") {
+    echo ("
+      <script language='JavaScript' src='../include/iskorea.js'></script>
+      <script language='javascript'>
+      <!--
+        function check_submit(frm) {
+            if (iskorea_checkMinLength(frm.write_name,1,'이름이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.phone,1,'연락처가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.email,1,'Email이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.rcash_num,1,'입금계좌가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.rcash_bank,1,'입금은행명이 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.rcash_name,1,'입금자가 필요합니다.\\n다시 입력하세요!') == false) return;
+            if (iskorea_checkMinLength(frm.body ,1,'내용이 없습니다.\\n다시 입력하세요!') == false) return;
+            frm.submit();
+        }
+        function clearField(field){
+            if (field.value == field.defaultValue) {
+                field.value = '';
+            }
+        }
+        function checkField(field){
+            if (field.value == '') {
+                field.value = field.defaultValue;
+            }
+        }
+      -->
+      </script>
+
+      <form name='form1' ENCTYPE='multipart/form-data' action='$PHP_SELF' method='POST'>
+      <input type=hidden name='cmd'  value='insert2'>
+      <input type=hidden name='cmd2' value='$cmd'>
+      <input type=hidden name='code' value='$code'>
+      <input type=hidden name='tid'  value='$tid'>
+      <input type=hidden name=field value='$field'>
+      <input type=hidden name=s_que value='$s_que'>
+      <table width=$width2><tr><td>$bcfg[write_top]</td></tr></table>
+
+      <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+      <tr bgcolor='#FFB56D'><td height='3' colspan=0></td></tr>
+      <tr bgcolor='#E5E5E5' align='center'>
+      <td>
+
+      <br>
+      <table width='$width2' border='0' cellspacing='1' cellpadding='5'>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>이름</td>
+        <td width='85%' bgcolor='ffffff'><input type=text name='write_name' size=40 value='$userna' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>연락처</td>
+        <td width='85%' bgcolor='ffffff'><input type=text name='phone' size=40 value='$user[cellp] $user[phone]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        (연락가능한 전화, 핸드폰을 입력하세요)
+        </td>
+        </tr>
+
+        <tr>
+        <td bgcolor='f4f4f4' align=center><font color=000000>Email</td>
+        <td bgcolor='ffffff'><input type=text name='email' value='$user[email]' size=40 class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        (Email로 확인메일을 받을수 있습니다.)
+        </td>
+        </tr>
+
+        <tr>
+        <td width='15%' bgcolor='f4f4f4' align=center width=150><font color=000000>입금계좌</td>
+        <td width='85%' bgcolor='ffffff'>
+        은행<input type=text name='rcash_bank' size=10 value='$user[rcash_bank]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        계좌<input type=text name='rcash_num' size=30 value='$user[rcash_num]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        예금주<input type=text name='rcash_name' size=10 value='$user[rcash_name]' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        입금액<input type=text name='rcash_money' size=10 value='' class=input onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\" >
+        </td>
+        </tr>
+
+        <tr>
+        <td bgcolor='ffffff' align=left colspan=3>
+        <center>
+        입금하신내용을 자세하게 적어주세요. (상품코드, 입급날짜, 기타 내용등)<BR>
+        <textarea name='body' cols=98 rows=13 wrap=off style='font-size:9pt ;border-width:1;border-color:gray;' onMouseOver=\"this.style.background='#D0F8F0'\" onMouseOut=\"this.style.background='white'\"></textarea><BR>
+        <center>
+      <a href='javascript:check_submit(document.form1)'><img src=images/upload.gif border=0></a>
+      &nbsp; &nbsp;
+      <a href='javascript:history.go(-1)'><img src=images/cancel.gif border=0></a>
+        </td>
+        </tr>
+
+        </form>
+        </table>
+      </td>
+      </tr>
+
+      <tr bgcolor='#E5E5E5'><td height='15' align=center valign=bottom>
+      </td></tr>
+      <tr bgcolor='#cccccc'><td width=100% colspan=5 height='3'></td></tr>
+
+      </table>
+      ");
+  }
+
+
+  if (!$cmd) {
+
+    echo ("
+    <img src='images/blank.gif' width='1' height='5'><BR>
+    <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+    <tr><td>$bcfg[head]</td></tr>
+    </table>
+    <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+      <tr bgcolor='#7d6433'><td height='3' colspan=3></td></tr>
+    </tr>
+    <table width='$width2' border='1' cellspacing='0' cellpadding='0' bordercolordark='ffffff'>
+      <tr align=center bgcolor='f0f0f0'>
+        <td height='20' width=110>분류</td>
+        <td height='20' width=530><B>$bcfg[name]&nbsp;</B></td>
+      </tr>
+    ");
+    $query="select * from $table_name where tid='$tid' order by date";
+    $result=mysql_db_query($DB_NAME,$query);
+    if (!$result) {echo $query,mysql_error();exit;}
+    //echo $query;
+
+    $count=0;
+    while (($row=mysql_fetch_array($result))) {
+      $num2=$row[num];
+      $count++;
+
+      if ($row[usetag]!='y') {
+        $body=$row[body];
+        $body=htmlspecialchars($body);
+        $body=nl2br($body);
+      }
+      else $body=$row[body];
+
+	  if ($bcfg[num_new]>0) {
+		$how_old=(int)(how_old_str($row[date])/3600);
+		if ($how_old<=$bcfg[num_new]) {
+          if ($bcfg[use_char]=='y') $body="<font color=107cb3 size=2><B>new</b></font> ".$body;
+          else $body="<img src=images/new.gif border=0> ".$body;
+        }
+	  }
+
+      $edit="";
+      if ($row[id]==$userid||$row[tid]==$userid||$super_user==1235) $edit="<a href=$PHP_SELF?cmd=delete&code=$code&num=$row[num]' onClick=\"return confirm('$num2 번 내용을 삭제 할까요?')\"><img src=images/delete.gif border=0></a>";
+
+      if (is_super_user($row[id])) $img="images/qa2.gif";
+      else $img="images/qa1.gif";
+
+      echo ("<tr>
+      <td align=center><img src=$img border=0>$row[id]<BR>".substr($row[date],0,16)."<BR>$edit</td>
+      <td style=padding-left:5pt;>$body</td>
+      </tr>");
+    }
+    if ($count==0) echo ("<tr><td colspan=7 align=center>해당되는 자료가 없습니다.</td></tr>");
+    echo ("</table>");
+
+    //답변적기
+    echo ("
+    <script language='javascript1.2' src='../include/iskorea.js'></script>
+    <script>
+    function check_submit(frm) {
+        frm.submit();
+        return;
+    }
+    </script>
+
+    <a name='input'></a>
+    <img src='images/blank.gif' width='1' height='5'><BR>
+    <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+      <tr bgcolor='#7d6433'><td height='3' colspan=3></td></tr>
+    </tr>
+    <table width='$width2' border=1 cellpadding=0 cellspacing=0 vspace='0' hspace='0' bordercolordark='ffffff'>
+      <form name='form1' method='post' action=$PHP_SELF>
+      <input type=hidden name=cmd value='insert'>
+      <input type=hidden name=num value='$num'>
+      <input type=hidden name=tid value='$tid'>
+      <input type=hidden name=code value='$code'>
+      <input type=hidden name=mode value='$mode'>
+      <input type=hidden name=mode2 value='$mode2'>
+      <input type=hidden name=mode3 value='$mode3'>
+      <input type=hidden name=field value='$field'>
+      <input type=hidden name=s_que value='$s_que'>
+      <tr height=24>
+        <td align='center' colspan=4 class=unnamed1 bgcolor='f0f0f0'><b>$bcfg[name] 입력</b></td>
+      </tr>
+      <tr>
+        <td>&nbsp;&nbsp; &nbsp;<input type=checkbox name='tag' value='y'>HTML Tag 사용 <BR>
+        <center><textarea name='body' cols='85' rows='13'></textarea><BR>
+
+        <a href='javascript:check_submit(document.form1)'><img src=images/upload.gif border=0></a>
+        &nbsp; &nbsp;
+        <a href='javascript:history.go(-1)'><img src=images/cancel.gif border=0></a>
+        </td>
+      </tr>
+    </table>
+    <center>
+    <a href=#top><img src=/shop/images/backto_top.gif border=0></a>
+
+    </form>
+
+    <table width='$width2' border='0' cellspacing='0' cellpadding='0'>
+    <tr><td>$bcfg[foot]</td></tr>
+    </table>
+    ");
+
+    if ($bcfg[body_only]!='y'&&!$skip_include) {
+        if ($bcfg[include_left]!='n') {
+          echo ("
+          <!---- 오른쪽 메뉴 끝 --->
+          </td>
+          </tr>
+          </table>");
+        }
+    }
+  }
+
+?>

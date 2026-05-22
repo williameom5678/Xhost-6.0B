@@ -1,0 +1,272 @@
+<?
+  include "akom.inc";
+  include "sysop.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!$userid||!$super_user) {echo("<center>관리자가 아니거나 로그인을 해주십시요!</center>");exit;}
+
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if (!$result||mysql_affected_rows()==0) {  //현재 화면출력자료
+      $query2="insert into cfg (sysop) values ('sysop')";
+      mysql_db_query($DB_NAME,$query2);
+      $result=mysql_db_query($DB_NAME,$query);
+  }
+$cfg=mysql_fetch_array($result);
+if ($club=="main") {
+  echo("
+   <link rel='stylesheet' type='text/css' href='font.css'>
+   ");
+  }
+				     
+
+if ($cmd=="cfgup") {
+	$date=date("Y-m-d H:i:s");
+	$now_allno=0;
+
+    $query="update cfg set
+	sysop	     = '$sysop',
+	passwd	     = '$passwd',
+        hostname     = '$hostname',
+        basedir      = '$basedir',
+        relog        = '$relog',
+	memo1	     = '$memo1',
+	memo2	     = '$memo2',
+	memo3	     = '$memo3',
+	memo4	     = '$memo4',
+	memo5	     = '$memo5',
+        memo6        = '$memo6',
+        memo7        = '$memo7',
+        memo8        = '$memo8',
+        disp_memo1   = '$disp_memo1',
+        disp_memo2   = '$disp_memo2',
+        disp_memo3   = '$disp_memo3',
+        disp_memo4   = '$disp_memo4',
+        disp_memo5   = '$disp_memo5',
+        disp_memo6   = '$disp_memo6',
+        disp_memo7   = '$disp_memo7',
+        disp_memo8   = '$disp_memo8',
+        ajob0        = '$ajob0',
+        ajob1        = '$ajob1',
+        ajob2        = '$ajob2',
+        ajob3        = '$ajob3',
+        ajob4        = '$ajob4',
+        ajob5        = '$ajob5',
+        ajob6        = '$ajob6',
+        ajob7        = '$ajob7',
+        ajob8        = '$ajob8',
+        ajob9        = '$ajob9',
+        ajob10       = '$ajob10',
+        ajob11       = '$ajob11',
+        ajob12       = '$ajob12',
+        ajob13       = '$ajob13',
+        ajob14       = '$ajob14',
+        ajob15       = '$ajob15',
+        ajob16       = '$ajob16',
+        ajob17       = '$ajob17',
+        ajob18       = '$ajob18',
+        ajob19       = '$ajob19',
+        atype0       = '$atype0',
+        atype1       = '$atype1',
+        atype2       = '$atype2',
+        atype3       = '$atype3',
+        atype4       = '$atype4',
+        atype5       = '$atype5',
+        atype6       = '$atype6',
+        atype7       = '$atype7',
+        atype8       = '$atype8',
+        atype9       = '$atype9',
+        atype10      = '$atype10',
+        atype11      = '$atype11',
+        atype12      = '$atype12',
+        atype13      = '$atype13',
+        atype14      = '$atype14',
+        atype15      = '$atype15',
+        atype16      = '$atype16',
+        atype17      = '$atype17',
+        atype18      = '$atype18',
+        atype19      = '$atype19',
+ 	autoguest    = '$autoguest',
+        guestin      = '$guestin',
+        guesttype    = '$guesttype',
+        noticex      = '$noticex',
+        noticey      = '$noticey',
+        allsay       = '$allsay',
+        view_notice  = '$view_notice'
+    ";
+
+    $result=mysql_db_query($DB_NAME,$query,$connect);
+	if (!$result) {
+        echo("$query<BR>".mysql_error()."<BR>");
+        exit;
+	}
+	else {
+        echo("<table border='0' width='750' height='400'><tr><td align='center' valign='center'><h3>수정 되었습니다.</h3></td></tr></table>");
+        echo("<meta http-equiv='Refresh' content='1; URL=akuser.htm'>");
+	}
+    mysql_close();
+	exit;
+}
+
+if ($cmd==""||!$cmd||$cmd=="cfg") {
+
+  echo("
+<table border='0' width='750'>
+<tr><td align='center'>
+  <form name='form1' action='$PHP_SELF' method=post>
+  <input  type=hidden name=cmd value='cfgup'>
+
+  <table width=750  cellspacing=0 cellpadding=3 border=0>
+  <tr bgcolor=#006699>
+  <td bgcolor=#113366 align=center><font color=white>메인 환경 편집</td>
+  </tr>
+  </table>
+
+  <table width=750 cellspacing=0 cellpadding=1 border=1>
+  <tr>
+    <td bgcolor='#5485B6' align=center>BBS 이름</td>
+    <td width=650>&nbsp;&nbsp;<input type=text name=hostname value='$cfg[hostname]' size=20 maxlength=20></td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>시삽</td>
+    <td>&nbsp;&nbsp;<input type=text name=sysop value='$cfg[sysop]' size=20></td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>시삽메뉴암호</td>
+    <td>&nbsp;&nbsp;<input type=text name=passwd value='$cfg[passwd]' size=20></td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>BBS디렉토리</td>
+    <td>&nbsp;&nbsp;<input type=text name=basedir value='$cfg[basedir]' size=50> (text BBS 디렉위치)</td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>가입방법</td>
+    <td>
+    &nbsp;&nbsp;<input type=radio name=autoguest value=0 >자동가입
+    &nbsp;&nbsp;<input type=radio name=autoguest value=1 >수동가입
+    &nbsp;&nbsp;<input type=radio name=autoguest value=2 >가입신청금지
+  </tr>
+  <script>form1.autoguest[$cfg[autoguest]].checked=true;</script>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>손님접속시</td>
+    <td>
+    &nbsp;&nbsp;<input type=radio name=guestin value=0 >접속허용
+    &nbsp;&nbsp;<input type=radio name=guestin value=1 >접속종료
+    &nbsp;&nbsp;<input type=radio name=guestin value=2 >재접속
+    &nbsp;&nbsp;<input type=radio name=guestin value=3 >guide메뉴만가능
+    &nbsp;&nbsp;<input type=radio name=guestin value=4 >메뉴선택
+  </tr>
+  <script>form1.guestin[$cfg[guestin]].checked=true;</script>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>가입등급</td>
+    <td>
+    &nbsp;&nbsp;<input type=text name=guesttype value='$cfg[guesttype]' size=2> 가입시 설정 초기 등급(1:대기,2:금지,3:삭제,4~13:회원)
+  </tr>
+  <script>form1.autoguest[$cfg[autoguest]].checked=true;</script>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>참고제목</td>
+    <td>
+    &nbsp;&nbsp;1<INPUT TYPE=CHECKBOX NAME=disp_memo1 value='1'");if ($cfg[disp_memo1]=='1') echo(" checked");echo("><input type=text name=memo1 value='$cfg[memo1]' size=20>
+    &nbsp;&nbsp;2<INPUT TYPE=CHECKBOX NAME=disp_memo2 value='1'");if ($cfg[disp_memo2]=='1') echo(" checked");echo("><input type=text name=memo2 value='$cfg[memo2]' size=20>
+    &nbsp;&nbsp;3<INPUT TYPE=CHECKBOX NAME=disp_memo3 value='1'");if ($cfg[disp_memo3]=='1') echo(" checked");echo("><input type=text name=memo3 value='$cfg[memo3]' size=20><BR>
+    &nbsp;&nbsp;4<INPUT TYPE=CHECKBOX NAME=disp_memo4 value='1'");if ($cfg[disp_memo4]=='1') echo(" checked");echo("><input type=text name=memo4 value='$cfg[memo4]' size=20>
+    &nbsp;&nbsp;5<INPUT TYPE=CHECKBOX NAME=disp_memo5 value='1'");if ($cfg[disp_memo5]=='1') echo(" checked");echo("><input type=text name=memo5 value='$cfg[memo5]' size=20>
+    &nbsp;&nbsp;6<INPUT TYPE=CHECKBOX NAME=disp_memo6 value='1'");if ($cfg[disp_memo5]=='1') echo(" checked");echo("><input type=text name=memo6 value='$cfg[memo6]' size=20><BR>
+    &nbsp;&nbsp;7<INPUT TYPE=CHECKBOX NAME=disp_memo7 value='1'");if ($cfg[disp_memo5]=='1') echo(" checked");echo("><input type=text name=memo7 value='$cfg[memo7]' size=20>
+    &nbsp;&nbsp;8<INPUT TYPE=CHECKBOX NAME=disp_memo8 value='1'");if ($cfg[disp_memo5]=='1') echo(" checked");echo("><input type=text name=memo8 value='$cfg[memo8]' size=20>
+    </td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>직업이름</td>
+    <td>
+    &nbsp;&nbsp;&nbsp;0<input type=text name=ajob0  value='$cfg[ajob0]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;1<input type=text name=ajob1  value='$cfg[ajob1]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;2<input type=text name=ajob2  value='$cfg[ajob2]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;3<input type=text name=ajob3  value='$cfg[ajob3]'  size=20 maxlength=20><BR>
+    &nbsp;&nbsp;&nbsp;4<input type=text name=ajob4  value='$cfg[ajob4]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;5<input type=text name=ajob5  value='$cfg[ajob5]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;6<input type=text name=ajob6  value='$cfg[ajob6]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;7<input type=text name=ajob7  value='$cfg[ajob7]'  size=20 maxlength=20><BR>
+    &nbsp;&nbsp;&nbsp;8<input type=text name=ajob8  value='$cfg[ajob8]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;9<input type=text name=ajob9  value='$cfg[ajob9]'  size=20 maxlength=20>
+    &nbsp;&nbsp;10<input type=text name=ajob10 value='$cfg[ajob10]' size=20 maxlength=20>
+    &nbsp;&nbsp;11<input type=text name=ajob11 value='$cfg[ajob11]' size=20 maxlength=20><BR>
+    &nbsp;&nbsp;12<input type=text name=ajob12 value='$cfg[ajob12]' size=20 maxlength=20>
+    &nbsp;&nbsp;13<input type=text name=ajob13 value='$cfg[ajob13]' size=20 maxlength=20>
+    &nbsp;&nbsp;14<input type=text name=ajob14 value='$cfg[ajob14]' size=20 maxlength=20>
+    &nbsp;&nbsp;15<input type=text name=ajob15 value='$cfg[ajob15]' size=20 maxlength=20><BR>
+    &nbsp;&nbsp;16<input type=text name=ajob16 value='$cfg[ajob16]' size=20 maxlength=20>
+    &nbsp;&nbsp;17<input type=text name=ajob17 value='$cfg[ajob17]' size=20 maxlength=20>
+    &nbsp;&nbsp;18<input type=text name=ajob18 value='$cfg[ajob18]' size=20 maxlength=20>
+    &nbsp;&nbsp;19<input type=text name=ajob19 value='$cfg[ajob19]' size=20 maxlength=20><BR>
+    </td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>등급이름</td>
+    <td>
+    &nbsp;&nbsp;&nbsp;0<input type=text name=atype0  value='$cfg[atype0]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;1<input type=text name=atype1  value='$cfg[atype1]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;2<input type=text name=atype2  value='$cfg[atype2]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;3<input type=text name=atype3  value='$cfg[atype3]'  size=20 maxlength=20><BR>
+    &nbsp;&nbsp;&nbsp;4<input type=text name=atype4  value='$cfg[atype4]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;5<input type=text name=atype5  value='$cfg[atype5]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;6<input type=text name=atype6  value='$cfg[atype6]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;7<input type=text name=atype7  value='$cfg[atype7]'  size=20 maxlength=20><BR>
+    &nbsp;&nbsp;&nbsp;8<input type=text name=atype8  value='$cfg[atype8]'  size=20 maxlength=20>
+    &nbsp;&nbsp;&nbsp;9<input type=text name=atype9  value='$cfg[atype9]'  size=20 maxlength=20>
+    &nbsp;&nbsp;10<input type=text name=atype10 value='$cfg[atype10]' size=20 maxlength=20>
+    &nbsp;&nbsp;11<input type=text name=atype11 value='$cfg[atype11]' size=20 maxlength=20><BR>
+    &nbsp;&nbsp;12<input type=text name=atype12 value='$cfg[atype12]' size=20 maxlength=20>
+    &nbsp;&nbsp;13<input type=text name=atype13 value='$cfg[atype13]' size=20 maxlength=20>
+    &nbsp;&nbsp;14<input type=text name=atype14 value='$cfg[atype14]' size=20 maxlength=20>
+    &nbsp;&nbsp;15<input type=text name=atype15 value='$cfg[atype15]' size=20 maxlength=20><BR>
+    &nbsp;&nbsp;16<input type=text name=atype16 value='$cfg[atype16]' size=20 maxlength=20>
+    &nbsp;&nbsp;17<input type=text name=atype17 value='$cfg[atype17]' size=20 maxlength=20>
+    &nbsp;&nbsp;18<input type=text name=atype18 value='$cfg[atype18]' size=20 maxlength=20>
+    &nbsp;&nbsp;19<input type=text name=atype19 value='$cfg[atype19]' size=20 maxlength=20><BR>
+    </td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>공지사항</td>
+    <td>
+    &nbsp;&nbsp;공지X<input type=text name=noticex  value='$cfg[noticex]'  size=2>
+    &nbsp;&nbsp;공지Y<input type=text name=noticey  value='$cfg[noticey]'  size=2>
+    &nbsp;&nbsp;공지출력<INPUT TYPE=CHECKBOX NAME=view_notice value='1'");if ($cfg[view_notice]=='1') echo(" checked");echo(">
+    </td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>접속설정</td>
+    <td>
+    &nbsp;&nbsp;동시접속가능등급<input type=text name=relog value='$cfg[relog]' size=2>
+    </td>
+  </tr>
+
+  <tr>
+    <td bgcolor='#5485B6' align=center>메세지설정</td>
+    <td>
+    &nbsp;&nbsp;전체메세지가능등급<input type=text name=allsay value='$cfg[allsay]' size=2>
+    </td>
+  </tr>
+
+  </table>
+  <BR>
+  <input type=submit value=' 수 정 완 료 '>&nbsp; &nbsp;
+  <input type=button value=' 취 소 ' onclick=window.open('akuser.htm','_self','')>
+  </form>
+</td></tr>
+</table>
+  ");
+  mysql_close();
+}
+
+?>

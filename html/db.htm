@@ -1,0 +1,71 @@
+<?
+  $define_db=true;        //true이면 다시 인크루드 안하게..
+  $sw__id="test";
+  $sw__version="010828";
+  $sw__name="BBS";
+  $DB_NAME="bbs";
+  $DB_MAIL="bbs";
+  $DB_CM  ="bbs";
+  $DB_DATA="database";
+  $DB_USER="wwwuser";
+  $DB_HOST="localhost";
+  $DB_PASS="";
+  $home_dir="/nfs/xh/html";
+
+  $userip=$REMOTE_ADDR;
+  if (!$club) $club="main";
+  if (!$userid) $userid="guest";
+  if (!$userna) $userna="guest";
+  $font1="888888"; // 폰트 칼라 임의 지정 -- 차후 수정요
+  $font2="c15d13";
+  $font3="888888";
+  $font4="888888";
+  $cfg_base="/nfs/xh";
+  function is_super_user($id) {
+    if ($id=="sysop"||
+        $id=="sysop"||
+        $id=="sysop") return true;
+    return false;
+  }
+  if (is_super_user($userid)||$userip=="127.0.0.1") {
+    $super_user=1235;
+    $super_mode=1235;
+	$job_mode=true;
+  }
+  //금은동매달
+  function irank($buy) {return 0;}
+  function irank_str($buy) {return "";}
+
+/*
+  //게시판색상
+  $co_listtit1'
+  $co_listtit2'
+  $co_listbg1'
+  $co_listbg2'
+  $co_listbg3'
+  $co_listbar1'
+  $co_listbar2'
+
+  $co_writetit1'
+  $co_writetit2'
+  $co_writebar1'
+  $co_writebar2'
+  $co_writebg1'
+  $co_writebg2'
+
+  $co_readtit1'
+  $co_readtit2'
+  $co_readbar1'
+  $co_readbar2'
+  $co_readbg1'
+  $co_readbg2'
+*/
+
+  $bbs_width1=625;
+  $bbs_width2=615;
+  $bbs_width3=610;
+  $bbs_widthall=780;
+  $bbs_widthleft=130;
+  $bbs_widthbody=650;
+
+?>

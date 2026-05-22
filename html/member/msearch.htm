@@ -1,0 +1,159 @@
+<HTML>
+<HEAD>
+<LINK REL="stylesheet" TYPE="text/css" href="font.css">
+<TITLE>회원 검색</TITLE>
+<script language='javascript'>
+<!--
+  function verify_Form() {
+    if(document.Fo.se_que.value.length < 1) {
+      window.alert("검색단어를 입력하세요.");
+      document.Fo.se_que.focus();
+      return(false);
+    }
+  }
+-->
+</script>
+</HEAD>
+
+<BODY>
+<br>
+<table border='0' width='626'>
+<tr><td align='center'>
+<?
+  include "akom.inc";
+  include ("logon.htm");
+  if ($cmd=="logout"||!$userid||$userid=="guest") {
+    echo ("<meta http-equiv='Refresh' content='0; URL=$PHP_SELF'>");
+  exit;
+  }
+
+  mysql_connect("$DB_HOST", "$DB_USER", "$DB_PASS") or die("데이터 베이스에 접속하지 못했습니다.");
+  $cmd=="";
+  echo("
+  <table border='0' width='600' cellspacing='1' cellpadding='0' bgcolor='#AAAAAA'>
+  <form name='Fo' method='post' action='$PHP_SELF' onSubmit=\"return verify_Form(this);\">
+  <input type='hidden' name='cmd' value='search'>
+  <tr bgcolor='#D9D1BE'>
+  <th width='15%'>검색 분류</th>
+  <th width='20%'>정렬 순서</th>
+  <th width='65%'>검색 단어</th>
+  </tr>
+  <tr bgcolor='#FFFFF8'>
+  <td align='center'><select name='field'>
+  <option value='id'> 아이디 </option>
+  <option value='name'> 성 명 </option>
+  <option value='tele'> 전 화 </option>
+  <option value='hand'> 핸드폰 </option>
+  <option value='addr1'> 주 소 </option>
+  <option value='offi'> 직장  </option> </select>
+  </td>
+  <td align='center'><select name='sort'>
+  <option value='id' checked> 아이디 </option>
+  <option value='name'> 성 명 </option>
+  <option value='tele'> 전 화 </option>
+  <option value='hand'> 핸드폰 </option>
+  <option value='addr1'> 주 소 </option>
+  <option value='offi'> 직장 </option>> </select>
+  </td>
+  <td class='pad10'><input type='text' name='se_que' size='20'> &nbsp; 
+  <input type='submit' value='검 색' class='frm1'></td>
+  </tr>
+  </form>
+  </table>
+  <br>
+  ");
+
+if($cmd=="") { 
+  echo("
+  <br><br>
+  <font color='#000A3C'>
+  회원아이디, 성명, 전화, 주소, 직장 명 등으로 회원을 검색할 수 있으며 <br>
+  순서출력은 아이디를 기본으로 오름차순으로 순서정렬됩니다. <br>
+  검색단어수는  최소 2자이상이어야 검색이 가능합니다.<br>
+  <br><br>
+  1차 검색후 아이디 또는 성명을 클릭하면 상세한 회원정보를 검색할수 있습니다.
+  </font>
+  ");
+}
+
+if($cmd=="search") {
+  if($sort=="0") $sort_str = ""; //오름차순정렬
+  else $sort_str = "order by $sort";
+  if($se_que) $query = "SELECT * FROM user WHERE $field like '%$se_que%'"." $sort_str"; //검색
+  else $query = "SELECT * FROM user"." $sort_str";
+  $result = mysql_db_query($DB_NAME, $query);
+  echo("
+      <table border='0' width='600' cellspacing='1' cellpadding='0' bgcolor='#BBBBBB'>
+      <tr bgcolor='#EEEEEE'>
+      <th width='12%'>아 이 디</th>
+      <th width='10%'>성 &nbsp; 명</th>
+      <th width='14%'>전 &nbsp; 화</th>
+      <th width='46%'>주 &nbsp; 소</th>
+      <th width='18%'>직장 명</th>
+      </tr>
+  ");
+
+  while($row=mysql_fetch_array($result)) {
+    echo("
+      <tr bgcolor='#FFFFFF'>
+      <td align='center'><a href=\"$PHP_SELF?cmd=detail&id=$row[id]\" class='blue'>$row[id]</a></td>
+      <td align='center'><a href=\"$PHP_SELF?cmd=detail&id=$row[id]\" class='blue'>$row[name]</a></td>
+      <td align='center'>$row[tele]</a></td>
+      <td> $row[addr1]</td>
+      <td align='center'>$row[offi]</td>
+      </tr>
+    ");
+  }
+  echo "</table><br>";
+
+}
+
+
+if($cmd=="detail") {
+  echo("
+      <br>
+      <table border='0' width='600' cellspacing='1' cellpadding='0' bgcolor='#AAAAAA'>
+      <tr>
+      <th bgcolor='#EEEEEE' colspan='2' height='30'>검색 회원 정보</th>
+      </tr>
+  ");
+  $query = "SELECT * FROM user WHERE id='$id'";
+  $result = mysql_db_query($DB_NAME, $query);
+  $user = mysql_fetch_array($result);
+  echo("
+      <tr bgcolor='#FFFFFF'>
+      <th width='30%'>아이디</th> <td width='70%' class='pad14'> $user[id]</td> 
+      </tr>
+      <tr bgcolor='#FFFFFF'> 
+      <th>이름</th> <td class='pad14'> $user[name]</td>
+      </tr>
+      <tr bgcolor='#FFFFFF'>
+      <th>등급</th> <td class='pad14'>$user[type]</td>
+      </tr>
+      <tr bgcolor='#FFFFFF'>
+      <th>Email</th> <td class='pad14'> $user[email]</td>
+      </tr>
+      <tr bgcolor='#FFFFFF'>
+      <th>주소</th> 
+      <td class='pad14'> $user[addr1] $user[addr2]</td>
+      </tr>
+      <tr bgcolor='#FFFFFF'>
+      <th>전화번호</th> <td class='pad14'> $user[tele]</td>
+      </tr>
+      <tr bgcolor='#FFFFFF'>
+      <th>핸드폰</th> <td class='pad14'> $user[hand]</td>
+      </tr>
+      <tr bgcolor='#FFFFFF'>
+      <th>직장명</th> <td class='pad14'> $user[offi] </td>
+      </tr>
+      </table>
+  ");
+
+}
+
+  mysql_close();
+?>
+</td></tr>
+</table>
+</BODY>
+</HTML>

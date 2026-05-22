@@ -1,0 +1,211 @@
+<?
+  include "akom.inc";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if (!$result) {echo $query,mysql_error();exit;}
+  $ccfg=mysql_fetch_array($result);
+
+if ($cmd=="new" || $cmd=="") {
+  echo("
+  <table width='642' border='0'>
+  <tr><td align='center'>
+    <form name=form1 action=$PHP_SELF target='_parent' method=post>
+    <input type=hidden name=club value='$club'>
+    <input type=hidden name=cmd value='save'>
+
+    <table border=0 bordercolor=black cellpadding=0 cellspacing=0 width='100%'>
+    <tr bgcolor='7d6433'>
+    <td align=center><font color=white size=3><B>$ccfg[name] 회원 가입</b></td>
+    </tr>
+    </table>
+
+  $ccfg[intro]
+    <table border=0 bordercolor=black cellpadding=0 cellspacing=0 width=300>
+
+    <tr>
+    <td width=150><LI><b>아이디</td>
+    <td><input type=text size=20 value='$userid' readonly></td>
+    </tr>
+
+    <tr>
+    <td width=150><LI><b>이름</td>
+    <td><input type=text size=20 value='$userna' readonly></td>
+    </tr>
+    ");
+
+    if ($ccfg[disp_memo1]) echo("
+    <tr>
+    <td width=150><LI><b>$ccfg[memo1]</td>
+    <td><input type=text size=20 name=memo1></td>
+    </tr>
+    ");
+    if ($ccfg[disp_memo2]) echo("
+    <tr>
+    <td width=150><LI><b>$ccfg[memo2]</td>
+    <td><input type=text size=20 name=memo2></td>
+    </tr>
+    ");
+    if ($ccfg[disp_memo3]) echo("
+    <tr>
+    <td width=150><LI><b>$ccfg[memo3]</td>
+    <td><input type=text size=20 name=memo3></td>
+    </tr>
+    ");
+    if ($ccfg[disp_memo4]) echo("
+    <tr>
+    <td width=150><LI><b>$ccfg[memo4]</td>
+    <td><input type=text size=20 name=memo4></td>
+    </tr>
+    ");
+    if ($ccfg[disp_memo5]) echo("
+    <tr>
+    <td width=150><LI><b>$ccfg[memo5]</td>
+    <td><input type=text size=20 name=memo5></td>
+    </tr>
+    ");
+
+    echo("
+    </table>
+
+    <BR>
+    <input type=submit value=' 회원가입 '>&nbsp;&nbsp;&nbsp;
+    <input type=button value=' 가입취소 ' onclick='history.go(-1)'>
+    </form>
+  </td></tr>
+  </table>
+  </body>
+  </html>
+  ");
+}
+
+if ($cmd=="save") {
+	include("top.htm");
+	$table_name="cuser_".$club;
+	$query = "select * from $table_name where id='$userid'";
+    $result=mysql_db_query($DB_CM,$query);
+	$user=mysql_fetch_array($result);
+	if ($user) {
+		echo("<script>window.alert('이미 가입중인 ID 입니다.');history.go(-1);</script>");
+		exit;
+	}
+	$inday=date("Y-m-d H:i:s");
+	$query = "insert into $table_name (
+	id,name,type,
+	memo1,memo2,memo3,memo4,memo5,
+	inday,
+	countw,countu,countd,
+	all_log,all_time,month_log,month_time)
+	values(
+    '$userid','$userna','$ccfg[guesttype]',
+	'$memo1','$memo2','$memo3','$memo4','$memo5',
+	'$inday',
+	0,0,0,
+	0,0,0,0)";
+    $result=mysql_db_query($DB_CM,$query);
+	if (!$result) {
+		if (mysql_errno()==1146) {	//회원DB없다
+            create_db2("def_cuser",$table_name);
+            $result=mysql_db_query($DB_CM,$query);
+		}
+        if (!$result) {
+            echo("INSERT ERR Q:$query<BR>E:".mysql_error()."<BR>errno:".mysql_errno()."<BR>");
+            echo("<script>window.alert('회원저장에 실패하였습니다.');history.go(-1);</script>");
+            exit;
+        }
+	}
+
+	echo("
+	<br><br>
+	<table width='642' border='0'>
+	<tr><td align='center'>
+	  <table width='100%'>
+          <tr><td>
+	  $ccfg[guestok]
+	  </td></tr>
+	  </table>
+	<form>
+	<input type=button value=' 동호회메인 ' onclick=window.open('$club"."main.htm','_parent','')>
+	<input type=button value=' 메인메뉴 ' onclick=window.open('main.htm','_parent','')>
+	</form>
+	</td></tr>
+	</table>
+	");
+}
+
+if ($cmd=="search_id") {
+  echo("
+  <html>
+  <head><title>사용자 찾기</title>
+  <script language='javascript'>
+	 function process(){
+	  window.opener.document.form1.id.value=document.searchform.id.value;
+	  window.close();
+	 }
+  </script>
+  </head>
+  <body bgcolor='e6e6c3' OnLoad='document.forms[0].id.focus()';>
+  <center>
+  ");
+
+  $table_name="cuser_".$club;
+  $query="SELECT * FROM $table_name WHERE id = '$id'";
+  $result=mysql_db_query($DB_CM,$query);
+  $user=mysql_fetch_array($result);
+
+  if(strlen($id)<3) echo("<font size=-1>사용하기 원하는 아이디를 입력하세요.</font><br>");
+  else if (!$user[id])echo("<font size=-1>'$id' 는 등록가능한 아이디입니다.</font><br>");
+  else echo("<font size=-1>'$id' 는 '$user[name]'님이 사용중인 아이디입니다.</font><br>
+			  <font size=-1>다른 아이디를 입력하세요.</font><br>");
+  echo("
+	 <form action='$PHP_SELF?cmd=search_id&id=$id' method=post name='searchform'>
+	 <input type=text name='id' value='$id' size=12 maxlength=12><br>
+	 (3~12자의 빈칸이 없는 영어,한글문자)
+	 <br>
+	 <input type=submit value='다시찾기'>
+	 <input type=reset value='확인' onclick='javascript:process()'>
+	 </form>
+	 </center>
+	 </body>
+	 </html>
+   ");
+}
+
+
+function create_db2($file1,$file2)
+{
+    global $DB_NAME,$DB_CM,$DB_USER,$connect;
+	$filename=$file2."__.tmp";
+
+	$pResult = mysql_query( "show variables" );
+	while( 1 ) {
+		$rowArray = mysql_fetch_row( $pResult );
+		if( $rowArray == false ) break;
+		if( $rowArray[0] == "basedir" )
+			$bindir = $rowArray[1]."bin/";
+	}
+    @exec( $bindir."mysqldump -d --user=$DB_USER $DB_NAME $file1 > $filename" );
+
+	if (($fp=fopen($filename,"r+"))==NULL) return;
+	$start=false;
+	$count=0;
+	$query="create table $file2 (";
+
+    while (($buff = fgets($fp, 4096))) {
+		$buff=ereg_replace("\n","",$buff);
+		if (substr($buff,0,13)=="CREATE TABLE ") $start=true;
+		else if ($start) {
+			$query=$query.$buff;
+			$count++;
+		}
+	}
+	fclose($fp);
+	if ($count>0) {
+        $result=mysql_db_query($DB_CM,$query);
+        if (!$result) echo $query,mysql_error();
+	}
+	unlink($filename);
+}
+  mysql_close();
+?>

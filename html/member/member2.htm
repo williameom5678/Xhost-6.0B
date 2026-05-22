@@ -1,0 +1,50 @@
+<?
+        $DB_MAIL="xhostmail";
+        if (!$connect) {
+            $connect=mysql_connect("localhost","$DB_USER","");
+            if (!mysql_select_db("$DB_NAME",$connect)) exit;
+        }
+        $query = "select * from user where id='$userid'";
+        $result=mysql_query($query,$connect);
+        $user=mysql_fetch_array($result);
+        $uhour=(int)($user[all_time]/(60*60)) ;
+        $umin =(int)($user[all_time]%(60)) ;
+        $user[all_time_str]=sprintf("%d 시간 %d 분",$uhour,$umin);
+        mysql_close( $connect);
+
+        $mailcount=0;
+        $connect2=mysql_connect("localhost","$DB_MAIL","");
+        if (!mysql_select_db("$DB_MAIL",$connect2)) exit;
+        $table_name="mail".$user[id];
+		//총수구하기
+        $query="select count(*) from $table_name where tcode='mail'";
+        $result2=mysql_db_query($DB_MAIL,$query);
+        if ($result2) {
+            $row2=mysql_fetch_array($result2);
+            $mailcount=$row2[0];
+        }
+
+        echo("
+        <BR>
+        안녕하세요? $user[id] ($user[name])님<BR>
+        $user[id] 님은 ".disp_num($count_total)." 접속자입니다. <BR>
+        마지막접속 : $user[logout]<BR>
+        총 접속수  : $user[all_log]<BR>
+        총 사용시간 : $user[all_time] $user[all_time_str]<BR>
+        <a href='mjoin.htm'><b>☞ 회원가입하기</b></a><BR>
+        <a href='medit.htm'><b>☞ 회원정보변경</b></a><BR>
+        <a href='bbs/list.htm?code=qa'><b>☞ Q & A 게시판</b></a><BR>
+        <a href='$PHP_SELF?cmd=logout'><b>☞ 로그아웃</b></a><BR>
+        <a href='mail.htm'><b>☞ 편지보관함 ($mailcount 통)</b></a><BR>
+        <a href='mout.htm' ><b>☞ 회원탈퇴</b></a><BR>
+        ");
+        if ($user[id]=="sysop"||$user[type]==19) {
+          echo("
+          <a href='sysop.htm?cmd=member'><font color=red><b>◆ 회원관리</b></a></font><BR>
+          <a href='maincfg.htm'         ><font color=red><b>◆ 환경설정</b></a></font><BR>
+          <a href='sysop.htm?cmd=club'  ><font color=red><b>◆ 동호회관리</b></a></font><BR>
+          ");
+        }
+    }
+  include("sign.htm");
+?>

@@ -1,0 +1,75 @@
+<?
+  include("akom.inc");
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!mysql_select_db("$DB_NAME",$connect)) exit;
+  $userip=getenv("REMOTE_ADDR");
+
+  echo("
+  <html>
+  <head>
+  <title>우편번호 검색</title>
+  <style type='text/css'>
+  	  body, td, th, input	{ font-family:굴림,arial; font-size:9pt; line-height:14pt; }
+	a:link		{ font-family:굴림,arial; font-size:9pt; line-height:14pt; color:darkblue;}
+	a:hover		{ font-family:굴림,arial; font-size:9pt; line-height:14pt; color:#B70E89;}
+	a:visited	{ font-family:굴림,arial; font-size:9pt; line-height:14pt; color:darkblue;}
+
+  </style>
+  </head>
+  <script>
+  function zip_code(v1,v2)
+  {
+	  opener.document.form1.post.readonly = false;
+	  opener.document.form1.addr1.readonly = false;
+	  opener.document.form1.post.value = v1;
+	  opener.document.form1.addr1.value = v2;
+	  opener.document.form1.post.readonly = true;
+	  opener.document.form1.addr1.readonly = true;
+	  opener.document.form1.addr2.focus();
+  }
+  </script>
+
+  <body leftmargin='0' topmargin='5' OnLoad='document.forms[0].dong_name.focus()';>
+  <form name=post_no action='$PHP_SELF'>
+  <center>
+  <img src=images/searchpost.gif border=0><BR>
+  검색하시고자하는 동/면/읍 이름을 입력하세요.<BR><br>
+  <font color=blue> (예: <font color=red>강남</font>(구),
+  <font color=red>상계</font>(동) ...)</font><BR>
+  동/면/읍 : 
+  <input type=text name='dong_name' size=15>
+  <input type=button value='찾기' onclick='submit();' style='background-color:#ffcc00; border-bottom:gray solid 1px; border-left:gray solid 1px; border-right:gray solid 1px; border-top:gray solid 1px; color:black; height: 20px'>
+  </form>
+  ");
+  if (strlen($dong_name)>2) {
+	echo("<table border=0 width=380>
+	<TR>
+    <TD width=60  bgcolor=#3384BF align=center>우편번호</TD>
+    <TD width=320 bgcolor=#3384BF align=center>주&nbsp;소</TD>
+	");
+	$query="select * from postno where v_city like '%$dong_name%' limit 100";
+	$result=mysql_query($query,$connect);
+	$count=0;
+	while ($row=mysql_fetch_array($result)){
+		$tstr="$row[v_province] $row[v_district] $row[v_city]";
+		$tstr=str_replace("\n","",$tstr);
+		$tstr=str_replace("\r","",$tstr);
+
+		if($count++ %2 == 0) $row_color='#f7f7f7';
+		else $row_color='#CBDCED';
+		echo("<tr>\n<td align=center bgcolor='$row_color' >");
+		echo("<a href=\"javascript:zip_code('$row[v_post_num]','$tstr'),self.close()\">");
+        echo("$row[v_post_num]</a></TD>");
+		echo("<TD bgcolor='$row_color' >&nbsp;&nbsp;");
+		echo("<a href=\"javascript:zip_code('$row[v_post_num]','$tstr'),self.close()\">");
+        echo("$tstr</a></TD>\n");
+		echo("</tr>\n");
+	}
+	echo("</table>");
+  }
+  echo("
+  </body>
+  </html>
+  ");
+
+?>

@@ -1,0 +1,23 @@
+BODY          { font-family:arial,±¼¸² ; font-size:9pt }	
+FONT          { font-family:arial,±¼¸² ; font-size:9pt }	
+FONT.title    { font-family:arial,±¼¸² ; font-size:9pt }	
+STRONG        { font-family:arial,±¼¸² ; font-size:9pt }	
+B             { font-family:arial,±¼¸² ; font-size:9pt }	
+A:link        { font-family:arial,±¼¸² ; font-size:9pt ; text-decoration:none ; background-color:none }	
+A:active      { font-family:arial,±¼¸² ; font-size:9pt ; text-decoration:none ; color: #344BEB ; background-color:none }	
+A:visited     { font-family:arial,±¼¸² ; font-size:9pt ; text-decoration:none ; color: #0000EE ; background-color:none }	
+A:hover       { font-family:arial,±¼¸² ; text-decoration: underline ; color:#F66901 ; background-color:none }	
+TD            { font-family:arial,±¼¸² ; font-size:9pt }	
+TH            { font-family:arial,±¼¸² ; font-size:9pt }	
+#PCL          { font-family:arial,±¼¸² ; font-style:none; font-weight:normal ; text-decoration:none; font-size:9pt }	
+#PTT          { font-family:arial,±¼¸² ; font-size:9pt }	
+#PST          { font-family:arial,±¼¸² ; font-size:9pt }	
+.help         { cursor:help }	
+.hand         { cursor:hand }	
+.cross        { cursor:crosshair }	
+.move         { cursor:move }	
+.text         { cursor:text }	
+.wait         { cursor:wait }	
+.scroll       { font-weight:bold ; font-size:15 ; text-align:center ; color:#FF9933 }	
+.drag         {position:relative ; cursor:move }	
+.starhome     {	position:absolute ; visibility:visible ; top:-50px ; font-size:9pt ; font-family:Arial,±¼¸² ; font-weight:bold ; color:orange }

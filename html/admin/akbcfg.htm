@@ -1,0 +1,416 @@
+<?
+  if (!$userid||$userid=="guest") {include("login.htm");exit;}
+  include "akom.inc";
+  include "sysop.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+  $table_name="$club"."_"."$code";
+  $ctype=0;
+  if ($club!="main") {
+	$cuser_name="cuser_".$club;
+	$query = "select * from $cuser_name where id='$userid'";
+	$result=mysql_db_query($DB_CM,$query);
+	if ($result) {
+		$cuser=mysql_fetch_array($result);
+        if ($cuser) $ctype=$cuser[type];
+	}
+  }
+  $query="select * from bcfg where table_name='$table_name'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $bcfg=mysql_fetch_array($result);
+  if (!$result||!$bcfg) echo("생성되어 있지않은 DB ERR<BR>$query<BR>".mysql_error()."<BR>");
+
+  if ($super_user||$csuper_user||$ctype>16||$userid==$bcfg[sysop]||$userid==$bcfg[sysop1]||$userid==$bcfg[sysop2]||$userid==$bcfg[sysop3]) $bsuper_user=true;
+  if (!$bsuper_user) {echo ("<script>window.alert('운영자 전용메뉴' );history.go(-1)</script>");exit;}
+  //echo ("$bsuper_user,$bcfg[sysop1],");
+
+  if ($bcfg[bform]<1) $bcfg[bform]=1;
+  if (!$bcfg[club]) $bcfg[club]="main";
+
+
+  if ($cmd=="dump") {
+	header("Content-disposition: filename=$table_name.sql");
+	header("Content-type: application/octetstream");
+	header("Pragma: no-cache");
+	header("Expires: 0");
+
+	$pResult = mysql_query( "show variables" );
+	while( 1 ) {
+		$rowArray = mysql_fetch_row( $pResult );
+		if( $rowArray == false ) break;
+		if( $rowArray[0] == "basedir" )
+			$bindir = $rowArray[1]."bin/";
+	}
+	passthru( $bindir."mysqldump --user=$DB_USER --password='' $DB_NAME $table_name" );
+	exit;
+  }
+
+
+  if ($cmd=="delete") {
+	  $query="delete from bcfg where table_name=$table_name";
+	  $result=mysql_db_query($DB_CM,$query);
+	  if (!$result) {
+		  echo("DELETE ERR Q:$query,".mysql_error()."<BR>");
+	  }
+	  else {
+		  echo("
+		  <table border='0' width='626'><tr><td align='center'>
+		  삭제 되었습니다.
+		  </td></tr></table>");
+		  echo("<meta http-equiv='Refresh' content='1; URL=bbsadsys.htm'>");
+	  }
+	  exit;
+  }
+
+
+  if ($mode=="insert") {
+	$reg_dagte=date("Y-m-d H:i:s");
+	$table_name="$new_club"."_"."$new_code";
+	$query = "
+	insert into bcfg (table_name,code,club,name,reg_date)
+	values ('$table_name','$new_code','$new_club','$name','$reg_date')
+	";
+	$result=mysql_db_query($DB_CM,$query);
+	if($result) $mode="";
+	else {
+		echo("CREATE ERR Q:$query, R:$result,".mysql_error()."<BR>");
+		exit;
+	}
+  }
+
+  if($mode=='update') {
+	$head=addslashes($head);
+	$foot=addslashes($foot);
+	$date=date("Y-m-d H:i:s");
+	$now_allno=0;
+
+	if ($cmd!="insert") {       //자료없을때
+		$query="select * from bcfg where table_name='$table_name'" ;
+		$result=mysql_db_query($DB_CM,$query);
+		if ($result) $bcfg=mysql_fetch_array($result);
+		if (!$result||!$bcfg) $cmd="insert";//자료없다.
+	}
+
+	if ($cmd=="insert") {
+		$query2="insert into bcfg (table_name,club,code,date) values ('$table_name','$club','$code','$date')";
+		$result2=mysql_db_query($DB_CM,$query2);
+		if (!$result2) {
+			echo("INSERT ERR Q:$query,".mysql_error()."<BR>");
+		}
+	}
+
+	if($admin_pw2) $admin_pw=$admin_pw2;
+	if ($new_code) $code=$new_code;
+	if ($new_club) $club=$new_club;
+	$new_table_name="$club"."_"."$code";
+
+	//총수구하기
+	$now_allno=0;
+	$query="select count(*) from $table_name";
+	$result2=mysql_db_query($DB_CM,$query);
+	if ($result2) {
+		$row=mysql_fetch_array($result2);
+		$now_allno=$row[0];
+	}
+
+	$query="update bcfg set
+	club		 = '$club',
+	code		 = '$code',
+	table_name	 = '$new_table_name',
+	name		 = '$name',
+	head		 = '$head',
+	foot		 = '$foot',
+	write_top	 = '$write_top',
+	bform		 = '$bform'  ,
+	formnum 	 = '$formnum'  ,
+	num_hits	 = '$num_hits',
+	num_new 	 = '$num_new',
+	sysop		 = '$new_sysop'   ,
+	sysop1		 = '$new_sysop1'   ,
+	sysop2		 = '$new_sysop2'   ,
+	sysop3		 = '$new_sysop3'   ,
+	passwd		 = '$new_passwd',
+	read_passwd  = '$read_passwd',
+	write_passwd = '$write_passwd',
+	admin_mail	 = '$admin_mail' ,
+	body_home	 = '$body_home',
+	html_top	 = '$html_top',
+	html_end	 = '$html_end',
+	use_file	 = '$use_file',
+	use_hide	 = '$use_hide',
+	empty_file	 = '$empty_file',
+	use_name	 = '$use_name',
+	use_email	 = '$use_email',
+	use_tag 	 = '$use_tag',
+	use_ok		 = '$use_ok',
+    use_good     = '$use_good',
+    use_good3    = '$use_good3',
+    use_passwd   = '$use_passwd',
+	use_body	 = '$use_body',
+	use_char	 = '$use_char',
+	itype		 = '$itype',
+	rtype		 = '$rtype',
+	dtype		 = '$dtype',
+	wtype		 = '$wtype',
+	ictype		 = '$ictype',
+	rctype		 = '$rctype',
+	dctype		 = '$dctype',
+	wctype		 = '$wctype',
+	line		 = '$line',
+	tline		 = '$tline',
+	total		 = '$now_allno',
+	date2		 = '$date'
+	where table_name='$table_name'" ;
+
+	$result=mysql_db_query($DB_CM,$query);
+	if (!$result) {
+		echo("UPDATE ERR Q:$query,".mysql_error()."<BR>");
+	}
+	else {
+		mysql_close( $connect);
+		echo("수정 되었습니다.<BR>");
+		if ($cmd2=="all") echo("<meta http-equiv='Refresh' content='1; URL=bbsadsys.htm'>");
+		else echo("<meta http-equiv='Refresh' content='0; URL=$PHP_SELF?club=$club&code=$code'>");
+	}
+	exit;
+  }
+
+  if ($cmd=="delsame") {
+	$count=0;
+	echo("<table border='0' width='626'><tr><td align='center'>
+	같은 자료를 삭제하고 있습니다. 잠시만 기다려 주십시요.
+	</td></tr></table>\n");flush();
+	$table_name="$club"."_"."$code";
+	$query = "select * from $table_name order by title,date,name";
+	$result=mysql_db_query($DB_CM,$query);
+	echo("<table border='0' width='626'><tr><td align='center'>
+	같은 자료 추출중....
+	</td></tr></table>\n");flush();
+	while($row = mysql_fetch_array($result)) {
+		if (
+			$row2[title]==$row[title]&&
+			$row2[date]==$row[date]&&
+			$row2[size]==$row[size]&&
+			$row2[filename]==$row[filename]&&
+			$row2[id]==$row[id] ) {
+			$query = "delete from $table where num=$row[num]";
+			$result2=mysql_db_query($DB_CM,$query);
+			echo("중복 삭제 $row[num]. $row[title] ($table_name) <BR>");
+			echo("<script>scroll(0,1000000);</script>\n");
+			flush();
+			$count++;
+		}
+		else {
+			$row2=$row;
+		}
+	}
+	echo("<center>같은 자료 삭제가 끝났습니다. (총 $count 개 삭제)<BR>\n");flush();
+  }
+
+  $bform=$bcfg[bform]-1;
+  if (!$bform||$bform<0) $bform=0;
+  echo("
+<link rel='stylesheet' type='text/css' href='font.css'>
+<form name='form1' action='$PHP_SELF' method=post>
+<input	type=hidden name=club value='$club'>
+<input	type=hidden name=code value='$code'>
+<input	type=hidden name=cmd value='$cmd'>
+<input	type=hidden name=cmd2 value='$cmd2'>
+<input	type=hidden name=mode value='update'>
+<input	type=hidden name=mode2 value='$mode2'>
+<br>
+<table width=626  cellspacing=0 cellpadding=3 border=0>
+<tr bgcolor=#006699>
+<td bgcolor=#113366 align=left width=310><font color=white><b>&nbsp;&nbsp;$bcfg[name]</b></font></td>
+<td bgcolor=#113366 align=right width=310><font color=white>CLUB: $bcfg[club] / CODE:$bcfg[code]</font></td>
+</tr>
+</table>
+
+<table width=626 cellspacing=0 cellpadding=1 border=1>
+");
+
+
+if ($cmd2=="all") echo("
+<tr>
+  <td bgcolor='#5485B6' width=80 align=center>동호회</td>
+  <td width=530>
+  &nbsp;&nbsp;<input type=text name=new_club value='$bcfg[club]' size=80 maxlength=30></td>
+</tr>
+<tr>
+  <td bgcolor='#5485B6' align=center>가기코드</td>
+  <td width=530>
+  &nbsp;<input type=text name=new_code value='$bcfg[code]' size=80 maxlength=30></td>
+</tr>
+");
+
+echo("
+<tr>
+  <td bgcolor='#5485B6' align=center>게시판제목</td>
+  <td width=530>
+  &nbsp;<input type=text value='$bcfg[name]' size=70 maxlength=100 name=name></td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>담당</td>
+  <td width=530>
+  &nbsp;<input type=text name=new_sysop value='$bcfg[sysop]' size=15>
+  &nbsp;<input type=text name=new_sysop1 value='$bcfg[sysop1]' size=15>
+  &nbsp;<input type=text name=new_sysop2 value='$bcfg[sysop2]' size=15>
+  &nbsp;<input type=text name=new_sysop3 value='$bcfg[sysop3]' size=15>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>목록형식</td>
+  <td>
+  &nbsp;<input type=radio name=bform value=1 >기본
+  &nbsp;&nbsp;<input type=radio name=bform value=2 >비공개
+  &nbsp;&nbsp;<input type=radio name=bform value=3 >공지
+  &nbsp;&nbsp;<input type=radio name=bform value=4 >찬성/반대
+  &nbsp;&nbsp;<input type=radio name=bform value=5 >방명록<BR>
+  &nbsp;<input type=radio name=bform value=6 >참고자료
+  &nbsp;&nbsp;<input type=radio name=bform value=7 >예비
+  &nbsp;&nbsp;<input type=radio name=bform value=8 >강좌
+  &nbsp;&nbsp;<input type=radio name=bform value=9 >예비
+  &nbsp;&nbsp;<input type=radio name=bform value=10>뉴스 <BR>
+  &nbsp;<input type=radio name=bform value=11>자료실
+  &nbsp;&nbsp;<input type=radio name=bform value=12>제목전용
+  &nbsp;&nbsp;<input type=radio name=bform value=13>제목전용자료실
+  &nbsp;&nbsp;<input type=radio name=bform value=14>예비
+  &nbsp;&nbsp;<input type=radio name=bform value=15>예비 <BR>
+  &nbsp;<input type=radio name=bform value=16>예비
+  &nbsp;&nbsp;<input type=radio name=bform value=17>예비
+  &nbsp;&nbsp;<input type=radio name=bform value=18>예비
+  &nbsp;&nbsp;<input type=radio name=bform value=19>예비
+  &nbsp;&nbsp;<input type=radio name=bform value=20>예비 <BR>
+  &nbsp;<input type=radio name=bform value=21>전체게시판
+  &nbsp;&nbsp;<input type=radio name=bform value=22>전체자료실
+  </td>
+</tr>
+<script>form1.bform[$bform].checked=true;</script>
+<tr>
+  <td bgcolor='#5485B6' align=center>TEXT목록</td>
+  <td>
+  &nbsp;<input type=text name=formnum value='$bcfg[formnum]' size=3>
+  &nbsp;Web Line&nbsp;<input type=text name=line value='$bcfg[line]' size=3>
+  &nbsp;&nbsp;Text Line&nbsp;<input type=text name=tline value='$bcfg[tline]' size=3>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>목록모양</td>
+  <td>
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_good3    value='y'");if ($bcfg[use_good3  ]=='y') echo(" checked");echo(">3번추천보이기
+  </td>
+</tr>
+
+
+<tr>
+  <td bgcolor='#5485B6' align=center>강조모양</td>
+  <td>
+  &nbsp;New<input type=text value='$bcfg[num_new]'  size=3 name=num_new>H
+  &nbsp;Hit<input type=text value='$bcfg[num_hits]' size=3 name=num_hits>회
+  &nbsp;문자사용<INPUT TYPE=CHECKBOX NAME=use_char value='y'");if ($bcfg[use_char]=='y') echo(" checked");echo(">
+ </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>쓰기모양</td>
+  <td>
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_name   value='y'");if ($bcfg[use_name   ]=='y') echo(" checked");echo(">Name
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_email  value='y'");if ($bcfg[use_email  ]=='y') echo(" checked");echo(">Email
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_body   value='y'");if ($bcfg[use_body   ]=='y') echo(" checked");echo(">내용
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_tag    value='y'");if ($bcfg[use_tag    ]=='y') echo(" checked");echo(">Tag
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_passwd value='y'");if ($bcfg[use_passwd ]=='y') echo(" checked");echo(">암호
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_file   value='y'");if ($bcfg[use_file   ]=='y') echo(" checked");echo(">파일첨부
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=empty_file value='y'");if ($bcfg[empty_file ]=='y') echo(" checked");echo(">빈파일무시
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_hide   value='y'");if ($bcfg[use_hide   ]=='y') echo(" checked");echo(">등록자감춤
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>읽기모양</td>
+  <td>
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_ok	   value='y'");if ($bcfg[use_ok     ]=='y') echo(" checked");echo(">찬성/반대선택
+  &nbsp;<INPUT TYPE=CHECKBOX NAME=use_good     value='y'");if ($bcfg[use_good   ]=='y') echo(" checked");echo(">추천/해제선택
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>암호인증</td>
+  <td>
+  &nbsp;읽기암호<input type=text size=8 name=read_passwd value='$bcfg[read_passwd]'>
+  &nbsp;쓰기암호<input type=text size=8 name=write_passwd value='$bcfg[write_passwd]'>
+  &nbsp;관리암호<input type=text size=8 name=new_passwd value='$bcfg[passwd]'>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>등급인증</td>
+  <td>
+  &nbsp;진입등급<input type=text size=4 name=itype value='$bcfg[itype]'>
+  &nbsp;읽기등급<input type=text size=4 name=rtype value='$bcfg[rtype]'>
+  &nbsp;쓰기등급<input type=text size=4 name=wtype value='$bcfg[wtype]'>
+  &nbsp;다운등급<input type=text size=4 name=dtype value='$bcfg[dtype]'>
+");
+  if ($club!="main") echo("
+  <BR>
+  &nbsp;진입동호등급<input type=text size=4 name=ictype value='$bcfg[ictype]'>
+  &nbsp;읽기동호등급<input type=text size=4 name=rctype value='$bcfg[rctype]'>
+  &nbsp;쓰기동호등급<input type=text size=4 name=wctype value='$bcfg[wctype]'>
+  &nbsp;다운동호등급<input type=text size=4 name=dctype value='$bcfg[dctype]'>
+");
+echo("
+  </font></td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>HTML</td>
+  <td>
+  &nbsp;상단HTML<input type=text size=50 name=html_top value='$bcfg[html_top]'><BR>
+  &nbsp;하단HTML<input type=text size=50 name=html_end value='$bcfg[html_end]'>
+  </font></td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>Header</td>
+  <td align='center'>
+  &nbsp;<TEXTAREA NAME=head ROWS=3 COLS=75>$bcfg[head]</TEXTAREA>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>Footer</td>
+  <td align='center'>
+  &nbsp;<TEXTAREA NAME=foot ROWS=3 COLS=75>$bcfg[foot]</TEXTAREA>
+  </td>
+</tr>
+
+<tr>
+  <td bgcolor='#5485B6' align=center>Write</td>
+  <td align='center'>
+  &nbsp;<TEXTAREA NAME=write_top ROWS=3 COLS=75>$bcfg[write_top]</TEXTAREA>
+  </td>
+</tr>
+
+</table>
+<table width='626' border=0>
+<tr><td align=center>
+<input type=submit value=' 수 정 완 료 '>&nbsp;
+<input type=button value=' 메 인 복 귀 ' onclick=window.open('bbs/list.htm?code=$code&club=$club','_self','')>
+</form>
+</td></tr>
+</table>
+<b>현재상태</b><BR>
+<table width=626 cellspacing=0 cellpadding=1 border=1>
+<tr>
+  <td bgcolor='#5485B6' align=center>게시물수</td>
+  <td width=530>
+  &nbsp;&nbsp;총수:$bcfg[total]  마지막:$bcfg[last_date]
+  </td>
+</tr>
+</table>
+
+");
+
+?>

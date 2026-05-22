@@ -1,0 +1,46 @@
+td          { font-family:±¼¸²,arial; font-size:12px; line-height:14pt; color:black}
+input		{ font-family:±¼¸²,arial; font-size:12px; border:1x solid #ffffff;border-color:#000000; }
+pre         { font-family:±¼¸²,arial; font-size:12px; color:#123456; }
+a.top		{ font-family:±¼¸²,arial; font-size:12px; color:#5A5A5A; text-decoration:none; }
+a.top:hover { font-family:±¼¸²,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a.tmenu     { font-family:±¼¸²,arial; font-size:12px; color:#444444; text-decoration:none; }
+a.tmenu:hover	{ font-family:±¼¸²,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a.lmenu 	{ font-family:±¼¸²,arial; font-size:12px; color:#222222; text-decoration:none; }
+a.lmenu:hover	{ font-family:±¼¸²,arial; font-size:12px; color:#A8240B; text-decoration:underline; }
+a           { font-family:±¼¸²,arial; font-size:12px; color:#000000; text-decoration:none; }
+a:hover 	{ font-family:±¼¸²,arial; font-size:12px; color:#0000FF; text-decoration:underline; }
+a.page:hover	{ font-family:±¼¸²,arial; font-size:12px; color:#A8240B; text-decoration:underline; background-color:#CCCCFF; }
+
+.frm1 {
+       font-size:9pt; 
+       font-family:±¼¸²Ã¼; 
+}
+
+.frm2 {
+       font: 9pt ±¼¸²Ã¼; 
+       BACKGROUND-COLOR:#FFFFFF; 
+       COLOR:#000000; 
+       BORDER:1x solid #ba9c00
+}
+
+.frm3 {
+       font-size:9pt; 
+       font-family:±¼¸²Ã¼; 
+       BACKGROUND-COLOR:#C0E4E0; 
+       border-left-width:1; 
+       border-left-color:#6084A0; 
+       COLOR:#000000; 
+       BORDER:5x solid #C0E4E0;
+}
+
+.frm4 {
+       font-size:9pt; 
+       font-family:±¼¸²Ã¼; 
+       BACKGROUND-COLOR:#70ACA8; 
+       border-width:1; 
+       border-color:#70ACA8; 
+       COLOR:#ffffff; 
+       BORDER:2x solid #70ACA8
+}
+
+TEXTAREA {font-size:10pt; font-family:±¼¸²Ã¼; BACKGROUND-COLOR:#FFFFFF; COLOR:#000000; BORDER:1x solid #000000}

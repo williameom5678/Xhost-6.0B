@@ -1,0 +1,30 @@
+<?
+  include "db.htm";
+  include "ut.htm";
+  $now_html="회원정보";
+  $tophtml="top.htm?now_html=$now_html";
+  $lefthtml="memleft.htm";
+  $bodyhtml="msearch.htm";
+  $bottomhtml="bottom.htm";
+  if ($cmd=="logout"||!$userid||$userid=="guest")  {
+    echo("<meta http-equiv='refresh' content='0; url=index.htm'>");
+    exit;
+  }
+
+echo("
+<html>
+<head>
+<title>대전맹 Web/Text-BBS</title>
+<meta http-equiv='Content-Type' content='text/html; charset=euc-kr'>
+</head>
+<frameset rows='92,*,25' border=0>
+  <frame name='f_top' scrolling='no' marginwidth='0' marginheight='0' noresize target='f_left' src='$tophtml'>
+  <frameset cols='142,*' border=0>
+    <frame name='f_left' scrolling='auto' marginwidth='0' marginheight='0' noresize target='f_body' src='$lefthtml'>
+    <frame name='f_body' marginwidth='0' marginheight='0' target='f_body' src='$bodyhtml'>
+  </frameset>
+  <frame name='f_bottom' target='_parent' marginwidth='0' marginheight='0' src='$bottomhtml'>
+</frameset>
+</html>
+");
+?>

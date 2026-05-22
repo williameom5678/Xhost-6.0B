@@ -1,0 +1,14 @@
+<?
+function check_sysop() {
+global $userid,$userip;
+  if ( 
+      $userid=="SySop"||
+      $userid=="sysop9"||
+      $userid=="°³¹ßÀÚ"||
+      strstr($userip,"192.0.0.") 
+  ) return true;
+  return false;
+} 
+$super_user=check_sysop();
+if ($userip=="203.248.71.50"||$userip=="203.248.71.51"||$userip=="203.248.71.52"||$userip=="203.248.71.60"||$userip=="203.248.71.61") $super_user=true;
+?>

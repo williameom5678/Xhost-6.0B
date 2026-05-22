@@ -1,0 +1,163 @@
+<?
+  if (!$define_db) include "db.htm";
+  if (!$define_ut) include "ut.htm";
+
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  if (!$userid) {echo("로그인필요");exit;}
+
+  //메인환경읽기
+  $query="select * from cfg" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $cfg=mysql_fetch_array($result);
+
+
+  if (!$super_user) {echo("관리자전용메뉴");exit;}
+
+  $table_name="$club"."_"."$code";
+  if (!$club) $club=$oldclub;
+  if (!$oldclub) $oldclub=$club;
+
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_CM,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+
+//  echo("$result,$ccfg,$ccfg[club],$oldclub,");
+  if (!$result||!$ccfg||$ccfg[club]!=$oldclub) {
+      $query2="insert into ccfg (club,name) values ('$club','$name')";
+      $result=mysql_db_query($DB_CM,$query2);
+      if (!$result) {echo $query2,mysql_error();exit;}
+  }
+  include("top.htm");
+  if ($club=="main") {
+      echo("
+        <link rel='stylesheet' type='text/css' href='font.css'>
+	<table border='0' width='750'><tr><td align='center'>
+	<a href=akcfg1.htm>환경설정</a>
+      | <a href=akuser.htm          >회원관리</a>
+      | <a href=$PHP_SELP?cmd=club  >동호회설정</a>
+      | <a href=aklogo.htm          >화면설정</a>
+      | <a href=akstat.htm>접속통계</a>
+      | <a href=akstat.htm?cmd=userstat>사용자통계</a>
+      | <a href=akstat.htm?cmd=bbsstat1>계시판통계</a>
+        </td></tr></table>
+      ");
+  }
+  else {
+      echo("
+      $club 동호회관리메뉴<BR>
+      <a href=$PHP_SELP?club=$club&cmd=cfg>환경설정</a>
+      | <a href=$PHP_SELP?club=$club&cmd=user>회원관리</a>
+      ");
+  }
+
+
+if ($cmd=="club") {
+  $PAGE=15;
+
+  $filt1="";$filt2="";
+  if ($sque&&$field!="num") {
+	$filt1=" where $field like '%$sque%' ";
+	$filt2=" and $field like '%$sque%' ";
+  }
+
+  if ($pos=="delete"&&$num) {
+    $query="delete from ccfg where num=$num";
+    $result=mysql_db_query($DB_CM,$query);
+    $pos="";
+  }
+
+  if ($field=="num"&&$sque) {
+    $query="select * from ccfg where num<=$sque order by num DESC limit $PAGE" ;
+  }
+  else if ($pos=="now") {
+    $query="select * from ccfg where num<$start order by num DESC limit $PAGE" ;
+  }
+  else if ($pos==""||$pos=="top"||(!$start&&!$last)) {
+    $query="select * from ccfg $filt1  order by num DESC limit $PAGE" ;
+  }
+  else if ($pos=="back"&&$last) {
+      $query="select * from ccfg where num>=$start $filt2 order by num limit $PAGE" ;
+      $result=mysql_db_query($DB_CM,$query);
+	  for ($i=0;$i<$PAGE;$i++) {
+        if (($ccfg=mysql_fetch_array($result))) {
+//			  echo("$query,$i,$user[num]<BR>");
+            $start=$ccfg[num]+1;
+		}
+		else break;
+	  }
+      $query="select * from ccfg where num<$start  $filt2 order by num DESC limit $PAGE" ;
+  }
+  else if ($pos=="next"&&$last) {
+	$start=$last;
+    $query="select * from ccfg where num<$start  $filt2 order by num DESC limit $PAGE" ;
+  }
+  else {
+    $query="select * from ccfg  $filt1 order by num DESC limit $PAGE" ;
+  }
+
+  $result=mysql_db_query($DB_CM,$query);
+  echo("
+  <table border='0' width=750>
+  <tr><td align='center'>
+  <table width=750 bgcolor=CAC5A2 cellspacing=1 cellpadding=2 border=0>
+  <tr>
+  <td align=center bgcolor=7d6433 colspan=9><font color=ffffff><b>전체동호회관리</b></font></td>
+  </tr>
+  </table>
+  <table width=750 cellspacing=0 cellpadding=0 border=1>
+  <tr bgcolor=e3e3bf>
+	  <td width=100 align=center><font color=000000><b>편집</b></font></td>
+	  <td width=70 align=center><font color=000000><b>번호</b></font></td>
+      <td width=100 align=center><font color=000000><b>코드</b></font></td>
+	  <td width=100 align=center><font color=000000><b>이름</b></font></td>
+      <td width=100 align=center><font color=000000><b>개설날짜</b></font></td>
+	  <td width=100 align=center><font color=000000><b>최종날짜</b></font></td>
+      <td width=50 align=center><font color=000000><b>회원수</b></font></td>
+  </tr>
+  ");
+
+  while(($ccfg=mysql_fetch_array($result))) {
+      if (!$start||$start<=$ccfg[num]) $start=$ccfg[num]+1;
+	  echo("
+	  <tr>
+	  <td align=center>
+      <a href='clubedit.htm?cmd=cfg&mode=sys&num=$ccfg[num]'>편집</a>
+      <a href='$PHP_SELF?cmd=club&pos=delete&num=$ccfg[num]' onClick=\"return confirm('$ccfg[club]($ccfg[name])를 삭제할까요?')\">삭제</a>
+	  </td>
+      <td align=center><a href='$PHP_SELF?cmd=cfg&club=$ccfg[club]'>$ccfg[num]</a></td>
+      <td align=center><a href='$PHP_SELF?cmd=cfg&club=$ccfg[club]'>$ccfg[club]</a></td>
+      <td align=center><a href='PHP_SELF?cmd=cfg&club=$ccfg[club]'>$ccfg[name]</a></td>
+      <td align=center>&nbsp;".substr($ccfg[date],2,14)."</td>
+      <td align=center>&nbsp;".substr($ccfg[date2],2,14)."</td>
+      <td align=center>&nbsp;$ccfg[total]</td>
+	  </tr>
+	  ");
+      $last=$ccfg[num];
+  }
+  echo("</table>");
+  echo("
+  <form name=form1 action='$PHP_SELF' method=post>
+  <input type=hidden name=cmd value='club'>
+  <input type=hidden name=field value='$field'>
+  <input type=hidden name=sque value='$sque'>
+
+  &nbsp;<a href='$PHP_SELF?cmd=club&pos=next&start=$start&last=$last&field=$field&sque=$sque'><img src=images/bbs/next.gif border=0></a>
+  &nbsp;<a href='$PHP_SELF?cmd=club&pos=top'><img src='images/bbs/top.gif' border=0></a>
+  &nbsp;<a href='$PHP_SELF?cmd=club&pos=back&start=$start&last=$last&field=$field&sque=$sque'><img src=images/bbs/back.gif border=0></a>
+  &nbsp;&nbsp;&nbsp;
+  <select name=field>
+  <option value=club" );if ($field=="club" ) echo " selected"; echo(">코드</option>
+  <option value=name" );if ($field=="name" ) echo " selected"; echo(">이름</option>
+  <option value=num"  );if ($field=="num"  ) echo " selected"; echo(">번호</option>
+  </select>
+  <input type=text size=15 maxlength=30 name=sque value='$sque'>
+  <input type=submit value='검색'>
+  &nbsp; &nbsp;<input type=button value='신규' onclick=window.open('mjoin2.htm','_top','')>
+  &nbsp; &nbsp;<input type=button value='종료' onclick=window.open('member.htm','_top','')>
+  </form>
+  </td></tr>
+  </table>
+  ");
+}
+
+?>

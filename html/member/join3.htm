@@ -1,0 +1,22 @@
+<?
+include "../db.htm";
+include "/nfs/php/lib/ut.htm";
+include "../utbase.htm";
+include "/nfs/php/lib/template2.htm";
+
+$tpl = new template("./"); 
+$tpl->define("main","join3_t.htm");
+$connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+
+$tpl->assign(  array(
+상단메뉴			=> file2str("../bbstop.htm"),
+왼쪽메뉴			=> file2str("../left.htm"),
+하단메뉴			=> file2str("../bottom.htm"),
+아이디				=> $userid,
+이름				=> $userna,
+)  );
+$tpl->parse("main"); 
+$tpl->tprint("main"); 
+
+?>

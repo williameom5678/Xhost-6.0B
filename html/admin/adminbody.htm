@@ -1,0 +1,14 @@
+<?
+include("sysop.htm");
+if(!check_sysop($adminid)||!$rootid) {
+  echo("
+  <script>alert('정상적인 접속이 아닙니다.,,,$rootid,,,');</script>
+  <target='_parent'>
+  <meta http-equiv='refresh' type='text/css' content='0; url=admin.htm'>
+  ");
+} else {
+  echo("
+관리자 메뉴 회원관리 전체게시판
+  ");
+}
+?>

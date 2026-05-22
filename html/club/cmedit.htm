@@ -1,0 +1,131 @@
+<HTML>
+<HEAD>
+<LINK REL="stylesheet" TYPE="text/css" href="font.css">
+<TITLE>회원 정보 수정</TITLE>
+</HEAD>
+<body leftmargin='20'>
+<?
+  include "db.htm";
+  include "ut.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+  $query="select * from ccfg where club='$club'" ;
+  $result=mysql_db_query($DB_NAME,$query);
+  if ($result) $ccfg=mysql_fetch_array($result);
+  
+  $readonly="readonly";
+  $table_name="cuser_$club";
+  if ($super_user) $readonly="";
+  else $readonly="readonly";
+  $editid=$id;
+  if (!$editid) $editid=$userid;
+  if (!mysql_select_db("$DB_CM",$connect)) {echo mysql_error();exit;}
+  $query = "select * from $table_name where id = '$editid'";
+  $result=mysql_query($query,$connect);
+  if (!$result) echo $query,mysql_error();
+  $cuser=mysql_fetch_array($result);
+
+if($cmd=="editsave") {
+    $query = "update $table_name set
+              type='$user_type',
+              memo1='$memo1',
+              memo2='$memo2',
+              memo3='$memo3',
+              memo4='$memo4',
+              memo5='$memo5'
+              where id='$editid'";
+  
+
+$result=mysql_query($query,$connect);
+if(!$result) {
+   error("query erro");
+   exit;
+}
+echo("
+  <table border='0' width='626' height='300'>
+  <tr><td align='center' valign='center'>
+  <b>$cuser[name]</b>($cuser[id])님의 정보가 수정되었습니다.</td></tr>
+  </table>
+");
+  mysql_close();
+echo("<meta http-equiv='refresh' content='0; url=akcuser.htm?club=$club'>");
+exit;
+}
+echo("
+<body>
+  <br>
+  <table border=0 bordercolor=black cellpadding=0 cellspacing=0 width=600>
+  <form name='form1' action='$PHP_SELF?cmd=editsave&club=$club' method=post>
+  <input type=hidden name=id value='$id'>
+  <input type=hidden name=editid value='$id'>
+  <tr>
+  <td>
+	<table border=0 cellpadding=0 cellspacing=0 width=100%>
+	<tr bgcolor=''>
+	<td colspan=2 align=center><font size=3><b>$club동호회 회 원 정 보 수 정</b></td>
+	</tr>
+	<tr>
+	<td width='20%'></td><td width='80%'></td>
+	</tr>
+	<tr>
+	<td colspan=2>&nbsp;</td>
+	</tr>
+");
+echo("
+	  <tr>
+	  <td><LI><b>아이디*</td>
+	  <td><input type=text name=user_id value='$cuser[id]' size=12 readonly></td>
+	  </tr>
+	  <tr>
+	  <td><LI><b>이름*</td>
+	  <td><input type=text name=user_name value='$cuser[name]' size=12 readonly></td>
+	  </tr>
+	  <tr>
+	  <td><LI><b>등급</td>
+      <td><input type=text name=user_type value='$cuser[type]' size=12>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*표 수정불가)</td>
+	  </tr>
+
+	  <tr>
+      <td><LI><b>$ccfg[memo1]</td>
+	  <td>
+      <input type=text name=memo1 size=70 value='$cuser[memo1]'> </td>
+	  </tr>
+
+	  <tr>
+      <td><LI><b>$ccfg[memo2]</td>
+	  <td>
+      <input type=text name=memo2 size=70 value='$cuser[memo2]'> </td>
+	  </tr>
+	  
+	  <tr>
+      <td><LI><b>$ccfg[memo3]</td>
+	  <td>
+      <input type=text name=memo3 size=70 value='$cuser[memo3]'> </td>
+	  </tr>
+
+	  <tr>
+      <td><LI><b>$ccfg[memo4]</td>
+	  <td>
+      <input type=text name=memo4 size=70 value='$cuser[memo4]'> </td>
+	  </tr>
+
+	  <tr>
+      <td><LI><b>$ccfg[memo5]</td>
+	  <td>
+      <input type=text name=memo5 size=70 value='$cuser[memo5]'></td>
+	  </tr>
+
+	  <tr>
+	  <td colspan=2 align=center>
+	  <BR>
+	  <input type=submit value=' 수정완료 '>&nbsp;&nbsp;&nbsp
+	  <input type=button value=' 취 소 ' onclick=window.open('akcuser.htm?club=$club','_self','')>
+	  </td>
+	  </tr>
+	  </table>
+	</td>
+	</tr>
+	</form>
+	</table>
+  ");
+  mysql_close();
+?>

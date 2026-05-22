@@ -1,0 +1,29 @@
+<?
+  if (!$define_db) include "db.htm";
+  if (!$define_ut) include "ut.htm";
+  $code="mail";
+  $now_html="메일";
+  $tophtml="top.htm?now_html=$now_html";
+  $lefthtml="mailleft.htm";
+  $bodyhtml="mail.htm";
+  $bottomhtml="bottom.htm";
+  if ($cmd=="logout"||!$userid||$userid=="guest")  {echo("<meta http-equiv='refresh' content='0; url=index.htm'>");exit;}
+  if ($userty<5)  {echo("<script>alert('정식 회원만이 AKOM을 사용할수 있습니다. (ID:$userid 등급:$userty)');</script><meta http-equiv='refresh' content='0; url=index.htm'>");exit;}
+
+echo("
+<html>
+<head>
+<title>대전맹학교 WEB BBS</title>
+<meta http-equiv='Content-Type' content='text/html; charset=euc-kr'>
+</head>
+<frameset rows='92,*,25' border=0>
+  <frame name='f_top' scrolling='no' marginwidth='0' marginheight='0' noresize target='f_main' src='$tophtml'>
+  <frameset cols='142,*' border=0 name='f_main'>
+    <frame name='f_left' scrolling='auto' marginwidth='0' marginheight='0' noresize target='f_body' src='$lefthtml'>
+    <frame name='f_body' marginheight='0' target='f_body' src='$bodyhtml'>
+  </frameset>
+  <frame name='f_bottom' target='_parent' marginwidth='0' marginheight='0' src='$bottomhtml'>
+</frameset>
+</html>
+");
+?>

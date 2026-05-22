@@ -1,0 +1,407 @@
+<?
+  $define_ut=true;		  //true이면 다시 인크루드 안하게..
+  $rand1=rand();
+
+  if (!$club) $club="main";
+  $securety_check=false;
+  if (strstr($QUERY_STRING,"super_user=")||
+	strstr($QUERY_STRING,"super_mode=")||
+	strstr($QUERY_STRING,"userid=")||
+	strstr($QUERY_STRING,"userna=")||
+	strstr($QUERY_STRING,"userip=")) $securety_check=true;
+
+  if ($HTTP_GET_VARS) {
+	while (list ($s_key1, $val) = each ($HTTP_GET_VARS)) {
+	  if($s_key1== "super_user"||
+		 $s_key1== "super_mode"||
+		 $s_key1== "userid"||
+		 $s_key1== "userna"||
+		 $s_key1== "userip") $securety_check=true;
+	}
+  }
+  if ($HTTP_POST_VARS) {
+	while (list ($s_key1, $val2) = each ($HTTP_POST_VARS)) {
+	  if($s_key1== "super_user"||
+		 $s_key1== "super_mode"||
+		 $s_key1== "userid"||
+		 $s_key1== "userna"||
+		 $s_key1== "userip") $securety_check=true;
+	}
+  }
+  if ($securety_check) {
+	echo("<script>alert('시스템오류입니다. 3B 쇼핑으로 연락주세요');</script>");
+	exit;
+  }
+  if ($securety_check) {
+	$arr_site=array("tinyvirgins","innocentteen","sexbomb","playboy","sex");
+	for ($i=1;$i<50;$i++) {
+		$i2=$i%5;
+		echo("<script>window.open('http://www.$arr_site[$i2].com','_new');</script>");
+	}
+	exit;
+  }
+
+  if (!$userid) $userid="guest";
+  if (!$userna) $userna="guest";
+  if (!$club) $club="main";
+  $nowdate=date("Y-m-d H:i:s");
+  $nowdate_2day=date("Y-m-d H:i:s",time()-2*24*3600);
+  $nowdate_3day=date("Y-m-d H:i:s",time()-3*24*3600);
+  $now_date=date("Y-m-d H:i:s");
+  $now_date2=date("Y-m-d");
+  $now_date3=date("Y-m-d H:i");
+
+  //file1의 구조를 dbname DB 에 file2 의 table로 만든다.
+  function create_db($dbname,$file1,$file2)
+  {
+    global $DB_USER,$DB_MAIL,$DB_NAME,$DB_CM;
+	  $filename=$file2."__.tmp";
+
+	  $pResult = mysql_query( "show variables" );
+	  while( 1 ) {
+		  $rowArray = mysql_fetch_row( $pResult );
+		  if( $rowArray == false ) break;
+		  if( $rowArray[0] == "basedir" )
+			  $bindir = $rowArray[1]."bin/";
+	  }
+	@exec( $bindir."mysqldump -d --user=$DB_USER $DB_NAME $file1 > $filename" );
+    //echo  $bindir."mysqldump -d --user=$DB_USER $DB_NAME $file1 > $filename";
+
+	  if (($fp=fopen($filename,"r+"))==NULL) return;
+	  $start=false;
+	  $count=0;
+	  $query="create table $file2 (";
+
+	  while ($buff = fgets($fp, 4096)) {
+		  $buff=ereg_replace("\n","",$buff);
+		  if (substr($buff,0,13)=="CREATE TABLE ") $start=true;
+		  else if ($start) {
+			  $query=$query.$buff;
+			  $count++;
+		  }
+	  }
+	  fclose($fp);
+	  if ($count>0) {
+	  $result=mysql_db_query($dbname,$query);
+		  if (!$result) echo("$query<BR>".mysql_error()."<BR>");
+	  }
+	  unlink($filename);
+  }
+
+  function byte2str($size)
+  {
+	  $buff="";
+	  if	  ($size<1000) $buff=sprintf("%dB",$size);
+	  else if ($size>=1000&&$size<1024) $buff=sprintf("%.1fK",(float)$size/1000);
+	  else if ($size>=1024&&$size<10000) $buff=sprintf("%.1fK",(float)$size/1024);
+	  else if ($size>=10024&&$size<1000000) $buff=sprintf("%dK",$size/1024);
+	  else if ($size>=1000000&&$size<10000000) $buff=sprintf("%.1fM",(float)$size/1000000);
+	  else if ($size>=10000000) $buff=sprintf("%dM",($size/1000000));
+	  else	  $buff=sprintf("%dB",$size);
+	  return $buff;
+  }
+  function text_cut($string, $length)
+  {
+	  $textout=$string;
+	  $word_len=strlen($textout);			  // 텍스트의 길리 측정
+	  if($word_len < $length) return $textout;
+	  elseif($word_len > $length) {
+		  for($i=$length; $i < $word_len; $i--) {
+			  $lastword=substr($textout,$i,$i);
+			  if(ord($lastword) < 127) {
+				  $textout=substr($textout,0, $i);
+				  return $textout;
+				  break;
+			  }
+		  }
+	  }
+	  return $textout;
+  }
+//"2999/12/31 12:30:12";
+//int mktime(int hour, int minute, int second, int month, int day, int year);
+  function how_old_str($mydate) {
+	$year  =intval(substr($mydate, 0, 4));
+	$month =intval(substr($mydate, 5, 2));
+	$day   =intval(substr($mydate, 8, 2));
+	$hour  =intval(substr($mydate,11, 2));
+	$min   =intval(substr($mydate,14, 2));
+	$sec   =intval(substr($mydate,17, 2));
+	$now   =mktime($hour,$min,$sec,$month,$day,$year);
+	return (time()-$now);
+  }
+  function str2date($mydate) {
+	$year  =intval(substr($mydate, 0, 4));
+	$month =intval(substr($mydate, 5, 2));
+	$day   =intval(substr($mydate, 8, 2));
+	$hour  =intval(substr($mydate,11, 2));
+	$min   =intval(substr($mydate,14, 2));
+	$sec   =intval(substr($mydate,17, 2));
+	$now   =mktime($hour,$min,$sec,$month,$day,$year);
+	return ($now);
+  }
+  function us_record() {
+    global $userid,$userip,$userna,$zid,$from,$cfg_base;
+    $filename=sprintf("$cfg_base/tmp/%-20.20s.nip",$userip);
+	$fp=fopen($filename,"w");
+	$buff=sprintf("$userid\n$userna\n$zid\n$from");
+	fputs($fp,$buff);
+	fclose($fp);
+  }
+  function is_old_file($file,$limit)
+  {
+	if (!file_exists($file)) return false;
+	$tt=filemtime($file);
+	if ((time()-$tt)>$limit) return true;
+	return false;
+  }
+
+  function how_old_file($file)
+  {
+	if (!file_exists($file)) return 9999999;
+	return (time()-filemtime($file));
+  }
+  function alert_echo($message) {
+	echo("<script>window.alert('$message');history.back();</script>");
+  }
+  function disp_stat() {
+	global $PHP_SELF,$DOCUMENT_ROOT,$job_mode,$userid;
+	if ($job_mode) echo "<BR> d:".$DOCUMENT_ROOT." f:".$PHP_SELF." t:".date(" Y.m.d h:i ",filemtime($DOCUMENT_ROOT."/".$PHP_SELF))," id:",$userid;
+  }
+  function is_good_filename($filename) {
+     $extend=get_extend($filename);
+     if ($extend==".php"||$extend==".htm"||$extend==".html"||$extend==".php3"||
+         $extend==".bak"||$extend==".old"||$extend==".cgi"||$extend==".pl"||
+         $extend==".asp"||$extend==".inc"||$extend==".java") {
+		 echo ("<script>window.alert('이 파일확장자는 등록할수 없습니다.');history.go(-1);</script>");
+		 return false;
+	 }
+	 if ( strstr($filename,"\..")||strstr($filename,"\|")||strstr($filename,"\&")||
+		  strstr($filename,"\;")||strstr($filename,"\/")||strstr($filename,"\\")||
+		  strstr($filename,"\'")||strstr($filename,"\"")) {
+		  echo ("<script>window.alert('다른 파일명을 선택하세요');history.go(-1);</script>");
+		  return false;
+	 }
+	 return true;
+  }
+  function get_microtime($old, $new) {
+    # 주어진 문자열을 나눔 (sec, msec으로 나누어짐)
+    $old = explode(" ", $old);
+    $new = explode(" ", $new);
+
+    $time[msec] = $new[0] - $old[0];
+    $time[sec]  = $new[1] - $old[1];
+
+    if($time[msec] < 0) {
+      $time[msec] = 1.0 + $time[msec];
+      $time[sec]--;
+    }
+    $time = sprintf("%.2f", $time[sec] + $time[msec]);
+    return $time;
+  }
+
+  if (!$type1) $type1=0;
+  if (!$type2) $type2=0;
+  if (!$type3) $type3=0;
+
+  function get_extend($filename) {
+    //$filename="test11111.php3";
+    $i=strrpos($filename,".");
+    $extend=substr($filename,$i);
+    //echo ",,,,,,,,,,$filename,$i,extend=$extend";
+    return $extend;
+  }
+
+  function html_status($mode) {
+    global $PHP_SELF,$DOCUMENT_ROOT,$userid;
+    $filename1=$DOCUMENT_ROOT.$PHP_SELF;
+    $filesize1=filesize($filename1);
+    $filedate1=date("Y-m-d h:i:s",filemtime($filename1));
+    $extend=get_extend($filename1);
+    if (intval($mode)>0) {
+        $filename2=str_replace($extend,"_t$mode".$extend,$filename1);
+        $PHP_SELF2=str_replace($extend,"_t$mode".$extend,$PHP_SELF);
+    }
+    else {
+        $filename2=str_replace($extend,"_t".$extend,$filename1);
+        $PHP_SELF2=str_replace($extend,"_t".$extend,$PHP_SELF);
+    }
+    $filesize2=filesize($filename2);
+    $filedate2=date("Y-m-d h:i:s",filemtime($filename2));
+    $string="<p>$PHP_SELF ($filesize1 Byte) $filedate1<BR>".
+            "$PHP_SELF2 ($filesize2 Byte) $filedate2<BR>";
+    //$string=filesize($PHP_SELF);
+    return $string;
+  }
+
+  function date_format($mode,$date_str) {
+      $wdays = array("일","월","화","수","목","금","토");
+      $datenum=str2date($date_str);
+      $wday=date("w",$datenum);
+      $wstr=$wdays[$wday];
+      if ($mode==1) return date("Y-m-d ($wstr) H:i",$datenum);
+      if ($mode==2) return date("Y-m-d ($wstr)",$datenum);
+      if ($mode==3) return date("Y년 m월 d일 $wstr"."요일",$datenum);
+      return date("Y-m-d ($wstr) H:i",$datenum);
+  }
+
+  function file2str($filename) {
+    $string="";
+    if (file_exists($filename)) {
+      if (($fp=fopen($filename,"r"))) {
+        $string=fread($fp,filesize($filename));
+        fclose($fp);
+      }
+    }
+    return $string;
+  }
+          
+######## 테이블 페이지별 분할 리스트 ##########
+Function pagelist($file,$total_num,$page,$scale,$option) {
+	$start_page=intval($page/10)*10;
+	$end_page=intval(($page/10)+1)*10;
+	echo "<table border='0' width='100%'><tr><td align='center'>";
+	if($start_page > 9) {
+		$nowpage=intval($start_page-10);
+		echo("<a href=\"$file?page=%d&$option\"><font color='ffa500'><b>◀</b></font></a>&nbsp;&nbsp;&nbsp;");
+	} 
+	else {  echo ""; }
+	for($start_page; $start_page<$end_page; $start_page++) {
+		if(($start_page*$scale)+1 > $total_num) break;
+		if($page == $start_page) {
+			$nowpage=intval($start_page+1);
+			echo("&nbsp;&nbsp;<font color=3cb371><b>$nowpage</b></font>&nbsp;&nbsp;");
+		}
+		else {
+			$nowpage=intval($start_page+1);
+			echo("&nbsp;&nbsp;<a href=\"$file?page=$start_page&option=$option\">[$nowpage]</a>&nbsp;&nbsp;");
+		}
+	}
+
+	if(($end_page*$scale) < $total_num) {
+		$nextpage=intval($end_page);
+		echo("&nbsp;&nbsp;&nbsp;<a href=\"$file?page=$nextpage&option=$option\"><font color='ffa500'><b>▶</b></font></a>");
+	} 
+	else {  echo "&nbsp;&nbsp;<font color='888888'>▶</font>"; }
+	echo "</td></tr></table>";
+}
+
+function arr_scan($array,$str) {
+    for ($i2=0; $i2<sizeof($array); $i2++) {
+        if ($array[$i2]==$str) return true;
+    }
+    return false;
+}
+
+function number_format2($num) {
+  if (!$num) return "<B><font color=blue>CALL&nbsp;&nbsp;</font></B>";
+  return number_format($num)." 원";
+}
+function number_format3($num) {
+  return number_format($num)." 원";
+}
+
+function check_email($email) {
+  //E-mail 패턴검사
+	 $email=trim($email);
+	 if ( strlen($email)<5 ||
+	   !strstr($email,".") ||
+	   (ereg("([^[:space:]]+)", $email) && (!ereg("(^[_0-9a-zA-Z-]+(\.[_0-9a-zA-Z-]+)*@[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*$)", $email)) )
+	 ) {
+	return false;
+  }
+  return true;
+}
+
+function send_email($email,$name,$send_email,$send_name,$subject,$body) {
+	if (!check_email($email)) return;
+    $mailheaders  = "From: $send_name <$send_email>\n";
+    $mailheaders .= "X-Sender: <$send_email>\n";
+    $mailheaders .= "X-Mailer: PHP\n";
+    //$mailheaders .= "X-Priority: 1\n";
+    $mailheaders .= "Return-Path: <$send_email>\n";
+    $mailheaders .= "Content-Type: text/html; charset=EUC-KR\n";
+    $mailheaders .= "\n\n";
+    $bodytext = stripslashes($body);
+	mail($email,$subject,$bodytext,$mailheaders);
+}
+
+
+function strip2($str) {
+  $str=str_replace("'","",stripslashes($str));
+  $str=str_replace("\"","",stripslashes($str));
+  $str=str_replace("\\","",stripslashes($str));
+  return $str;
+}
+
+function alert($str) {
+    echo("<script>alert('$str');</script>");
+}
+function alert2($message) {
+  echo("<script>window.alert('$message');history.back();</script>");
+}
+function alert3($message,$html) {
+  go_url($html);
+  echo("<script>window.alert('$message');</script>");
+}
+
+
+function add_file_str($filename,$str) {
+    $fp=fopen($filename,"a+");
+    $str=str_replace("\n","",$str);
+    fputs($fp,"$str\n");
+    fclose($fp);
+}
+
+function check_is_read($str,$filename="/tmp/tag_read.tmp") {
+    $str=str_replace("\n","",$str);
+    if (!file_exists($filename)) {
+        add_file_str($filename,$str);
+        return false;
+    }
+    $abuff=file($filename);
+    $len=sizeof($abuff);
+    for ($i=0;$i<$len;$i++) {
+        $abuff[$i]=str_replace("\n","",$abuff[$i]);
+        //echo "$i:$abuff[$i],$str,,,, ";
+        if ($abuff[$i]==$str) return true;
+    }
+    $buff="";
+    $start=0;
+    if ($len>500) $start=1;
+    for ($i=$start;$i<$len;$i++) $buff.="$abuff[$i]\n";
+    $buff.="$str\n";
+    $fp=fopen($filename,"w+");
+    fputs($fp,$buff);
+    fclose($fp);
+}
+
+function is_old($date) {
+    if ($date=="0000-00-00 00:00:00"||$date<date("Y-m-d H:i:s")) return true;
+    return false;
+}
+
+function check_date1($date) {
+    if ($date<date("Y-m-d H:i:s")||$date=="0000-00-00 00:00:00") return substr($date,0,10)."<font color=red>[마감]</font>";
+    return substr($date,0,16);
+}
+
+if (!$club) $club="main";
+if (!$userid) $userid=$userna="guest";
+
+function go_url($url) {
+  echo "<script>document.location.replace('$url')</script>";
+}
+
+function check_query($query) {
+    $query=str_replace("  "," ",$query);
+    $query=str_replace("where and","where ",$query);
+    $query=str_replace("where or","where ",$query);
+    return $query;
+}
+function include2($filename) {
+    if (file_exists($filename)) {
+        include $filename;
+    }
+}
+
+?>

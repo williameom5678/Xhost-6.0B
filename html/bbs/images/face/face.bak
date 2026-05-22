@@ -1,0 +1,277 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0048)http://easynara.co.kr//blue/data/help/smiley.htm -->
+<HTML><HEAD><TITLE>스마일리 자동입력</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=ks_c_5601-1987">
+<STYLE>A {
+	TEXT-DECORATION: none
+}
+P {
+	FONT-SIZE: 9pt; FONT-FAMILY: 굴림
+}
+TD {
+	FONT-SIZE: 9pt; FONT-FAMILY: 굴림
+}
+.Text {
+	LINE-HEIGHT: 11pt
+}
+.Left {
+	BACKGROUND-COLOR: rgb(224,224,255); TEXT-ALIGN: right
+}
+.Blue {
+	BACKGROUND-COLOR: rgb(160,160,255)
+}
+</STYLE>
+
+<SCRIPT>
+function Select( smilytext )
+{
+  window.opener.InputSmily( smilytext );
+}
+
+window.resizeTo( 365, 340 )
+window.moveTo( 0, 0 )
+</SCRIPT>
+
+<META content="MSHTML 5.50.4134.600" name=GENERATOR></HEAD>
+<BODY text=black vLink=purple aLink=red link=blue bgColor=white leftMargin=2 
+topMargin=2 scroll=no>
+<DIV align=center>
+<TABLE cellSpacing=0 cellPadding=3 width="100%" border=0>
+  <TBODY>
+  <TR>
+    <TD align=middle bgColor=navy><FONT color=white><B>&nbsp;클릭하면 글쓰기 창에 
+      입력됩니다.</B></FONT></TD>
+    <TD align=right bgColor=navy><A href="javascript:self.close()"><IMG 
+      src="bedel.gif" border=0></A></TD></TR></TBODY></TABLE></DIV>
+<DIV align=center>
+<TABLE cellSpacing=0 width="100%" bgColor=#e0e0ff border=0>
+  <TBODY>
+  <TR>
+    <TD><A href="javascript:Select('미소~')"><IMG height=12 
+      src="gima0101.gif" width=13 border=0> 미소~</A></TD>
+    <TD><A href="javascript:Select('와아~')"><IMG height=12 
+      src="gima0102.gif" width=13 border=0> 와아~</A></TD>
+    <TD><A href="javascript:Select('하하~')"><IMG height=12 
+      src="gima0104.gif" width=13 border=0> 하하~</A></TD>
+    <TD><A href="javascript:Select('호호~')"><IMG height=12 
+      src="gima0108.gif" width=13 border=0> 호호~</A></TD>
+    <TD><A href="javascript:Select('오호호~')"><IMG height=12 
+      src="gima0105.gif" width=13 border=0> 오호호~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('오호~')"><IMG height=12 
+      src="gima0116.gif" width=13 border=0> 오호~</A></TD>
+    <TD><A href="javascript:Select('헤헤~')"><IMG height=12 
+      src="gima0106.gif" width=13 border=0> 헤헤~</A></TD>
+    <TD><A href="javascript:Select('히히~')"><IMG height=12 
+      src="gima0107.gif" width=13 border=0> 히히~</A></TD>
+    <TD><A href="javascript:Select('메롱~')"><IMG height=12 
+      src="gima0111.gif" width=13 border=0> 메롱~</A></TD>
+    <TD><A href="javascript:Select('푸하하~')"><IMG height=12 
+      src="gima0103.gif" width=13 border=0> 푸하하~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('우와~')"><IMG height=12 
+      src="gima0115.gif" width=13 border=0> 우와~</A></TD>
+    <TD><A href="javascript:Select('발끈~')"><IMG height=12 
+      src="gima0109.gif" width=13 border=0> 발끈~</A></TD>
+    <TD><A href="javascript:Select('성남~')"><IMG height=12 
+      src="gima0110.gif" width=13 border=0> 성남~</A></TD>
+    <TD><A href="javascript:Select('오잉~')"><IMG height=12 
+      src="gima0114.gif" width=13 border=0> 오잉~</A></TD>
+    <TD><A href="javascript:Select('뭐라고~')"><IMG height=12 
+      src="gima0113.gif" width=13 border=0> 뭐라고~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('흑흑~')"><IMG height=12 
+      src="gima0112.gif" width=13 border=0> 흑흑~</A></TD>
+    <TD><A href="javascript:Select('힐끔~')"><IMG height=12 
+      src="gima0117.gif" width=13 border=0> 힐끔~</A></TD>
+    <TD><A href="javascript:Select('흐으~')"><IMG height=12 
+      src="gima0118.gif" width=13 border=0> 흐으~</A></TD>
+    <TD><A href="javascript:Select('으으~')"><IMG height=12 
+      src="gima0119.gif" width=13 border=0> 으으~</A></TD>
+    <TD><A href="javascript:Select('부들~')"><IMG height=12 
+      src="gima0120.gif" width=13 border=0> 부들~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('으악~')"><IMG height=12 
+      src="gima0121.gif" width=13 border=0> 으악~</A></TD>
+    <TD><A href="javascript:Select('깝죽~')"><IMG height=12 
+      src="gima0122.gif" width=13 border=0> 깝죽~</A></TD>
+    <TD><A href="javascript:Select('졸려~')"><IMG height=12 
+      src="gima0123.gif" width=13 border=0> 졸려~</A></TD>
+    <TD><A href="javascript:Select('뾰옹~')"><IMG height=12 
+      src="gima0124.gif" width=13 border=0> 뾰옹~</A></TD>
+    <TD><A href="javascript:Select('시무룩~')"><IMG height=12 
+      src="gima0125.gif" width=13 border=0> 시무룩~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('띠용~')"><IMG height=12 
+      src="gima0126.gif" width=13 border=0> 띠용~</A></TD>
+    <TD><A href="javascript:Select('멍듦~')"><IMG height=12 
+      src="gima0127.gif" width=13 border=0> 멍듦~</A></TD>
+    <TD><A href="javascript:Select('당황~')"><IMG height=12 
+      src="gima0128.gif" width=13 border=0> 당황~</A></TD>
+    <TD><A href="javascript:Select('우웩~')"><IMG height=12 
+      src="gima0129.gif" width=13 border=0> 우웩~</A></TD>
+    <TD><A href="javascript:Select('허허~')"><IMG height=12 
+      src="gima0130.gif" width=13 border=0> 허허~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('푸훗~')"><IMG height=12 
+      src="gima0131.gif" width=13 border=0> 푸훗~</A></TD>
+    <TD><A href="javascript:Select('웃음~')"><IMG height=12 
+      src="gima0132.gif" width=13 border=0> 웃음~</A></TD>
+    <TD><A href="javascript:Select('함박~')"><IMG height=12 
+      src="gima0133.gif" width=13 border=0> 함박~</A></TD>
+    <TD><A href="javascript:Select('음산~')"><IMG height=12 
+      src="gima0134.gif" width=13 border=0> 음산~</A></TD>
+    <TD><A href="javascript:Select('놀람~')"><IMG height=12 
+      src="gima0135.gif" width=13 border=0> 놀람~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('황당~')"><IMG height=12 
+      src="gima0136.gif" width=13 border=0> 황당~</A></TD>
+    <TD><A href="javascript:Select('울먹~')"><IMG height=12 
+      src="gima0137.gif" width=13 border=0> 울먹~</A></TD>
+    <TD><A href="javascript:Select('훌쩍~')"><IMG height=12 
+      src="gima0138.gif" width=13 border=0> 훌쩍~</A></TD>
+    <TD><A href="javascript:Select('씨이~')"><IMG height=12 
+      src="gima0139.gif" width=13 border=0> 씨이~</A></TD>
+    <TD><A href="javascript:Select('크하하~')"><IMG height=12 
+      src="gima0140.gif" border=0> 크하하~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('호호호~')"><IMG height=12 
+      src="gima0146.gif" border=0> 호호호~</A></TD>
+    <TD><A href="javascript:Select('와하하~')"><IMG height=12 
+      src="gima0143.gif" border=0> 와하하~</A></TD>
+    <TD><A href="javascript:Select('새침~')"><IMG height=12 
+      src="gima0144.gif" border=0> 새침~</A></TD>
+    <TD><A href="javascript:Select('꾸벅~')"><IMG height=12 
+      src="gima0163.gif" border=0> 꾸벅~</A></TD>
+    <TD><A href="javascript:Select('방끗~')"><IMG height=12 
+      src="gima0164.gif" border=0> 방끗~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('아하~')"><IMG height=12 
+      src="gima0152.gif" border=0> 아하~</A></TD>
+    <TD><A href="javascript:Select('궁금~')"><IMG height=12 
+      src="gima0153.gif" border=0> 궁금~</A></TD>
+    <TD><A href="javascript:Select('부끄~')"><IMG height=12 
+      src="gima0154.gif" border=0> 부끄~</A></TD>
+    <TD><A href="javascript:Select('땀땀~')"><IMG height=12 
+      src="gima0145.gif" border=0> 땀땀~</A></TD>
+    <TD><A href="javascript:Select('허걱~')"><IMG height=12 
+      src="gima0150.gif" border=0> 허걱~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('한숨~')"><IMG height=12 
+      src="gima0162.gif" border=0> 한숨~</A></TD>
+    <TD><A href="javascript:Select('쿨쿨~')"><IMG height=12 
+      src="gima0165.gif" border=0> 쿨쿨~</A></TD>
+    <TD><A href="javascript:Select('헬쑥~')"><IMG height=12 
+      src="gima0158.gif" border=0> 헬쑥~</A></TD>
+    <TD><A href="javascript:Select('으씨~')"><IMG height=12 
+      src="gima0159.gif" border=0> 으씨~</A></TD>
+    <TD><A href="javascript:Select('반짝~')"><IMG height=12 
+      src="gima0160.gif" border=0> 반짝~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('엉엉~')"><IMG height=12 
+      src="gima0155.gif" border=0> 엉엉~</A></TD>
+    <TD><A href="javascript:Select('잉잉~')"><IMG height=12 
+      src="gima0149.gif" border=0> 잉잉~</A></TD>
+    <TD><A href="javascript:Select('흐음~')"><IMG height=12 
+      src="gima0156.gif" border=0> 흐음~</A></TD>
+    <TD><A href="javascript:Select('윙크~')"><IMG height=12 
+      src="gima0157.gif" border=0> 윙크~</A></TD>
+    <TD><A href="javascript:Select('으윽~')"><IMG height=12 
+      src="gima0151.gif" border=0> 으윽~</A></TD></TR>
+  <TR>
+    <TD><A href="javascript:Select('야호~')"><IMG height=12 
+      src="gima0141.gif" border=0> 야호~</A></TD>
+    <TD><A href="javascript:Select('아잉~')"><IMG height=12 
+      src="gima0142.gif" border=0> 아잉~</A></TD>
+    <TD><A href="javascript:Select('화남~')"><IMG height=12 
+      src="gima0147.gif" border=0> 화남~</A></TD>
+    <TD><A href="javascript:Select('반함~')"><IMG height=12 
+      src="gima0148.gif" border=0> 반함~</A></TD>
+    <TD><A href="javascript:Select('째려봄~')"><IMG height=12 
+      src="gima0161.gif" border=0> 째려봄~</A></TD></TR>
+  <TR>
+    <TD colSpan=5><A href="javascript:Select('『')">『</A>&nbsp;<A 
+      href="javascript:Select('』')">』</A> <A 
+      href="javascript:Select('【')">【</A>&nbsp;<A 
+      href="javascript:Select('】')">】</A> <A 
+      href="javascript:Select('±')">±</A>&nbsp;<A 
+      href="javascript:Select('×')">×</A> <A 
+      href="javascript:Select('÷')">÷</A>&nbsp;<A 
+      href="javascript:Select('∴')">∴</A> <A 
+      href="javascript:Select('♂')">♂</A>&nbsp;<A 
+      href="javascript:Select('♀')">♀</A> <A 
+      href="javascript:Select('≒')">≒</A>&nbsp;<A 
+      href="javascript:Select('※')">※</A> <A 
+      href="javascript:Select('☆')">☆</A>&nbsp;<A 
+      href="javascript:Select('★')">★</A> <A 
+      href="javascript:Select('○')">○</A>&nbsp;<A 
+      href="javascript:Select('●')">●</A> <A 
+      href="javascript:Select('◇')">◇</A>&nbsp;<A 
+      href="javascript:Select('◆')">◆</A> <A 
+      href="javascript:Select('□')">□</A>&nbsp;<A 
+      href="javascript:Select('■')">■</A> <A 
+      href="javascript:Select('△')">△</A><BR><A 
+      href="javascript:Select('▲')">▲</A> <A 
+      href="javascript:Select('▽')">▽</A>&nbsp;<A 
+      href="javascript:Select('▼')">▼</A> <A 
+      href="javascript:Select('→')">→</A>&nbsp;<A 
+      href="javascript:Select('←')">←</A> <A 
+      href="javascript:Select('↑)'">↑</A>&nbsp;<A 
+      href="javascript:Select('↓')">↓</A> <A 
+      href="javascript:Select('↔')">↔</A>&nbsp;<A 
+      href="javascript:Select('≪')">≪</A> <A 
+      href="javascript:Select('≫')">≫</A>&nbsp;<A 
+      href="javascript:Select('∵')">∵</A> <A 
+      href="javascript:Select('⇒')">⇒</A>&nbsp;<A 
+      href="javascript:Select('⇔')">⇔</A> <A 
+      href="javascript:Select('∑')">∑</A>&nbsp;<A 
+      href="javascript:Select('∏')">∏</A> <A 
+      href="javascript:Select('¤')">¤</A>&nbsp;<A 
+      href="javascript:Select('◁')">◁</A> <A 
+      href="javascript:Select('◀')">◀</A>&nbsp;<A 
+      href="javascript:Select('▷')">▷</A> <A 
+      href="javascript:Select('▶')">▶</A>&nbsp;<A 
+      href="javascript:Select('♤')">♤</A><BR><A 
+      href="javascript:Select('♠')">♠</A>&nbsp;<A 
+      href="javascript:Select('♡')">♡</A> <A 
+      href="javascript:Select('♥')">♥</A>&nbsp;<A 
+      href="javascript:Select('♧')">♧</A> <A 
+      href="javascript:Select('♣')">♣</A>&nbsp;<A 
+      href="javascript:Select('⊙')">⊙</A> <A 
+      href="javascript:Select('◈')">◈</A>&nbsp;<A 
+      href="javascript:Select('▣')">▣</A> <A 
+      href="javascript:Select('◐')">◐</A>&nbsp;<A 
+      href="javascript:Select('◑')">◑</A> <A 
+      href="javascript:Select('▒')">▒</A>&nbsp;<A 
+      href="javascript:Select('▤')">▤</A> <A 
+      href="javascript:Select('▥')">▥</A>&nbsp;<A 
+      href="javascript:Select('▨')">▨</A> <A 
+      href="javascript:Select('▧')">▧</A>&nbsp;<A 
+      href="javascript:Select('▦')">▦</A> <A 
+      href="javascript:Select('▩')">▩</A>&nbsp;<A 
+      href="javascript:Select('♨')">♨</A> <A 
+      href="javascript:Select('☏')">☏</A>&nbsp;<A 
+      href="javascript:Select('☎')">☎</A> <A 
+      href="javascript:Select('↕')">↕</A>&nbsp;<A 
+      href="javascript:Select('☜')">☜</A> <A 
+      href="javascript:Select('☞')">☞</A>&nbsp;<A 
+      href="javascript:Select('‡')">‡</A> <A 
+      href="javascript:Select('↗')">↗</A>&nbsp;<A 
+      href="javascript:Select('↙')">↙</A> <A 
+      href="javascript:Select('↖')">↖</A>&nbsp;<A 
+      href="javascript:Select('♩')">♩</A> <A 
+      href="javascript:Select('♬')">♬</A>&nbsp;<A 
+      href="javascript:Select('α')">α</A> <A 
+      href="javascript:Select('β')">β</A>&nbsp;<BR><A
+      href="javascript:Select('얼굴0~')"><img src=face0.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴1~')"><img src=face1.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴2~')"><img src=face2.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴3~')"><img src=face3.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴4~')"><img src=face4.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴5~')"><img src=face5.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴6~')"><img src=face6.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴7~')"><img src=face7.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴8~')"><img src=face8.gif width=10 height=10 border=0></A>&nbsp;<A
+      href="javascript:Select('얼굴9~')"><img src=face9.gif width=10 height=10 border=0></A>&nbsp;
+      zzzzzzzzzzzzzzzzzzzzz
+</TD></TR></TBODY></TABLE></DIV></BODY></HTML>

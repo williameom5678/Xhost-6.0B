@@ -1,0 +1,88 @@
+<?php
+  $DB_NAME="xhost";
+  if (!$userid||strlen($userid)<2||$userid=="guest") {
+     echo("<script>window.alert('로그인을 하십시요.');history.go(-1);</script>");
+     exit;
+  }
+
+if ($cmd=="outsave") {
+  $connect=mysql_connect("localhost","$DB_USER","");
+  if (!mysql_select_db("$DB_NAME",$connect)) {echo("DB OPEN ERR");exit;}
+  $userip=getenv("REMOTE_ADDR");
+
+  $query = "select * from user where id='$userid'";
+  $result=mysql_query($query,$connect);
+  $user=mysql_fetch_array($result);
+  if (strlen($user[id])<2||$user[id]!=$userid) {
+    echo("
+    <script>
+    window.alert('$userid 님은 가입되어 있지 않습니다. ID를 확인하십시요');
+    history.go(-1);
+    </script>
+    ");
+    exit;
+  }
+  else if (!$user[passwd]||$user[passwd]!=$out_passwd) {
+    echo("<script>window.alert('암호를 확인하십시요');history.go(-1);</script>");
+    exit;
+  }
+  else if ($user[id_no]!=$out_id_no) {
+    echo("<script>window.alert('주민등록번호를 확인하십시요');history.go(-1);</script>");
+    exit;
+  }
+  $query = "delete from user where id='$userid'";
+  $result=mysql_query($query,$connect);
+  echo("
+  <script>
+  window.alert('$userid 님은 회원정보에서 삭제되었습니다.');
+  window.open('member.htm?cmd=logout','_top','');
+  </script>
+  ");
+  exit;
+}
+
+  echo("
+    <table border='0' width='680'>
+    <tr><td align='center'><BR>
+    회 원 탈 퇴<BR>
+    3B의 모든 정보는 안전하게 저장되어 있습니다.<BR>
+    개인정보는 절대 보호되며 접속을 하지 않아도 불이익이 없습니다.<BR>
+    가입 기간에 따른 혜택이 많으니 신중하게 결정하시고 탈퇴하십시요 <BR>
+    탈퇴하기 위해서 주민등록번호와 암호를 입력해주세요.<BR>
+    <form name=form1 action='$PHP_SELF'>
+    <input type=hidden name=cmd value='outsave'>
+      <table width=200>
+      <tr>
+      <td width=40% align=center>아이디</td>
+      <td width=60%>
+        <input type=text name='t1' value='$userid' size=20 readonly>
+      </td>
+      </tr>
+      <tr>
+      <td width=40% align=center>이 름</td>
+      <td width=60%>
+        <input type=text name='t2' value='$userna' size=20 readonly>
+      </td>
+      </tr>
+      <tr>
+      <td width=40% align=center>주민등록</td>
+      <td width=60%>
+        <input type=text name='out_id_no'    size=15>
+      </td>
+      </tr>
+      <tr>
+      <td width=40% align=center>암 호</td>
+      <td width=60%>
+        <input type=password name='out_passwd'  size=20 maxlength=8 value=''>
+      </td>
+      </tr>
+      </table>
+    <BR><BR>
+    <a href='javascript:form1.submit();'><img src='/images/btn_submit.gif' width=75 height=22 border=0 alt=''>
+    <a target=_top href='member.htm'><img src='/images/btn_mem_can.gif' width=75 height=22 border=0 alt=''></a>
+    </form>
+    </td></tr>
+    </table>
+  ");
+
+?>

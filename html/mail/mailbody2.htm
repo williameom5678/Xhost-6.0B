@@ -1,0 +1,253 @@
+<?
+  include "akom.inc";
+  include "sysop.htm";
+  $connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+  function byte2str($size)
+  {
+	  $buff="";
+	  if	  ($size<1000) $buff=sprintf("%dB",$size);
+	  else if ($size>=1000&&$size<1024) $buff=sprintf("%.1fK",(float)$size/1000);
+	  else if ($size>=1024&&$size<10000) $buff=sprintf("%.1fK",(float)$size/1024);
+	  else if ($size>=10024&&$size<1000000) $buff=sprintf("%dK",$size/1024);
+	  else if ($size>=1000000&&$size<10000000) $buff=sprintf("%.1fM",(float)$size/1000000);
+	  else if ($size>=10000000) $buff=sprintf("%dM",($size/1000000));
+	  else	  $buff=sprintf("%dB",$size);
+	  return $buff;
+  }
+
+  function make_mail($connect,$id,$name) {
+    global $DB_NAME,$DB_MAIL,$DB_HOST;
+    $filename="struct.dat";
+	$table_name="mail".$id;
+	$query="CREATE TABLE $table_name (";
+
+	$fp=fopen($filename,"r");
+	while (($buff=fgets($fp,1024))) {
+		$query=$query.$buff;
+	}
+	fclose($fp);
+	$query=$query.");";
+    $result=mysql_db_query($DB_MAIL,$query);
+    if (!$result) echo(mysql_error()."<BR>$query<BR>");
+  }
+
+  if(!$userid||$userid=="guest") {
+	echo("<center><BR>
+	회원로그인을 하십시요<BR>
+	<meta http-equiv='Refresh' content='1; URL=member.htm'>
+	") ;
+	exit;
+  }
+
+  $table_name="mail".$userid;
+  if (!$mailcmd) $mailcmd="mail";
+  if (!$club) $club="main";
+
+  if(!$userid||$userid=="guest") {echo("회원로그인 필요") ; exit;}
+
+  //  존재하는 게시판인가?
+  $query="select * from $table_name limit 1";
+  $result=mysql_db_query($DB_MAIL,$query);
+//  echo("$query<BR>".mysql_error().mysql_errno()."<BR>");
+  if (!$result&&mysql_errno()==1146) {      //테이블없다.
+	make_mail($connect,$userid,$userna);
+  }
+
+
+//==============전체 게시물 ==============
+    if ($now_page<1) $now_toppos=0;
+//    echo("cmd:$cmd page:$now_page top:$now_toppos bot:$now_botpos all:$now_allno<BR>");
+
+         if ($now_toppos<1) ;
+    else if ($cmd=="top") $now_toppos=0;
+	else if ($cmd=="next") {   //다음자료
+        $now_toppos=$now_botpos;
+		$now_page++;
+	}
+	else if ($cmd=="back") {
+//        echo("back before-> cmd:$cmd page:$now_page top:$now_toppos bot:$now_botpos all:$now_allno<BR>");
+		$now_page--;
+        if ($mailcmd=="all") $query="select * from $table_name where pos>=$now_toppos order by pos,depth limit 20";
+        else $query="select * from $table_name where pos>=$now_toppos and tcode='$mailcmd' order by pos,depth  limit 20";
+        $result=mysql_db_query($DB_MAIL,$query);
+        if ($result) {
+			$total=mysql_affected_rows();  //현재 화면출력자료
+			for ($i=0 ; $i< min($total,15) ; $i++) {
+				$i2=mysql_data_seek($result,$i);
+				$row2=mysql_fetch_array($result);
+//				  echo("$i,$i2,$row2[num],$row2[title]<BR>");
+				if ($row2) {
+                    $now_toppos=$row2[pos];
+                    $now_toppos=$now_toppos+1;
+				}
+			}
+		}
+//        echo("back after -> cmd:$cmd page:$now_page top:$now_toppos bot:$now_botpos all:$now_allno<BR>");
+	}
+
+    if ($now_toppos==0) {
+		$now_allno=0;
+        $now_toppos=0;
+		$now_page=0;
+
+		//총수구하기
+        if ($mailcmd=="all") $query="select count(*) from $table_name";
+        else $query="select count(*) from $table_name where tcode='$mailcmd' ";
+        $result2=mysql_db_query($DB_MAIL,$query);
+		$row2=mysql_fetch_array($result2);
+		$now_allno=$row2[0];
+
+        if ($mailcmd=="all") $query="select * from $table_name order by pos desc,depth limit 16";
+        else $query="select * from $table_name where tcode='$mailcmd' order by pos desc,depth desc limit 16";
+//        echo("1st page cmd:$cmd q:$query <BR>");flush();
+        $result=mysql_db_query($DB_MAIL,$query);
+		$row=mysql_fetch_array($result);
+        $now_toppos=$row[pos];
+        $now_toppos=$now_toppos+1;
+	}
+	else {
+        if ($mailcmd=="all") $query="select * from $table_name where pos<$now_toppos order by pos desc,depth  limit 16";
+        else $query="select * from $table_name where pos<$now_toppos and tcode='$mailcmd' order by pos desc,depth limit 16";
+//        echo("2st page cmd:$cmd q:$query <BR>");flush();
+        $result=mysql_db_query($DB_MAIL,$query);
+	}
+
+	if (mysql_affected_rows()==0) { 	//현재 화면출력자료가 1개도 없다
+		$now_page--;
+        $query="select * from $table_name where pos>=$now_toppos and tcode='$mailcmd' order by pos,depth limit 20";
+//        echo("No data page : $query <BR>");flush();
+        $result2=mysql_db_query($DB_MAIL,$query);
+		$row2=mysql_fetch_array($result2);
+        $now_toppos=$row2[pos];
+        $now_toppos=$now_toppos+1;
+		$now_page=($now_allno/15)+1;
+
+        if ($mailcmd=="all") $query="select * from $table_name where pos<$now_topposp order by pos desc,depth limit 16";
+        else $query="select * from $table_name where pos<$now_toppos and tcode='$mailcmd' order by pos desc,depth  limit 16";
+//        echo("2st page : $query <BR>");flush();
+        $result=mysql_db_query($DB_MAIL,$query);
+	}
+
+    if ($now_allno>0&&$result) mysql_data_seek($result,0);
+
+	if ($now_page>($now_allno/15)+1) $now_page=($now_allno/15)+1;
+	if ($now_page<1) $now_page=1;
+
+//============= 게시물 목록 테이블	머리글 표시 ======================
+
+$now_allpage=(int)($now_allno/15+1);
+$idstr="보낸이";
+
+	 if ($mailcmd=='mail')   $mail_title="받은편지함";
+else if ($mailcmd=='send')   {$mail_title="보낸편지함";$idstr="받는이";}
+else if ($mailcmd=='delete') $mail_title="지운편지함";
+else if ($mailcmd=='save')   $mail_title="임시보관함";
+else if ($mailcmd=='all')    $mail_title="전체편지함";
+else						 $mail_title="받은편지함";
+
+echo("
+<style>
+<!--
+TD	{font-size:9pt;}
+-->
+</style>
+<body>
+<table border='0' width='680'>
+<tr><td align='center'>
+<table width='100%' border=0>
+<tr>
+<td align=right>
+$now_page / $now_allpage P (총 $now_allno 건)</td>
+</tr>
+</table>
+<table width='100%' bgcolor=CAC5A2 cellspacing=1 cellpadding=2 border=0>
+<tr>
+<td align=center bgcolor=107cb3 colspan=9><font color=ffffff>$mail_title</font></td>
+</tr>
+
+<tr bgcolor=e3e3bf>
+<td width=50 align=center><font color=000000><b>번호</b></font></td>
+<td width=40 align=center><font color=000000><b>삭제</b></font></td>
+<td width=80 align=center><font color=000000><b>$idstr</b></font></td>
+<td width=90 align=center><font color=000000><b>날짜</b></font></td>
+<td width=60 align=center><font color=000000><b>크기</b></font></td>
+<td width=300 align=center><font color=000000><b>제 목</b></font></td>
+<td width=40 align=center><font color=000000><b>분류</b></font></td>
+</tr>
+");
+
+  $total=mysql_affected_rows();  //현재 화면출력자료
+  $any_more=false;
+  if ($total<1) {
+	echo("
+		<tr>
+		<td colspan=10 height=50 align=center><B>자료가 없습니다.</td>
+		</tr>
+	");
+  }
+  else {
+	  for ($i=0 ; $i< min($total,15) ; $i++) { //  start 에서 scale 까지 만
+		  if (!$result) break;
+		  mysql_data_seek($result,$i);
+		  if (($row=mysql_fetch_array($result))==-1) break;
+		  if (!$row) break;
+
+		  $row_color='#F1F1E4';
+		  if($i%2 == 0) $row_color='#f7f7f7';
+
+		  $row[title] = stripslashes($row[title]);
+		  $row[title] = htmlspecialchars($row[title]);
+		  $row[title] = ereg_replace( "'", "＇", $row[title] );
+		  if (strlen($row[title])<30) $row[title]="$row[title] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+		  $row[str_date]=substr($row[date],2,14);
+		  echo("
+		  <tr bgcolor='$row_color' onMouseOver=\"this.style.backgroundColor='#dfEBf7';return true;\" onMouseOut=\"this.style.backgroundColor='';return true;\">
+		  ");
+
+
+          echo("<td align=center><a href='mailread.htm?mailcmd=$mailcmd&num=$row[num]&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno'>$row[num]</a></td>");
+          echo("<td align=center><a href='mailwrit.htm?cmd=delete&mailcmd=$mailcmd&num=$row[num]&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno'
+onClick=\"return confirm('$row[num] 번편지를 삭제 하시겠습니까?')\">
+삭제</a></td>");
+          echo("<td align=center><a href='mailwrit.htm?cmd=re&toid=$row[id]&mailcmd=$mailcmd&num=$row[num]&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno'>$row[id]</td>");
+		  echo("<td align=center>$row[str_date]</td>");
+		  if ($row[filename]) {
+			echo("<td align=center><img src='images/clip.gif' border=0>".byte2str($row[filesize])."</td>");
+		  }
+		  else echo("<td align=center>$row[size] Byte</td>");
+          echo("<td><a href='mailread.htm?num=$row[num]&code=$code&club=$club&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno'>&nbsp;&nbsp;$row[title]</a></td>");
+          echo("<td align=center>$row[tcode]</td>");
+		  echo("</tr>");
+          $now_botpos=$row[pos];
+		}
+		//다음자료있다..
+		if (($row2=mysql_fetch_row($result))) $any_more=true;
+  }
+
+  echo("</table>");
+
+echo("
+    <table border='0' width='680'>
+    <tr><td align='center'>
+");
+  if ($any_more) echo("<a href='$PHP_SELF?cmd=next&code=$code&club=$club&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno'><img src=images/bbs/next.gif border=0></a>");
+
+  echo("
+  <a href='$PHP_SELF?now_toppos=0'><img src='images/bbs/begin.gif' border=0></a>
+  <a href='$PHP_SELF?cmd=back&now_page=$now_page&now_toppos=$now_toppos&now_botpos=$now_botpos&now_allno=$now_allno'><img src=images/bbs/back.gif border=0></a>
+  <a href='mailwrit.htm'><img src=images/bbs/write.gif border=0></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href=bbsmain.htm><img src=images/bbs/board.gif border=0></a>
+  <a href=main.htm><img src=images/bbs/highhome.gif border=0></a>
+  ");
+  if (strlen($bcfg[foot])>1) {
+	  $bcfg[foot] = stripslashes($bcfg[foot]);
+	  echo("$bcfg[foot]");
+  }
+  echo("
+        </td> </tr>
+        </table>
+	</body>");
+  mysql_close();
+?>
