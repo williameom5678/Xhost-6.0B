@@ -13,10 +13,15 @@
  * - no schema migration
  */
 
+if (defined("XB_REWRITE_LOADED")) return;
+define("XB_REWRITE_LOADED", true);
+
 if (!$define_db) include "../db.htm";
 if (!$define_ut) include "../ut.htm";
 
 $XB_SELF = "rewrite.htm";
+
+if (!function_exists("xb_unslash")) {
 
 function xb_unslash($value)
 {
@@ -896,6 +901,8 @@ function xb_action_down()
     Header("Content-Disposition: attachment; filename=\"$filename\"");
     readfile($path);
     exit;
+}
+
 }
 
 $act = xb_ident(xb_param("act", "list"), "list");
