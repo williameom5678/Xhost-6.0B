@@ -284,9 +284,23 @@ function xb_page_top($title)
 
 function xb_page_nav($can_write, $page)
 {
+    global $userid, $userna, $code;
+
     echo "<div class='xb-nav'>";
-    echo "<a href='".xb_common_url("act=list&page=".intval($page))."'>List</a>";
-    if ($can_write) echo "<a href='".xb_common_url("act=write&page=".intval($page))."'>Write</a>";
+    echo "<a href='rewrite.htm'>Home</a>";
+    if ($code != "") {
+        echo "<a href='".xb_common_url("act=list&page=".intval($page))."'>List</a>";
+        if ($can_write) echo "<a href='".xb_common_url("act=write&page=".intval($page))."'>Write</a>";
+    }
+    echo "<span style='float:right'>";
+    if ($userid && $userid != "guest") {
+        echo xb_html($userna)." (".xb_html($userid).") ";
+        echo "<a href='rewrite.htm?act=logout'>Logout</a>";
+    } else {
+        echo "<a href='rewrite.htm?act=login'>Login</a>";
+        echo "<a href='rewrite.htm?act=signup'>Join</a>";
+    }
+    echo "</span>";
     echo "</div>\n<div class='xb-content'>\n";
 }
 
@@ -396,6 +410,187 @@ function xb_upload($club, $code)
     $ret["fcount"] = $fcount;
     $ret["filesize"] = $size;
     return $ret;
+}
+
+function xb_cookie($name)
+{
+    global $HTTP_COOKIE_VARS;
+    if (is_array($HTTP_COOKIE_VARS) && isset($HTTP_COOKIE_VARS[$name])) return xb_unslash($HTTP_COOKIE_VARS[$name]);
+    return "";
+}
+
+function xb_set_login($user)
+{
+    global $userid, $userna, $userty;
+    $userid = $user["id"];
+    $userna = $user["name"];
+    $userty = $user["type"];
+    setcookie("userid", $userid, 0, "/");
+    setcookie("userna", $userna, 0, "/");
+    setcookie("userty", $userty, 0, "/");
+    setcookie("userpw", $user["passwd"], 0, "/");
+}
+
+function xb_clear_login()
+{
+    global $userid, $userna, $userty;
+    $userid = "guest";
+    $userna = "guest";
+    $userty = 0;
+    setcookie("userid", "", time() - 3600, "/");
+    setcookie("userna", "", time() - 3600, "/");
+    setcookie("userty", "", time() - 3600, "/");
+    setcookie("userpw", "", time() - 3600, "/");
+}
+
+function xb_boot_auth()
+{
+    global $DB_NAME, $userid, $userna, $userty;
+
+    $cid = xb_cookie("userid");
+    $cpw = xb_cookie("userpw");
+    if ($cid == "" || $cpw == "") return;
+
+    $row = xb_fetch($DB_NAME, "select * from user where id='".xb_sql($cid)."' and (del!='D' or del is null or del='')");
+    if (!$row) return;
+    if ($row["passwd"] != $cpw) return;
+    $userid = $row["id"];
+    $userna = $row["name"];
+    $userty = $row["type"];
+}
+
+function xb_action_home()
+{
+    global $DB_CM;
+
+    xb_page_top("BBS Home");
+    xb_page_nav(false, 1);
+    echo "<div class='xb-title'>Board List</div>";
+    echo "<table class='xb-table'>";
+    echo "<tr><th>Board</th><th width='90'>Club</th><th width='90'>Code</th><th width='70'>Total</th><th width='130'>Last</th><th width='80'>Access</th></tr>";
+    $result = mysql_db_query($DB_CM, "select * from bcfg order by club,code,table_name");
+    if ($result) {
+        while ($row = mysql_fetch_array($result)) {
+            $table = $row["table_name"];
+            if ($table == "") continue;
+            $pos = strpos($table, "_");
+            if ($pos < 1) continue;
+            $tclub = $row["club"];
+            $tcode = $row["code"];
+            if ($tclub == "") $tclub = substr($table, 0, $pos);
+            if ($tcode == "") $tcode = substr($table, $pos + 1);
+            if ($tcode == "__backup" || $tcode == "__delete") continue;
+            $access = "open";
+            if ($row["member_read"] == "y") $access = "member";
+            $name = $row["name"];
+            if ($name == "") $name = $table;
+            echo "<tr>";
+            echo "<td><a href='rewrite.htm?act=list&club=".urlencode($tclub)."&code=".urlencode($tcode)."'>".xb_html($name)."</a></td>";
+            echo "<td align='center'>".xb_html($tclub)."</td>";
+            echo "<td align='center'>".xb_html($tcode)."</td>";
+            echo "<td align='right'>".intval($row["total"])."</td>";
+            echo "<td align='center'>".xb_html(substr($row["last_date"], 0, 16))."</td>";
+            echo "<td align='center'>$access</td>";
+            echo "</tr>";
+        }
+        mysql_free_result($result);
+    }
+    echo "</table>";
+    xb_page_bottom();
+}
+
+function xb_login_form($message)
+{
+    xb_page_top("Login");
+    xb_page_nav(false, 1);
+    if ($message != "") echo "<div class='xb-error'>".xb_html($message)."</div>";
+    echo "<form method='post' action='rewrite.htm?act=login'>";
+    echo "<input type='hidden' name='cmd' value='login'>";
+    echo "<table class='xb-table xb-form'>";
+    echo "<tr><th width='110'>ID</th><td><input class='xb-input' type='text' name='login_id' size='20' maxlength='12'></td></tr>";
+    echo "<tr><th>Password</th><td><input class='xb-input' type='password' name='login_pw' size='20' maxlength='12'></td></tr>";
+    echo "</table><p><input class='xb-button' type='submit' value='Login'> <a class='xb-button' href='rewrite.htm?act=signup'>Join</a></p>";
+    echo "</form>";
+    xb_page_bottom();
+}
+
+function xb_action_login()
+{
+    global $DB_NAME;
+    if (xb_param("cmd", "") != "login") { xb_login_form(""); return; }
+    $id = trim(xb_param("login_id", ""));
+    $pw = xb_param("login_pw", "");
+    if ($id == "" || $pw == "") { xb_login_form("ID and password are required."); return; }
+    $user = xb_fetch($DB_NAME, "select * from user where id='".xb_sql($id)."' and (del!='D' or del is null or del='')");
+    if (!$user || $user["passwd"] != $pw) { xb_login_form("Login failed."); return; }
+    $now = date("Y-m-d H:i:s");
+    mysql_db_query($DB_NAME, "update user set login='$now', all_log=all_log+1, month_log=month_log+1 where id='".xb_sql($id)."'");
+    xb_set_login($user);
+    Header("Location: rewrite.htm");
+    exit;
+}
+
+function xb_action_logout()
+{
+    global $DB_NAME, $userid;
+    if ($userid && $userid != "guest") {
+        $now = date("Y-m-d H:i:s");
+        mysql_db_query($DB_NAME, "update user set logout='$now' where id='".xb_sql($userid)."'");
+    }
+    xb_clear_login();
+    Header("Location: rewrite.htm");
+    exit;
+}
+
+function xb_signup_form($message, $id, $name, $email)
+{
+    xb_page_top("Join");
+    xb_page_nav(false, 1);
+    if ($message != "") echo "<div class='xb-error'>".xb_html($message)."</div>";
+    echo "<form method='post' action='rewrite.htm?act=signup'>";
+    echo "<input type='hidden' name='cmd' value='signup'>";
+    echo "<table class='xb-table xb-form'>";
+    echo "<tr><th width='110'>ID</th><td><input class='xb-input' type='text' name='join_id' size='20' maxlength='12' value='".xb_html($id)."'></td></tr>";
+    echo "<tr><th>Name</th><td><input class='xb-input' type='text' name='join_name' size='20' maxlength='12' value='".xb_html($name)."'></td></tr>";
+    echo "<tr><th>Email</th><td><input class='xb-input' type='text' name='join_email' size='40' maxlength='40' value='".xb_html($email)."'></td></tr>";
+    echo "<tr><th>Password</th><td><input class='xb-input' type='password' name='join_pw' size='20' maxlength='12'></td></tr>";
+    echo "<tr><th>Confirm</th><td><input class='xb-input' type='password' name='join_pw2' size='20' maxlength='12'></td></tr>";
+    echo "</table><p><input class='xb-button' type='submit' value='Join'> <a class='xb-button' href='rewrite.htm?act=login'>Login</a></p>";
+    echo "</form>";
+    xb_page_bottom();
+}
+
+function xb_action_signup()
+{
+    global $DB_NAME;
+    $id = trim(xb_param("join_id", ""));
+    $name = trim(xb_param("join_name", ""));
+    $email = trim(xb_param("join_email", ""));
+    if (xb_param("cmd", "") != "signup") { xb_signup_form("", $id, $name, $email); return; }
+    $pw = xb_param("join_pw", "");
+    $pw2 = xb_param("join_pw2", "");
+    if (!ereg("^[A-Za-z0-9_-]{3,12}$", $id)) { xb_signup_form("ID must be 3-12 letters, numbers, _ or -.", $id, $name, $email); return; }
+    if ($name == "") { xb_signup_form("Name is required.", $id, $name, $email); return; }
+    if (strlen($pw) < 3 || $pw != $pw2) { xb_signup_form("Password confirmation does not match.", $id, $name, $email); return; }
+    $old = xb_fetch($DB_NAME, "select * from user where id='".xb_sql($id)."'");
+    if ($old) { xb_signup_form("ID already exists.", $id, $name, $email); return; }
+    $now = date("Y-m-d H:i:s");
+    $data = array();
+    $data["id"] = $id;
+    $data["name"] = $name;
+    $data["passwd"] = $pw;
+    $data["email"] = $email;
+    $data["inday"] = $now;
+    $data["login"] = $now;
+    $data["type"] = "0";
+    $data["all_log"] = "1";
+    $data["month_log"] = "1";
+    $data["del"] = "";
+    if (!xb_insert($DB_NAME, "user", $data)) { xb_signup_form("Join failed: ".mysql_error(), $id, $name, $email); return; }
+    $user = xb_fetch($DB_NAME, "select * from user where id='".xb_sql($id)."'");
+    xb_set_login($user);
+    Header("Location: rewrite.htm");
+    exit;
 }
 
 function xb_action_list()
@@ -905,34 +1100,47 @@ function xb_action_down()
 
 }
 
-$act = xb_ident(xb_param("act", "list"), "list");
+$act = xb_ident(xb_param("act", ""), "");
 $club = xb_ident(xb_param("club", $club), "main");
 $code = xb_ident(xb_param("code", $code), "");
-if ($code == "") xb_error_page("Board code is required.");
-$table_name = $club."_".$code;
+if ($act == "") {
+    if ($code == "") $act = "home";
+    else $act = "list";
+}
+
 
 $connect = mysql_connect($DB_HOST, $DB_USER, $DB_PASS);
 if (!$connect) xb_error_page("DB connection failed.");
 if (!mysql_select_db($DB_CM, $connect)) xb_error_page("DB open failed.");
-if (!xb_table_exists($DB_CM, $table_name)) xb_error_page("Board table not found: $table_name");
 
-$cfg = xb_fetch($DB_NAME, "select * from cfg limit 1");
-if (!$cfg) $cfg = array();
-$ccfg = xb_fetch($DB_CM, "select * from ccfg where club='".xb_sql($club)."'");
-if (!$ccfg) $ccfg = array();
-$bcfg = xb_fetch($DB_CM, "select * from bcfg where table_name='".xb_sql($table_name)."'");
-if (!$bcfg) $bcfg = array("name"=>$table_name, "line"=>15);
+xb_boot_auth();
 
-$is_admin = xb_is_admin($cfg, $bcfg);
-$can_write = xb_can_write_board($bcfg, $ccfg, $is_admin);
-if (!xb_can_read_board($bcfg, $is_admin)) xb_error_page("No read permission.");
+if ($act == "login") xb_action_login();
+else if ($act == "logout") xb_action_logout();
+else if ($act == "signup") xb_action_signup();
+else if ($code == "" || $act == "home") xb_action_home();
+else {
+    $table_name = $club."_".$code;
+    if (!xb_table_exists($DB_CM, $table_name)) xb_error_page("Board table not found: $table_name");
 
-if ($act == "read") xb_action_read();
-else if ($act == "write") xb_action_write();
-else if ($act == "save") xb_action_save();
-else if ($act == "edit") xb_action_edit();
-else if ($act == "delete") xb_action_delete();
-else if ($act == "down") xb_action_down();
-else xb_action_list();
+    $cfg = xb_fetch($DB_NAME, "select * from cfg limit 1");
+    if (!$cfg) $cfg = array();
+    $ccfg = xb_fetch($DB_CM, "select * from ccfg where club='".xb_sql($club)."'");
+    if (!$ccfg) $ccfg = array();
+    $bcfg = xb_fetch($DB_CM, "select * from bcfg where table_name='".xb_sql($table_name)."'");
+    if (!$bcfg) $bcfg = array("name"=>$table_name, "line"=>15);
+
+    $is_admin = xb_is_admin($cfg, $bcfg);
+    $can_write = xb_can_write_board($bcfg, $ccfg, $is_admin);
+    if (!xb_can_read_board($bcfg, $is_admin)) xb_error_page("No read permission.");
+
+    if ($act == "read") xb_action_read();
+    else if ($act == "write") xb_action_write();
+    else if ($act == "save") xb_action_save();
+    else if ($act == "edit") xb_action_edit();
+    else if ($act == "delete") xb_action_delete();
+    else if ($act == "down") xb_action_down();
+    else xb_action_list();
+}
 
 ?>
