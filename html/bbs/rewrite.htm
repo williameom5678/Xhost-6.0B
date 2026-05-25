@@ -819,7 +819,7 @@ function xb_action_login()
     $now = date("Y-m-d H:i:s");
     mysql_db_query($DB_NAME, "update user set login='$now', all_log=all_log+1, month_log=month_log+1 where id='".xb_sql($id)."'");
     xb_set_login($user);
-    Header("Location: rewrite.htm?act=profile");
+    Header("Location: rewrite.htm");
     exit;
 }
 
@@ -882,7 +882,7 @@ function xb_action_signup()
     if (!xb_insert($DB_NAME, "user", $data)) { xb_signup_form("Join failed: ".mysql_error(), $id, $name, $email); return; }
     $user = xb_fetch($DB_NAME, "select * from user where id='".xb_sql($id)."'");
     xb_set_login($user);
-    Header("Location: rewrite.htm?act=profile");
+    Header("Location: rewrite.htm");
     exit;
 }
 
