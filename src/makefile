@@ -38,7 +38,7 @@ maillist: $(MAILLIST)
 
 PF	=pf.o ut.o utdb.o utbase.o utview.o 
 pf: $(PF)
-	$(CC) -o $@ $(PF)
+	$(CC) -o $@ $(PF) $(MYSQLINC) -s -L. $(MYSQLLIB) $(EXTRALIBS)
 #	$(CC) -o $@ $(PF) $(MYSQLINC) -s -L. $(MYSQLLIB) $(EXTRALIBS)
 
 
