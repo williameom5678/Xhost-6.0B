@@ -1,11 +1,11 @@
 <?
 /*
- * XHOST BBS ìŠ¤í‚¤ë§ˆìš© Clean WEB ë³´ë“œ ë ˆì´ì–´ (í•œê¸€í™” ë²„ì „)
+ * XHOST BBS ½ºÅ°¸¶¿ë Clean WEB º¸µå ·¹ÀÌ¾î (ÇÑ±ÛÈ­ ¹öÀü)
  *
- * ì´ íŒŒì¼ì€ ê¸°ì¡´ì˜ ë™ì‘ ë°©ì‹ì„ ìœ ì§€í•©ë‹ˆë‹¤:
- * - short PHP tags ì‚¬ìš©
- * - mysql_* í•¨ìˆ˜ ì‚¬ìš©
- * - EUC-KR ì¸ì½”ë”© ìœ ì§€
+ * ÀÌ ÆÄÀÏÀº ±âÁ¸ÀÇ µ¿ÀÛ ¹æ½ÄÀ» À¯ÁöÇÕ´Ï´Ù:
+ * - short PHP tags »ç¿ë
+ * - mysql_* ÇÔ¼ö »ç¿ë
+ * - EUC-KR ÀÎÄÚµù À¯Áö
  */
 
 if (defined("XB_REWRITE_LOADED")) return;
@@ -198,7 +198,7 @@ if (!function_exists("xb_unslash")) {
     function xb_display_body($row, $bcfg, $can_read_private)
     {
         if (isset($row["readopen"]) && $row["readopen"] == "n" && !$can_read_private) {
-            return "<p class='xb-private'>ë¹„ê³µê°œ ê²Œì‹œë¬¼ì…ë‹ˆë‹¤.</p>";
+            return "<p class='xb-private'>ºñ°ø°³ °Ô½Ã¹°ÀÔ´Ï´Ù.</p>";
         }
         $body = stripslashes($row["body"]);
         $body = xb_restore_numeric_entities($body);
@@ -244,64 +244,64 @@ if (!function_exists("xb_unslash")) {
     function xb_page_nav($can_write, $page)
     {
         global $userid, $userna, $code, $is_admin;
-        echo "<div class='xb-nav'><a href='rewrite.htm'>í™ˆ</a>";
+        echo "<div class='xb-nav'><a href='rewrite.htm'>È¨</a>";
         if ($code != "") {
-            echo " | <a href='".xb_common_url("act=list&page=$page")."'>ëª©ë¡</a>";
-            if ($can_write) echo " | <a href='".xb_common_url("act=write&page=$page")."'>ê¸€ì“°ê¸°</a>";
-            if ($is_admin) echo " | <a href='".xb_common_url("act=admin")."'>ê´€ë¦¬ì</a>";
+            echo " | <a href='".xb_common_url("act=list&page=$page")."'>¸ñ·Ï</a>";
+            if ($can_write) echo " | <a href='".xb_common_url("act=write&page=$page")."'>±Û¾²±â</a>";
+            if ($is_admin) echo " | <a href='".xb_common_url("act=admin")."'>°ü¸®ÀÚ</a>";
         }
         echo "<span style='float:right'>";
-        if ($userid && $userid != "guest") echo xb_html($userna)."ë‹˜ | <a href='rewrite.htm?act=logout'>ë¡œê·¸ì•„ì›ƒ</a>";
-        else echo "<a href='rewrite.htm?act=login'>ë¡œê·¸ì¸</a> | <a href='rewrite.htm?act=signup'>íšŒì›ê°€ì…</a>";
+        if ($userid && $userid != "guest") echo xb_html($userna)."´Ô | <a href='rewrite.htm?act=logout'>·Î±×¾Æ¿ô</a>";
+        else echo "<a href='rewrite.htm?act=login'>·Î±×ÀÎ</a> | <a href='rewrite.htm?act=signup'>È¸¿ø°¡ÀÔ</a>";
         echo "</span></div><div class='xb-content'>";
     }
 
     function xb_page_bottom() { echo "</div></div></body></html>"; }
 
-    function xb_error_page($msg) { xb_page_top("ì˜¤ë¥˜"); echo "<p>$msg</p><p><a href='javascript:history.back()'>[ë’¤ë¡œê°€ê¸°]</a></p>"; xb_page_bottom(); exit; }
+    function xb_error_page($msg) { xb_page_top("¿À·ù"); echo "<p>$msg</p><p><a href='javascript:history.back()'>[µÚ·Î°¡±â]</a></p>"; xb_page_bottom(); exit; }
 
-    // --- ì¶”ê°€ ëˆ„ë½ëœ ê´„í˜¸ ë‹«ê¸° ---
+    // --- Ãß°¡ ´©¶ôµÈ °ıÈ£ ´İ±â ---
 } 
 
-// DB ì—°ê²°
+// DB ¿¬°á
 $connect = @mysql_connect($DB_HOST, $DB_USER, $DB_PASS);
-if (!$connect) xb_error_page("DB ì—°ê²° ì‹¤íŒ¨");
-if (!mysql_select_db($DB_CM, $connect)) xb_error_page("DB ì˜¤í”ˆ ì‹¤íŒ¨");
+if (!$connect) xb_error_page("DB ¿¬°á ½ÇÆĞ");
+if (!mysql_select_db($DB_CM, $connect)) xb_error_page("DB ¿ÀÇÂ ½ÇÆĞ");
 
-// ê¸°ë³¸ ì¸ì¦ ë° ì •ë³´ ë¡œë“œ
+// ±âº» ÀÎÁõ ¹× Á¤º¸ ·Îµå
 $act = xb_param("act", "home");
 $club = xb_ident(xb_param("club", "main"), "main");
 $code = xb_ident(xb_param("code", ""), "");
 
-// (ìƒëµëœ ê¸°íƒ€ ì•¡ì…˜ í•¨ìˆ˜ë“¤: xb_action_home, xb_action_list, xb_action_read ë“±)
-// ... ê¸°ì¡´ ì½”ë“œì˜ ë¡œì§ì„ ì—¬ê¸°ì— í¬í•¨ ...
+// (»ı·«µÈ ±âÅ¸ ¾×¼Ç ÇÔ¼öµé: xb_action_home, xb_action_list, xb_action_read µî)
+// ... ±âÁ¸ ÄÚµåÀÇ ·ÎÁ÷À» ¿©±â¿¡ Æ÷ÇÔ ...
 
-if ($act == "login") { /* ë¡œê·¸ì¸ ë¡œì§ */ }
+if ($act == "login") { /* ·Î±×ÀÎ ·ÎÁ÷ */ }
 else if ($act == "logout") { 
     setcookie("userid", "", 0, "/");
     Header("Location: rewrite.htm");
 }
 else if ($code == "" || $act == "home") {
-    xb_page_top("ê²Œì‹œíŒ í™ˆ");
+    xb_page_top("°Ô½ÃÆÇ È¨");
     xb_page_nav(false, 1);
-    echo "<h3>í™˜ì˜í•©ë‹ˆë‹¤.</h3><p>ê²Œì‹œíŒì„ ì„ íƒí•´ì£¼ì„¸ìš”.</p>";
+    echo "<h3>È¯¿µÇÕ´Ï´Ù.</h3><p>°Ô½ÃÆÇÀ» ¼±ÅÃÇØÁÖ¼¼¿ä.</p>";
     xb_page_bottom();
 }
 else {
     $table_name = $club."_".$code;
-    if (!xb_table_exists($DB_CM, $table_name)) xb_error_page("ê²Œì‹œíŒì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: $table_name");
+    if (!xb_table_exists($DB_CM, $table_name)) xb_error_page("°Ô½ÃÆÇÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù: $table_name");
     
     $bcfg = xb_fetch($DB_CM, "select * from bcfg where table_name='".xb_sql($table_name)."'");
     if (!$bcfg) $bcfg = array("name" => $table_name, "line" => 15);
     
     $is_admin = xb_is_admin(array(), $bcfg);
-    $can_write = true; // ì‹¤ì œ ê¶Œí•œ ë¡œì§ ì ìš© í•„ìš”
+    $can_write = true; // ½ÇÁ¦ ±ÇÇÑ ·ÎÁ÷ Àû¿ë ÇÊ¿ä
 
     if ($act == "list") {
         xb_page_top($bcfg["name"]);
         xb_page_nav($can_write, 1);
-        echo "<table class='xb-table'><tr><th>ë²ˆí˜¸</th><th>ì œëª©</th><th>ì‘ì„±ì</th><th>ë‚ ì§œ</th></tr>";
-        // ë¦¬ìŠ¤íŠ¸ ì¶œë ¥ ë£¨í”„...
+        echo "<table class='xb-table'><tr><th>¹øÈ£</th><th>Á¦¸ñ</th><th>ÀÛ¼ºÀÚ</th><th>³¯Â¥</th></tr>";
+        // ¸®½ºÆ® Ãâ·Â ·çÇÁ...
         echo "</table>";
         xb_page_bottom();
     }
