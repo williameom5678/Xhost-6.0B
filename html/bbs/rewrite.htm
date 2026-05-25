@@ -65,9 +65,9 @@ function xb_decode_numeric_entities($value)
     $rest = $value;
     while (1) {
         $pos = strpos($rest, "&#");
-        if ($pos === false) break;
+        if (gettype($pos) != "integer") break;
         $semi = strpos($rest, ";", $pos + 2);
-        if ($semi === false) break;
+        if (gettype($semi) != "integer") break;
         $body = substr($rest, $pos + 2, $semi - $pos - 2);
         $num = 0;
         if (strlen($body) > 1 && (substr($body, 0, 1) == "x" || substr($body, 0, 1) == "X")) $num = hexdec(substr($body, 1));
@@ -336,7 +336,7 @@ function xb_page_top($title)
     echo "<title>".xb_html($title)."</title>\n";
     echo "<style>\n";
     echo "body{margin:18px;background:#f6f7f9;color:#222;font-family:Dotum,Arial,sans-serif;font-size:12px;}\n";
-    echo "a{color:#194f90;text-decoration:none}a:hover{text-decoration:underline}.xb-wrap{max-width:920px;margin:0 auto;background:white;border:1px solid #cfd6df}.xb-head{background:#26394f;color:white;padding:10px 14px}.xb-head h1{font-size:16px;margin:0}.xb-nav{padding:8px 14px;background:#edf1f5;border-bottom:1px solid #d5dce5}.xb-nav a,.xb-button{display:inline-block;padding:4px 8px;margin-right:4px;background:#fff;border:1px solid #aeb8c4;color:#16395f}.xb-content{padding:14px}.xb-table{width:100%;border-collapse:collapse;background:white}.xb-table th{background:#e8edf3;border:1px solid #cbd3dc;padding:6px}.xb-table td{border:1px solid #d8dee6;padding:6px}.xb-muted{color:#667}.xb-form td{padding:6px}.xb-input{border:1px solid #aeb8c4;padding:3px;font-size:12px}.xb-title{font-size:16px;font-weight:bold;margin:4px 0 10px}.xb-body{min-height:150px;line-height:1.55;padding:12px;border:1px solid #d8dee6;background:#fff}.xb-error{padding:18px;color:#9a1f1f}.xb-private{color:#9a1f1f;font-weight:bold}.xb-search{margin:10px 0}.xb-page{margin:12px 0;text-align:center}.xb-page b{color:#9a1f1f}.xb-file{background:#f8fafc;padding:8px;border:1px solid #d8dee6;margin:8px 0}\n";
+    echo "a{color:#194f90;text-decoration:none}a:hover{text-decoration:underline}.xb-wrap{max-width:920px;margin:0 auto;background:white;border:1px solid #cfd6df}.xb-head{background:#26394f;color:white;padding:10px 14px}.xb-head h1{font-size:16px;margin:0}.xb-nav{padding:8px 14px;background:#edf1f5;border-bottom:1px solid #d5dce5}.xb-nav a,.xb-button{display:inline-block;padding:4px 8px;margin-right:4px;background:#fff;border:1px solid #aeb8c4;color:#16395f}.xb-content{padding:14px}.xb-table{width:100%;border-collapse:collapse;background:white}.xb-table th{background:#e8edf3;border:1px solid #cbd3dc;padding:6px}.xb-table td{border:1px solid #d8dee6;padding:6px}.xb-muted{color:#667}.xb-form td{padding:6px}.xb-input{border:1px solid #aeb8c4;padding:3px;font-size:12px}.xb-title{font-size:16px;font-weight:bold;margin:4px 0 10px}.xb-body{min-height:150px;line-height:1.55;padding:12px;border:1px solid #d8dee6;background:#fff}.xb-error{padding:18px;color:#9a1f1f}.xb-private{color:#9a1f1f;font-weight:bold}.xb-search{margin:10px 0}.xb-page{margin:12px 0;text-align:center}.xb-page b{color:#9a1f1f}.xb-file{background:#f8fafc;padding:8px;border:1px solid #d8dee6;margin:8px 0}.xb-home{table-layout:fixed}.xb-left{width:170px;background:#f5f8ee;border-right:1px solid #d8dee6;padding:10px}.xb-center{padding:0 12px}.xb-right{width:155px;background:#f5f8ee;border-left:1px solid #d8dee6;padding:10px}.xb-side-title{font-weight:bold;color:#26394f;border-bottom:1px solid #cbd3dc;margin:0 0 8px;padding:5px 0}.xb-panel-title{font-weight:bold;background:#d9e6f2;border:1px solid #bdcbd8;padding:6px 8px;margin-bottom:6px}.xb-gap{margin-top:14px}.xb-login-input{width:130px;margin:2px 0 6px}.xb-login-name{font-weight:bold;margin-bottom:4px}.xb-board-mini div,.xb-online-list div{line-height:1.7;border-bottom:1px dotted #d5dcca}.xb-latest td{background:#fbfcfd}\n";
     echo "</style>\n</head>\n<body>\n";
     echo "<div class='xb-wrap'>\n<div class='xb-head'><h1>".xb_html($title)."</h1></div>\n";
 }
@@ -518,43 +518,240 @@ function xb_boot_auth()
     $userty = $row["type"];
 }
 
-function xb_action_home()
+
+function xb_now_path()
+{
+    global $REQUEST_URI, $PHP_SELF;
+    if ($REQUEST_URI) return $REQUEST_URI;
+    if ($PHP_SELF) return $PHP_SELF;
+    return "rewrite.htm";
+}
+
+function xb_record_online()
+{
+    global $cfg_base, $userid, $userna, $userip;
+
+    if (!$cfg_base) return;
+    if (!$userip) $userip = "0.0.0.0";
+    if (!$userid) $userid = "guest";
+    if (!$userna) $userna = "guest";
+
+    $body = $userid."\n".$userna."\n".date("Y-m-d H:i:s")."\n".xb_now_path();
+    $dirs = array("$cfg_base/userlist", "$cfg_base/tmp");
+    for ($i = 0; $i < sizeof($dirs); $i++) {
+        $dir = $dirs[$i];
+        if (!is_dir($dir)) xb_mkdirs($dir);
+        if (!is_dir($dir)) continue;
+        $filename = sprintf("%s/%-20.20s.nip", $dir, $userip);
+        $fp = @fopen($filename, "w");
+        if ($fp) {
+            fputs($fp, $body);
+            fclose($fp);
+        }
+    }
+}
+
+function xb_online_data()
+{
+    global $cfg_base, $userip;
+
+    $ret = array();
+    $ret["total"] = 0;
+    $ret["guest"] = 0;
+    $ret["users"] = array();
+
+    $dir = "$cfg_base/userlist";
+    if (!is_dir($dir)) $dir = "$cfg_base/tmp";
+    if (!is_dir($dir)) return $ret;
+
+    $handle = opendir($dir);
+    if (!$handle) return $ret;
+    while ($file = readdir($handle)) {
+        if (!strstr($file, ".nip")) continue;
+        $filename = "$dir/$file";
+        $age = time() - filemtime($filename);
+        if ($age > 5 * 60) {
+            @unlink($filename);
+            continue;
+        }
+        $arr = @file($filename);
+        if (!is_array($arr)) continue;
+        $id = trim(str_replace("\n", "", $arr[0]));
+        $name = trim(str_replace("\n", "", $arr[1]));
+        $when = trim(str_replace("\n", "", $arr[2]));
+        $where = trim(str_replace("\n", "", $arr[3]));
+        $ip = trim(substr($file, 0, 20));
+        if ($id == "" || $id == "guest" || $name == "guest") {
+            $ret["guest"]++;
+            continue;
+        }
+        $ret["users"][] = $when."||".$id."||".$name."||".$ip."||".$where."||".intval($age / 60 + 1);
+    }
+    closedir($handle);
+    sort($ret["users"]);
+    $ret["total"] = $ret["guest"] + sizeof($ret["users"]);
+    return $ret;
+}
+
+function xb_board_info_list()
 {
     global $DB_CM;
 
-    xb_page_top("BBS Home");
-    xb_page_nav(false, 1);
-    echo "<div class='xb-title'>Board List</div>";
-    echo "<table class='xb-table'>";
-    echo "<tr><th>Board</th><th width='90'>Club</th><th width='90'>Code</th><th width='70'>Total</th><th width='130'>Last</th><th width='80'>Access</th></tr>";
+    $list = array();
     $result = mysql_db_query($DB_CM, "select * from bcfg order by club,code,table_name");
-    if ($result) {
+    if (!$result) return $list;
+    while ($row = mysql_fetch_array($result)) {
+        $table = $row["table_name"];
+        if ($table == "") continue;
+        $pos = strpos($table, "_");
+        if ($pos < 1) continue;
+        $club = $row["club"];
+        $code = $row["code"];
+        if ($club == "") $club = substr($table, 0, $pos);
+        if ($code == "") $code = substr($table, $pos + 1);
+        if ($code == "__backup" || $code == "__delete") continue;
+        $name = $row["name"];
+        if ($name == "") $name = $table;
+        $item = array();
+        $item["club"] = $club;
+        $item["code"] = $code;
+        $item["name"] = $name;
+        $item["total"] = intval($row["total"]);
+        $item["last_date"] = $row["last_date"];
+        $item["member_read"] = $row["member_read"];
+        $list[] = $item;
+    }
+    mysql_free_result($result);
+    return $list;
+}
+
+function xb_latest_posts($limit)
+{
+    global $DB_CM;
+
+    $rows = array();
+    $boards = xb_board_info_list();
+    for ($i = 0; $i < sizeof($boards); $i++) {
+        $club = $boards[$i]["club"];
+        $code = $boards[$i]["code"];
+        $table = $club."_".$code;
+        if (!xb_table_exists($DB_CM, $table)) continue;
+        $where = xb_query_base($DB_CM, $table);
+        $result = mysql_db_query($DB_CM, "select num,id,name,title,date,hits from $table where $where order by date desc,num desc limit 5");
+        if (!$result) continue;
         while ($row = mysql_fetch_array($result)) {
-            $table = $row["table_name"];
-            if ($table == "") continue;
-            $pos = strpos($table, "_");
-            if ($pos < 1) continue;
-            $tclub = $row["club"];
-            $tcode = $row["code"];
-            if ($tclub == "") $tclub = substr($table, 0, $pos);
-            if ($tcode == "") $tcode = substr($table, $pos + 1);
-            if ($tcode == "__backup" || $tcode == "__delete") continue;
-            $access = "open";
-            if ($row["member_read"] == "y") $access = "member";
-            $name = $row["name"];
-            if ($name == "") $name = $table;
-            echo "<tr>";
-            echo "<td><a href='rewrite.htm?act=list&club=".urlencode($tclub)."&code=".urlencode($tcode)."'>".xb_html($name)."</a></td>";
-            echo "<td align='center'>".xb_html($tclub)."</td>";
-            echo "<td align='center'>".xb_html($tcode)."</td>";
-            echo "<td align='right'>".intval($row["total"])."</td>";
-            echo "<td align='center'>".xb_html(substr($row["last_date"], 0, 16))."</td>";
-            echo "<td align='center'>$access</td>";
-            echo "</tr>";
+            $key = $row["date"]."||".sprintf("%010d", intval($row["num"]));
+            $rows[] = $key."||".$club."||".$code."||".intval($row["num"])."||".$row["id"]."||".$row["name"]."||".$row["title"]."||".intval($row["hits"]);
         }
         mysql_free_result($result);
     }
+    rsort($rows);
+    $limited = array();
+    for ($i = 0; $i < sizeof($rows) && $i < $limit; $i++) $limited[] = $rows[$i];
+    return $limited;
+}
+
+function xb_render_login_box()
+{
+    global $userid, $userna, $userty;
+
+    echo "<div class='xb-side-title'>LOGIN</div>";
+    if ($userid && $userid != "guest") {
+        echo "<div class='xb-login-name'>".xb_html($userna)."</div>";
+        echo "<div class='xb-muted'>ID ".xb_html($userid)." / level ".intval($userty)."</div>";
+        echo "<p><a class='xb-button' href='rewrite.htm?act=logout'>Logout</a></p>";
+    } else {
+        echo "<form method='post' action='rewrite.htm?act=login' accept-charset='EUC-KR'>";
+        echo "<input type='hidden' name='cmd' value='login'>";
+        echo "<div>ID</div><input class='xb-input xb-login-input' type='text' name='login_id' maxlength='12'>";
+        echo "<div>Password</div><input class='xb-input xb-login-input' type='password' name='login_pw' maxlength='12'>";
+        echo "<p><input class='xb-button' type='submit' value='Login'> <a class='xb-button' href='rewrite.htm?act=signup'>Join</a></p>";
+        echo "</form>";
+    }
+}
+
+function xb_render_online_box()
+{
+    global $userip;
+
+    $online = xb_online_data();
+    echo "<div class='xb-side-title'>ONLINE <span class='xb-muted'>(".intval($online["total"]).")</span></div>";
+    echo "<div class='xb-online-list'>";
+    for ($i = 0; $i < sizeof($online["users"]); $i++) {
+        $v = explode("||", $online["users"][$i]);
+        $mark = (trim($v[3]) == trim($userip)) ? "@" : "";
+        echo "<div title='".xb_html($v[3]." / ".$v[4])."'>".$mark.xb_html($v[1])." <span class='xb-muted'>(".xb_html($v[2]).", ".intval($v[5])."m)</span></div>";
+    }
+    if ($online["guest"] > 0) echo "<div>guest <span class='xb-muted'>(".intval($online["guest"]).")</span></div>";
+    if ($online["total"] < 1) echo "<div class='xb-muted'>No active users</div>";
+    echo "</div>";
+}
+
+function xb_action_home()
+{
+    $boards = xb_board_info_list();
+    $latest = xb_latest_posts(12);
+
+    xb_page_top("BBS Home");
+    xb_page_nav(false, 1);
+
+    echo "<table class='xb-home' width='100%' cellspacing='0' cellpadding='0'><tr>";
+
+    echo "<td class='xb-left' valign='top'>";
+    xb_render_login_box();
+    echo "<div class='xb-side-title'>BOARDS</div>";
+    echo "<div class='xb-board-mini'>";
+    for ($i = 0; $i < sizeof($boards) && $i < 16; $i++) {
+        echo "<div><a href='rewrite.htm?act=list&club=".urlencode($boards[$i]["club"])."&code=".urlencode($boards[$i]["code"])."'>".xb_html($boards[$i]["name"])."</a></div>";
+    }
+    echo "</div>";
+    echo "</td>";
+
+    echo "<td class='xb-center' valign='top'>";
+    echo "<div class='xb-panel-title'>Latest Posts</div>";
+    echo "<table class='xb-table xb-latest'>";
+    echo "<tr><th width='70'>Board</th><th>Title</th><th width='90'>Writer</th><th width='95'>Date</th><th width='45'>Hit</th></tr>";
+    for ($i = 0; $i < sizeof($latest); $i++) {
+        $v = explode("||", $latest[$i]);
+        $date = $v[0];
+        $club = $v[2];
+        $code = $v[3];
+        $num = intval($v[4]);
+        $id = $v[5];
+        $name = $v[6];
+        $title = $v[7];
+        $hits = intval($v[8]);
+        echo "<tr>";
+        echo "<td align='center'><a href='rewrite.htm?act=list&club=".urlencode($club)."&code=".urlencode($code)."'>".xb_html($code)."</a></td>";
+        echo "<td><a href='rewrite.htm?act=read&club=".urlencode($club)."&code=".urlencode($code)."&num=$num'>".xb_html(xb_cut($title, 46))."</a></td>";
+        echo "<td align='center'>".xb_html($name ? $name : $id)."</td>";
+        echo "<td align='center'>".xb_html(substr($date, 5, 11))."</td>";
+        echo "<td align='right'>$hits</td>";
+        echo "</tr>";
+    }
+    if (sizeof($latest) < 1) echo "<tr><td colspan='5' align='center' class='xb-muted'>No posts</td></tr>";
     echo "</table>";
+
+    echo "<div class='xb-panel-title xb-gap'>Board List</div>";
+    echo "<table class='xb-table'>";
+    echo "<tr><th>Board</th><th width='80'>Club</th><th width='80'>Code</th><th width='60'>Total</th><th width='115'>Last</th></tr>";
+    for ($i = 0; $i < sizeof($boards); $i++) {
+        echo "<tr>";
+        echo "<td><a href='rewrite.htm?act=list&club=".urlencode($boards[$i]["club"])."&code=".urlencode($boards[$i]["code"])."'>".xb_html($boards[$i]["name"])."</a></td>";
+        echo "<td align='center'>".xb_html($boards[$i]["club"])."</td>";
+        echo "<td align='center'>".xb_html($boards[$i]["code"])."</td>";
+        echo "<td align='right'>".intval($boards[$i]["total"])."</td>";
+        echo "<td align='center'>".xb_html(substr($boards[$i]["last_date"], 5, 11))."</td>";
+        echo "</tr>";
+    }
+    echo "</table>";
+    echo "</td>";
+
+    echo "<td class='xb-right' valign='top'>";
+    xb_render_online_box();
+    echo "</td>";
+
+    echo "</tr></table>";
     xb_page_bottom();
 }
 
@@ -1173,6 +1370,7 @@ if (!$connect) xb_error_page("DB connection failed.");
 if (!mysql_select_db($DB_CM, $connect)) xb_error_page("DB open failed.");
 
 xb_boot_auth();
+xb_record_online();
 
 if ($act == "login") xb_action_login();
 else if ($act == "logout") xb_action_logout();

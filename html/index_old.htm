@@ -1,0 +1,75 @@
+<?
+include "db.htm";
+include "/nfs/php/lib/ut.htm";
+include "utbase.htm";
+include "/nfs/php/lib/template2.htm";
+
+if (!$userid||$userid=="guest") {
+	$hide_str3="<!--";
+	$hide_str4="-->";
+}
+else {
+	$hide_str1="<!--";
+	$hide_str2="-->";
+}
+
+$connect=mysql_connect($DB_HOST,$DB_USER,$DB_PASS);
+
+$tpl = new template("./"); 
+$tpl->define("main","index_t.htm");
+
+$club="main";
+$code="notice";
+$table_name="main_".$code;
+$query="select * from $table_name where good>0 order by date desc limit 10";
+$result=mysql_db_query($DB_CM,$query);
+$tpl->ddefine("notice","main"); 
+while ($row=mysql_fetch_array($result)) {
+	$tpl->dassign(array(
+	ȣ		=> $row[num],
+			=> text_cut($row[title],50),
+			=> substr($row[date],2,8),
+	ȸ		=> $row[hits],
+	));
+	$tpl->dparse("notice","main"); 
+}
+
+$club="main";
+$code="__notice";
+$table_name="main_".$code;
+$query="select * from $table_name where good>0 order by date desc limit 10";
+$result=mysql_db_query($DB_CM,$query);
+$tpl->ddefine("list","main"); 
+while ($row=mysql_fetch_array($result)) {
+	$tpl->dassign(array(
+	ȣ		=> $row[num],
+	club		=> $row[tclub],
+	code		=> $row[tcode],
+			=> $row[id],
+			=> text_cut($row[title],40),
+			=> substr($row[date],5,11),
+	));
+	$tpl->dparse("list","main"); 
+}
+
+$tpl->assign(  array(
+α				=> $login_form,
+ܸ޴			=> file2str("bbstop.htm"),
+ʸ޴			=> file2str("left.htm"),
+ϴܸ޴			=> file2str("bottom.htm"),
+̵				=> $userid,
+̸				=> $userna,
+				=> $userty,
+hide_str1			=> $hide_str1,
+hide_str2			=> $hide_str2,
+hide_str3			=> $hide_str3,
+hide_str4			=> $hide_str4,
+Խ1				=> $spec_bbs1,
+Խ2				=> $spec_bbs2,
+ο			=> $user_count,
+				=> $user_list,
+)  );
+$tpl->parse("main"); 
+$tpl->tprint("main"); 
+
+?>
