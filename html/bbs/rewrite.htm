@@ -471,25 +471,71 @@ function xb_mkdirs($dir)
     return @mkdir($dir, 0777);
 }
 
+function xb_add_unique_dir(&$dirs, $dir)
+{
+    $dir = trim($dir);
+    if ($dir == "") return;
+    $dir = ereg_replace("/+$", "", $dir);
+    for ($i = 0; $i < sizeof($dirs); $i++) {
+        if ($dirs[$i] == $dir) return;
+    }
+    $dirs[] = $dir;
+}
+
+function xb_pds_dirs($club, $code)
+{
+    global $cfg_base, $home_dir, $DOCUMENT_ROOT;
+
+    $dirs = array();
+    if ($cfg_base != "") xb_add_unique_dir($dirs, "$cfg_base/pds/$club/$code");
+    if ($home_dir != "") xb_add_unique_dir($dirs, dirname($home_dir)."/pds/$club/$code");
+    if ($DOCUMENT_ROOT != "") xb_add_unique_dir($dirs, dirname($DOCUMENT_ROOT)."/pds/$club/$code");
+    xb_add_unique_dir($dirs, dirname(dirname(dirname(__FILE__)))."/pds/$club/$code");
+    return $dirs;
+}
+
+function xb_first_writable_pds_dir($club, $code)
+{
+    $dirs = xb_pds_dirs($club, $code);
+    for ($i = 0; $i < sizeof($dirs); $i++) {
+        if (xb_mkdirs($dirs[$i]) && is_dir($dirs[$i]) && is_writable($dirs[$i])) return $dirs[$i];
+    }
+    return "";
+}
+
 function xb_has_upload_file()
 {
-    global $HTTP_POST_FILES, $up_file_name;
+    global $HTTP_POST_FILES, $up_file_name, $_FILES;
 
+    if (is_array($_FILES) && isset($_FILES["up_file"]) && $_FILES["up_file"]["name"] != "") return true;
     if (is_array($HTTP_POST_FILES) && isset($HTTP_POST_FILES["up_file"]) && $HTTP_POST_FILES["up_file"]["name"] != "") return true;
     if ($up_file_name != "") return true;
     return false;
 }
 
+function xb_upload_error_code()
+{
+    global $HTTP_POST_FILES, $_FILES;
+
+    if (is_array($_FILES) && isset($_FILES["up_file"]) && isset($_FILES["up_file"]["error"])) return intval($_FILES["up_file"]["error"]);
+    if (is_array($HTTP_POST_FILES) && isset($HTTP_POST_FILES["up_file"]) && isset($HTTP_POST_FILES["up_file"]["error"])) return intval($HTTP_POST_FILES["up_file"]["error"]);
+    return 0;
+}
+
 function xb_upload($club, $code)
 {
-    global $HTTP_POST_FILES, $cfg_base;
-    global $up_file, $up_file_name, $up_file_size;
+    global $HTTP_POST_FILES;
+    global $up_file, $up_file_name, $up_file_size, $_FILES;
 
     $tmp = "";
     $name = "";
     $size = 0;
 
-    if (is_array($HTTP_POST_FILES) && isset($HTTP_POST_FILES["up_file"])) {
+    if (is_array($_FILES) && isset($_FILES["up_file"])) {
+        $tmp = $_FILES["up_file"]["tmp_name"];
+        $name = $_FILES["up_file"]["name"];
+        $size = intval($_FILES["up_file"]["size"]);
+    } else if (is_array($HTTP_POST_FILES) && isset($HTTP_POST_FILES["up_file"])) {
         $tmp = $HTTP_POST_FILES["up_file"]["tmp_name"];
         $name = $HTTP_POST_FILES["up_file"]["name"];
         $size = intval($HTTP_POST_FILES["up_file"]["size"]);
@@ -499,12 +545,13 @@ function xb_upload($club, $code)
         $size = intval($up_file_size);
     }
 
+    if (xb_upload_error_code() > 0) return false;
     $name = xb_safe_filename($name);
     if ($tmp == "" || $name == "") return false;
     if ($size < 1 && file_exists($tmp)) $size = filesize($tmp);
 
-    $dir = "$cfg_base/pds/$club/$code";
-    if (!xb_mkdirs($dir)) return false;
+    $dir = xb_first_writable_pds_dir($club, $code);
+    if ($dir == "") return false;
 
     $fcount = 0;
     while (1) {
@@ -1429,7 +1476,7 @@ function xb_action_save()
     $upload = false;
     if (xb_board_uses_file($bcfg, $club, $code) && $parent_num < 1) {
         $upload = xb_upload($club, $code);
-        if (!$upload && xb_has_upload_file()) xb_error_page("&#54028;&#51068;&#32;&#50629;&#47196;&#46300;&#50640;&#32;&#49892;&#54056;&#54664;&#49845;&#45768;&#45796;&#46;&#32;&#112;&#100;&#115;&#32;&#46356;&#47113;&#53552;&#47532;&#32;&#44428;&#54620;&#44284;&#32;&#50629;&#47196;&#46300;&#32;&#50857;&#47049;&#32;&#51228;&#54620;&#51012;&#32;&#54869;&#51064;&#54616;&#49464;&#50836;&#46;");
+        if (!$upload && xb_has_upload_file()) xb_error_page("&#54028;&#51068;&#32;&#50629;&#47196;&#46300;&#50640;&#32;&#49892;&#54056;&#54664;&#49845;&#45768;&#45796;&#46;&#32;&#112;&#100;&#115;&#32;&#46356;&#47113;&#53552;&#47532;&#32;&#44428;&#54620;&#44;&#32;&#50629;&#47196;&#46300;&#32;&#50857;&#47049;&#32;&#51228;&#54620;&#44;&#32;&#51076;&#49884;&#32;&#50629;&#47196;&#46300;&#32;&#44221;&#47196;&#47484;&#32;&#54869;&#51064;&#54616;&#49464;&#50836;&#46;");
     }
 
     $data = array();
@@ -1604,14 +1651,16 @@ function xb_action_delete()
 
 function xb_download_path($row, $tclub, $tcode)
 {
-    global $cfg_base, $club, $code;
+    global $club, $code;
 
     $filename = xb_safe_filename($row["filename"]);
     if ($filename == "") return "";
 
-    $dirs = array();
-    $dirs[] = "$cfg_base/pds/$tclub/$tcode";
-    if ($tclub != $club || $tcode != $code) $dirs[] = "$cfg_base/pds/$club/$code";
+    $dirs = xb_pds_dirs($tclub, $tcode);
+    if ($tclub != $club || $tcode != $code) {
+        $more_dirs = xb_pds_dirs($club, $code);
+        for ($i = 0; $i < sizeof($more_dirs); $i++) xb_add_unique_dir($dirs, $more_dirs[$i]);
+    }
 
     $suffixes = array();
     $fcount = intval($row["fcount"]);
