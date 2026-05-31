@@ -471,6 +471,15 @@ function xb_mkdirs($dir)
     return @mkdir($dir, 0777);
 }
 
+function xb_has_upload_file()
+{
+    global $HTTP_POST_FILES, $up_file_name;
+
+    if (is_array($HTTP_POST_FILES) && isset($HTTP_POST_FILES["up_file"]) && $HTTP_POST_FILES["up_file"]["name"] != "") return true;
+    if ($up_file_name != "") return true;
+    return false;
+}
+
 function xb_upload($club, $code)
 {
     global $HTTP_POST_FILES, $cfg_base;
@@ -508,6 +517,7 @@ function xb_upload($club, $code)
     if (function_exists("move_uploaded_file")) $ok = @move_uploaded_file($tmp, $dest);
     if (!$ok) $ok = @copy($tmp, $dest);
     if (!$ok) return false;
+    @chmod($dest, 0666);
 
     $ret = array();
     $ret["filename"] = $name;
@@ -739,12 +749,21 @@ function xb_render_online_box()
     echo "</div>";
 }
 
+function xb_site_title()
+{
+    global $DB_NAME;
+
+    $row = xb_fetch($DB_NAME, "select hostname from cfg limit 1");
+    if ($row && isset($row["hostname"]) && trim($row["hostname"]) != "") return $row["hostname"];
+    return "&#44172;&#49884;&#54032;&#32;&#54856;";
+}
+
 function xb_action_home()
 {
     $boards = xb_board_info_list();
     $latest = xb_latest_posts(12);
 
-    xb_page_top("&#44172;&#49884;&#54032;&#32;&#54856;");
+    xb_page_top(xb_site_title());
     xb_page_nav(false, 1);
 
     echo "<table class='xb-home' width='100%' cellspacing='0' cellpadding='0'><tr>";
@@ -1408,7 +1427,10 @@ function xb_action_save()
     }
 
     $upload = false;
-    if (xb_board_uses_file($bcfg, $club, $code) && $parent_num < 1) $upload = xb_upload($club, $code);
+    if (xb_board_uses_file($bcfg, $club, $code) && $parent_num < 1) {
+        $upload = xb_upload($club, $code);
+        if (!$upload && xb_has_upload_file()) xb_error_page("&#54028;&#51068;&#32;&#50629;&#47196;&#46300;&#50640;&#32;&#49892;&#54056;&#54664;&#49845;&#45768;&#45796;&#46;&#32;&#112;&#100;&#115;&#32;&#46356;&#47113;&#53552;&#47532;&#32;&#44428;&#54620;&#44284;&#32;&#50629;&#47196;&#46300;&#32;&#50857;&#47049;&#32;&#51228;&#54620;&#51012;&#32;&#54869;&#51064;&#54616;&#49464;&#50836;&#46;");
+    }
 
     $data = array();
     $data["del"] = "";
@@ -1580,9 +1602,45 @@ function xb_action_delete()
     exit;
 }
 
+function xb_download_path($row, $tclub, $tcode)
+{
+    global $cfg_base, $club, $code;
+
+    $filename = xb_safe_filename($row["filename"]);
+    if ($filename == "") return "";
+
+    $dirs = array();
+    $dirs[] = "$cfg_base/pds/$tclub/$tcode";
+    if ($tclub != $club || $tcode != $code) $dirs[] = "$cfg_base/pds/$club/$code";
+
+    $suffixes = array();
+    $fcount = intval($row["fcount"]);
+    $suffixes[] = sprintf(".%x", $fcount);
+    $suffixes[] = ".".$fcount;
+    $suffixes[] = "";
+
+    for ($i = 0; $i < sizeof($dirs); $i++) {
+        for ($j = 0; $j < sizeof($suffixes); $j++) {
+            $path = $dirs[$i]."/".$filename.$suffixes[$j];
+            if (is_file($path)) return $path;
+        }
+    }
+    return "";
+}
+
+function xb_download_header_filename($filename)
+{
+    $filename = str_replace("\\", "_", $filename);
+    $filename = str_replace("\"", "_", $filename);
+    $filename = str_replace("\r", "", $filename);
+    $filename = str_replace("\n", "", $filename);
+    if ($filename == "") $filename = "download.bin";
+    return $filename;
+}
+
 function xb_action_down()
 {
-    global $DB_CM, $table_name, $cfg_base, $club, $code;
+    global $DB_CM, $table_name, $club, $code;
 
     $num = intval(xb_param("num", 0));
     $row = xb_row_by_num($DB_CM, $table_name, $num);
@@ -1590,19 +1648,28 @@ function xb_action_down()
 
     $tclub = $row["tclub"] != "" ? $row["tclub"] : $club;
     $tcode = $row["tcode"] != "" ? $row["tcode"] : $code;
-    $filename = $row["filename"];
-    $path = sprintf("%s/pds/%s/%s/%s.%x", $cfg_base, $tclub, $tcode, $filename, intval($row["fcount"]));
-    if (!file_exists($path)) $path = sprintf("%s/pds/%s/%s/%s", $cfg_base, $tclub, $tcode, $filename);
-    if (!file_exists($path)) xb_error_page("&#54028;&#51068;&#51012;&#32;&#52286;&#51012;&#32;&#49688;&#32;&#50630;&#49845;&#45768;&#45796;&#46;");
+    $filename = xb_safe_filename($row["filename"]);
+    $path = xb_download_path($row, $tclub, $tcode);
+    if ($filename == "" || $path == "") xb_error_page("&#54028;&#51068;&#51012;&#32;&#52286;&#51012;&#32;&#49688;&#32;&#50630;&#49845;&#45768;&#45796;&#46;");
 
     if (xb_has_col($DB_CM, $table_name, "down")) mysql_db_query($DB_CM, "update $table_name set down=down+1 where num='$num'");
 
+    if (function_exists("set_time_limit")) @set_time_limit(0);
+    if (function_exists("ob_get_level")) {
+        while (ob_get_level() > 0) @ob_end_clean();
+    }
+
+    $down_name = xb_download_header_filename($filename);
     Header("Content-Type: application/octet-stream");
     Header("Content-Length: ".filesize($path));
-    Header("Content-Disposition: attachment; filename=\"$filename\"");
+    Header("Content-Transfer-Encoding: binary");
+    Header("Cache-Control: private");
+    Header("Pragma: public");
+    Header("Content-Disposition: attachment; filename=\"".$down_name."\"");
     readfile($path);
     exit;
 }
+
 
 }
 
