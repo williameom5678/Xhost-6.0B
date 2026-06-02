@@ -197,13 +197,17 @@ static void sysop_summary()
 	printf(" Deleted users  : %d\n", n);
 	n = sysop_count(sock, "user", "type>=18");
 	printf(" Sysop users    : %d\n", n);
-	n = sysop_count(sock, "bcfg", "");
-	printf(" Boards         : %d\n", n);
-	n = sysop_count(sock, "ccfg", "");
-	printf(" Clubs          : %d\n", n);
 	n = sysop_count(sock, "loginrec", "date>=CURDATE()");
 	if (n >= 0) printf(" Today logins   : %d\n", n);
 	mysql_close(sock);
+
+	if ((sock = sysop_db(&mysql, DB_CM)) != NULL) {
+		n = sysop_count(sock, "bcfg", "");
+		printf(" Boards         : %d\n", n);
+		n = sysop_count(sock, "ccfg", "");
+		printf(" Clubs          : %d\n", n);
+		mysql_close(sock);
+	}
 	sysop_wait();
 }
 
@@ -225,7 +229,7 @@ static void sysop_current_board()
 	printf(" Code  : %s\n", sysop_code);
 	printf(" Table : %s\n\n", table);
 
-	if (!(sock = sysop_db(&mysql, DB_NAME))) {
+	if (!(sock = sysop_db(&mysql, DB_CM))) {
 		sysop_wait();
 		return;
 	}
@@ -411,7 +415,7 @@ static void sysop_board_list()
 	sysop_prompt(" Filter (Enter=all) >> ", key, 60);
 	sysop_sql_escape(esc, key, sizeof(esc));
 
-	if (!(sock = sysop_db(&mysql, DB_NAME))) {
+	if (!(sock = sysop_db(&mysql, DB_CM))) {
 		sysop_wait();
 		return;
 	}
@@ -504,7 +508,7 @@ static void sysop_board_admin()
 		return;
 	}
 
-	if (!(sock = sysop_db(&mysql, DB_NAME))) {
+	if (!(sock = sysop_db(&mysql, DB_CM))) {
 		sysop_wait();
 		return;
 	}
@@ -564,7 +568,7 @@ static void sysop_club_list()
 	sysop_prompt(" Filter (Enter=all) >> ", key, 60);
 	sysop_sql_escape(esc, key, sizeof(esc));
 
-	if (!(sock = sysop_db(&mysql, DB_NAME))) {
+	if (!(sock = sysop_db(&mysql, DB_CM))) {
 		sysop_wait();
 		return;
 	}

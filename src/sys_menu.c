@@ -193,6 +193,21 @@ help_sys_menu()
 }
 
 
+do_sysop()
+{
+	re_print=Yes;
+	if (pf.type<18&&!is_same2(cfg.sysop,pf.id)) {
+		mess("SYSOP utility is restricted to sysop accounts.");
+		return;
+	}
+	set_stat2(19,"bin/sysop");
+	sys_tem("bin/sysop '%s' '%s' '%s'",club_go.code,go.code,pf.id);
+	set_signal();
+	set_stat(1,"");
+	re_flash();
+}
+
+
 //게시판 담당자용 운용 메뉴
 do_bsysop()
 {

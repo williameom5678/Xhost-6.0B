@@ -7,19 +7,20 @@ EXTRALIBS= -lmysqlclient -lm
 
 CC=gcc -O3 -W $(MYSQLINC) $(MYSQLLIB)
 # rules
-all:	m
+all:	m sysop
 
 MAIN	=main.o find.o us.o check.o bbs.o bbssub.o bbsread.o write.o xchat.o xchatut.o mail.o down.o comm.o sub.o gocode.o logo.o mterm.o mess.o ut.o utdb.o utbase.o utview.o startid.o notice.o exec.o sys_menu.o sbook.o
 m: $(MAIN)
 	./makenum;$(CC) -o $@ $(MAIN) -s $(MYSQLLIB) $(EXTRALIBS)
 
-u:
+u: sysop
 	cp -f m  /bbs/bin/main
 	cp -f guest  /bbs/bin/
 	cp -f cguest  /bbs/bin/
 	cp -f ed_menu  /bbs/bin/
 	cp -f xfrm  /bbs/bin/
 	cp -f bsysop /bbs/bin/
+	cp -f sysop /bbs/bin/
 	cp -f txt2bbs /bbs/bin/
 
 
@@ -49,6 +50,11 @@ guest: $(GUEST)
 CGUEST	=cguest.o ut.o utdb.o utbase.o utview.o 
 cguest: $(CGUEST)
 	$(CC) -o $@ $(CGUEST) $(MYSQLINC) -s -L. $(MYSQLLIB) $(EXTRALIBS)
+
+SYSOP	=sysop.o ut.o utdb.o utbase.o utview.o 
+sysop: $(SYSOP)
+	$(CC) -o $@ $(SYSOP) $(MYSQLINC) -s -L. $(MYSQLLIB) $(EXTRALIBS)
+
 
 BSYSOP	=bsysop.o ut.o utdb.o utbase.o utview.o 
 bsysop: $(BSYSOP)
