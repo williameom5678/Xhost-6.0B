@@ -653,9 +653,12 @@ int main(int argc, char **argv)
 	findport(tty);
 	set_tmpfile();
 
-	strcpy(sysop_club, argv[1]);
-	strcpy(sysop_code, argv[2]);
-	strcpy(uid, argv[3]);
+	strncpy(sysop_club, argv[1], sizeof(sysop_club) - 1);
+	strncpy(sysop_code, argv[2], sizeof(sysop_code) - 1);
+	strncpy(uid, argv[3], sizeof(uid) - 1);
+	sysop_club[sizeof(sysop_club) - 1] = 0;
+	sysop_code[sizeof(sysop_code) - 1] = 0;
+	uid[sizeof(uid) - 1] = 0;
 	sysop_clean_word(sysop_club);
 	sysop_clean_word(sysop_code);
 	sysop_clean_word(uid);

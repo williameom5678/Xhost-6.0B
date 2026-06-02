@@ -44,7 +44,8 @@ sys_menu(char *buffstr)
 		}
 	}
 	set_stat(19,mmc[0]);	//작업
-		 if (is_same(cmd,".."))                  help_sys_menu();     //운영진 도움말
+		 if (is_same(cmd,syscmd[0].cmd)||is_same(cmd,".sys")||is_same(cmd,".s")) do_sysop();
+	else if (is_same(cmd,".."))                  help_sys_menu();     //운영진 도움말
 	else if (pf.type>=18&&stristr(cmd,".proc")) {
 		strchng2(cmd,".","");
 		sprintf(buff,"system/c_%s.tag",cmd);
