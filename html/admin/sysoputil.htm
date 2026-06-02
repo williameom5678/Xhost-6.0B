@@ -1,0 +1,619 @@
+<?
+if (!$define_db) {
+  if (file_exists("../db.htm")) include "../db.htm";
+  else include "db.htm";
+}
+if (!$define_ut) {
+  if (file_exists("../ut.htm")) include "../ut.htm";
+  else include "ut.htm";
+}
+if (file_exists("sysop.htm")) include "sysop.htm";
+
+if (isset($HTTP_GET_VARS) && is_array($HTTP_GET_VARS)) {
+  while (list($sw_k, $sw_v) = each($HTTP_GET_VARS)) {
+    if (ereg("^[A-Za-z0-9_]+$", $sw_k) &&
+        $sw_k != "userid" && $sw_k != "userna" && $sw_k != "userty" &&
+        $sw_k != "userip" && $sw_k != "super_user" && $sw_k != "super_mode") {
+      $$sw_k = $sw_v;
+    }
+  }
+}
+if (isset($HTTP_POST_VARS) && is_array($HTTP_POST_VARS)) {
+  while (list($sw_k, $sw_v) = each($HTTP_POST_VARS)) {
+    if (ereg("^[A-Za-z0-9_]+$", $sw_k) &&
+        $sw_k != "userid" && $sw_k != "userna" && $sw_k != "userty" &&
+        $sw_k != "userip" && $sw_k != "super_user" && $sw_k != "super_mode") {
+      $$sw_k = $sw_v;
+    }
+  }
+}
+if (isset($_GET) && is_array($_GET)) {
+  while (list($sw_k, $sw_v) = each($_GET)) {
+    if (ereg("^[A-Za-z0-9_]+$", $sw_k) &&
+        $sw_k != "userid" && $sw_k != "userna" && $sw_k != "userty" &&
+        $sw_k != "userip" && $sw_k != "super_user" && $sw_k != "super_mode") {
+      $$sw_k = $sw_v;
+    }
+  }
+}
+if (isset($_POST) && is_array($_POST)) {
+  while (list($sw_k, $sw_v) = each($_POST)) {
+    if (ereg("^[A-Za-z0-9_]+$", $sw_k) &&
+        $sw_k != "userid" && $sw_k != "userna" && $sw_k != "userty" &&
+        $sw_k != "userip" && $sw_k != "super_user" && $sw_k != "super_mode") {
+      $$sw_k = $sw_v;
+    }
+  }
+}
+
+function sw_in($str) {
+  if (get_magic_quotes_gpc()) $str = stripslashes($str);
+  return trim($str);
+}
+
+function sw_h($str) {
+  $str = htmlspecialchars($str);
+  $str = str_replace("'", "&#039;", $str);
+  return $str;
+}
+
+function sw_sql($str) {
+  $str = sw_in($str);
+  $str = str_replace("\\", "\\\\", $str);
+  $str = str_replace("'", "\\'", $str);
+  $str = str_replace("\"", "\\\"", $str);
+  return $str;
+}
+
+function sw_safe_word($str) {
+  $str = sw_in($str);
+  if (strlen($str) < 1) return false;
+  return ereg("^[A-Za-z0-9_.-]+$", $str);
+}
+
+function sw_val($row, $key) {
+  if (!$row) return "";
+  if (!isset($row[$key])) return "";
+  return $row[$key];
+}
+
+function sw_count_rows($dbname, $table, $where) {
+  if (!sw_safe_word($table)) return -1;
+  $query = "select count(*) from $table";
+  if (strlen($where) > 0) $query .= " where $where";
+  $result = mysql_db_query($dbname, $query);
+  if (!$result) return -1;
+  $row = mysql_fetch_row($result);
+  if (!$row) return -1;
+  return intval($row[0]);
+}
+
+function sw_num($n) {
+  if ($n < 0) return "ERR";
+  return $n;
+}
+
+function sw_table_exists($dbname, $table) {
+  if (!sw_safe_word($table)) return false;
+  $esc = sw_sql($table);
+  $result = mysql_db_query($dbname, "show tables like '$esc'");
+  if (!$result) return false;
+  $row = mysql_fetch_row($result);
+  if ($row) return true;
+  return false;
+}
+
+function sw_load_user($id) {
+  global $DB_NAME;
+  $id = sw_in($id);
+  if (!sw_safe_word($id)) return false;
+  $esc = sw_sql($id);
+  $result = mysql_db_query($DB_NAME, "select num,id,name,type,del,login,logout,all_log,month_log from user where id='$esc' limit 1");
+  if (!$result) return false;
+  $row = mysql_fetch_array($result);
+  if (!$row) return false;
+  return $row;
+}
+
+function sw_user_exists($id) {
+  $row = sw_load_user($id);
+  if ($row) return true;
+  return false;
+}
+
+function sw_url($newcmd) {
+  global $PHP_SELF, $club, $code;
+  $self = $PHP_SELF;
+  if (!$self) $self = "sysoputil.htm";
+  $url = $self . "?cmd=" . urlencode($newcmd);
+  if (strlen($club) > 0) $url .= "&club=" . urlencode($club);
+  if (strlen($code) > 0) $url .= "&code=" . urlencode($code);
+  return $url;
+}
+
+function sw_header($title, $notice) {
+  global $cmd, $userid, $current_name, $current_type, $club, $code;
+  echo("
+<html>
+<head>
+<title>XHOST SYSOP</title>
+<style>
+body { margin:0; padding:18px; background:#f3f5f7; color:#1b2733; font-family:Arial, sans-serif; font-size:12px; }
+a { color:#174ea6; text-decoration:none; }
+a:hover { text-decoration:underline; }
+.sw-wrap { width:960px; margin:0 auto; }
+.sw-head { background:#102f52; color:white; padding:12px 14px; border:1px solid #0b253f; }
+.sw-head h1 { margin:0; font-size:18px; letter-spacing:0; }
+.sw-meta { margin-top:6px; color:#d9e6f2; }
+.sw-tabs { background:#ffffff; border-left:1px solid #c7d0da; border-right:1px solid #c7d0da; border-bottom:1px solid #c7d0da; padding:8px; }
+.sw-tabs a { display:inline-block; padding:6px 9px; margin:2px; border:1px solid #c7d0da; background:#eef3f8; color:#1b2733; }
+.sw-tabs a.on { background:#2f6fa3; color:#ffffff; border-color:#2f6fa3; }
+.sw-box { background:white; border:1px solid #c7d0da; margin-top:12px; padding:12px; }
+.sw-title { background:#dfe8f1; border:1px solid #c7d0da; padding:7px 9px; font-weight:bold; margin-bottom:10px; }
+.sw-notice { background:#fff6cf; border:1px solid #d9b94e; padding:8px 10px; margin-top:12px; }
+.sw-error { background:#ffe4e4; border:1px solid #d08a8a; padding:8px 10px; margin-top:12px; }
+.sw-form { margin:0 0 12px 0; }
+.sw-form input, .sw-form select { font-size:12px; margin:2px; }
+.sw-form .btn { background:#245b88; color:white; border:1px solid #174160; padding:3px 9px; }
+.sw-grid { width:100%; border-collapse:collapse; background:white; }
+.sw-grid th { background:#e7edf4; border:1px solid #c7d0da; padding:5px; text-align:left; }
+.sw-grid td { border:1px solid #d8dee6; padding:5px; vertical-align:top; }
+.sw-grid .num { text-align:right; }
+.sw-grid .center { text-align:center; }
+.sw-muted { color:#667; }
+.sw-danger { color:#a31717; font-weight:bold; }
+</style>
+</head>
+<body>
+<div class='sw-wrap'>
+<div class='sw-head'>
+  <h1>XHOST SYSOP Web Utility</h1>
+  <div class='sw-meta'>Login: ".sw_h($userid)." (".sw_h($current_name).") type=".intval($current_type)." / Place: ".sw_h($club)." / ".sw_h($code)."</div>
+</div>
+<div class='sw-tabs'>");
+  sw_tab("summary", "Summary");
+  sw_tab("current", "Current Board");
+  sw_tab("user_find", "User Search");
+  sw_tab("user_type", "User Type");
+  sw_tab("user_del", "Delete Flag");
+  sw_tab("board_list", "Board List");
+  sw_tab("board_admin", "Board Managers");
+  sw_tab("club_list", "Club List");
+  echo("</div>");
+  if (strlen($notice) > 0) echo("<div class='sw-notice'>".sw_h($notice)."</div>");
+}
+
+function sw_tab($tabcmd, $label) {
+  global $cmd;
+  $class = "";
+  if ($cmd == $tabcmd) $class = " class='on'";
+  echo("<a$class href='".sw_h(sw_url($tabcmd))."'>$label</a>");
+}
+
+function sw_footer() {
+  echo("
+</div>
+</body>
+</html>
+");
+}
+
+function sw_render_summary() {
+  global $DB_NAME, $DB_MAIL, $DB_CM, $DB_HOST;
+  $result = mysql_db_query($DB_NAME, "select hostname,sysop,itype,rtype,wtype,dtype from cfg limit 1");
+  if ($result) $cfgrow = mysql_fetch_array($result);
+  echo("<div class='sw-box'><div class='sw-title'>System DB summary</div>");
+  echo("<table class='sw-grid'>");
+  echo("<tr><th width='180'>Item</th><th>Value</th></tr>");
+  echo("<tr><td>DB_HOST</td><td>".sw_h($DB_HOST)."</td></tr>");
+  echo("<tr><td>DB_NAME</td><td>".sw_h($DB_NAME)."</td></tr>");
+  echo("<tr><td>DB_MAIL</td><td>".sw_h($DB_MAIL)."</td></tr>");
+  echo("<tr><td>DB_CM</td><td>".sw_h($DB_CM)."</td></tr>");
+  echo("<tr><td>Hostname</td><td>".sw_h(sw_val($cfgrow, "hostname"))."</td></tr>");
+  echo("<tr><td>Sysop ID</td><td>".sw_h(sw_val($cfgrow, "sysop"))."</td></tr>");
+  echo("<tr><td>Limits</td><td>I=".sw_h(sw_val($cfgrow, "itype"))." R=".sw_h(sw_val($cfgrow, "rtype"))." W=".sw_h(sw_val($cfgrow, "wtype"))." D=".sw_h(sw_val($cfgrow, "dtype"))."</td></tr>");
+  echo("<tr><td>Users</td><td>".sw_num(sw_count_rows($DB_NAME, "user", ""))."</td></tr>");
+  echo("<tr><td>Deleted users</td><td>".sw_num(sw_count_rows($DB_NAME, "user", "del='D'"))."</td></tr>");
+  echo("<tr><td>Sysop users</td><td>".sw_num(sw_count_rows($DB_NAME, "user", "type>=18"))."</td></tr>");
+  echo("<tr><td>Boards</td><td>".sw_num(sw_count_rows($DB_NAME, "bcfg", ""))."</td></tr>");
+  echo("<tr><td>Clubs</td><td>".sw_num(sw_count_rows($DB_NAME, "ccfg", ""))."</td></tr>");
+  echo("<tr><td>Today logins</td><td>".sw_num(sw_count_rows($DB_NAME, "loginrec", "date>=CURDATE()"))."</td></tr>");
+  echo("</table></div>");
+}
+
+function sw_render_current() {
+  global $DB_NAME, $club, $code, $view_club, $view_code;
+  $view_club = sw_in($view_club);
+  $view_code = sw_in($view_code);
+  if (!$view_club) $view_club = $club;
+  if (!$view_code) $view_code = $code;
+  echo("<div class='sw-box'><div class='sw-title'>Current board info</div>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("current"))."' method=post>");
+  echo("<input type=hidden name=cmd value='current'> Club <input type=text name=view_club size=16 value='".sw_h($view_club)."'>");
+  echo(" Code <input type=text name=view_code size=16 value='".sw_h($view_code)."'>");
+  echo(" <input class='btn' type=submit value='View'>");
+  echo("</form>");
+  if (strlen($view_club) < 1 || strlen($view_code) < 1) {
+    echo("<div class='sw-muted'>No board selected.</div></div>");
+    return;
+  }
+  if (!sw_safe_word($view_club) || !sw_safe_word($view_code)) {
+    echo("<div class='sw-error'>Invalid club or code.</div></div>");
+    return;
+  }
+  $table = $view_club . "_" . $view_code;
+  $esc = sw_sql($table);
+  $query = "select name,total,sysop,sysop1,sysop2,sysop3,itype,rtype,wtype,dtype from bcfg where table_name='$esc'";
+  $result = mysql_db_query($DB_NAME, $query);
+  if ($result) $row = mysql_fetch_array($result);
+  echo("<table class='sw-grid'>");
+  echo("<tr><th width='180'>Item</th><th>Value</th></tr>");
+  echo("<tr><td>Club</td><td>".sw_h($view_club)."</td></tr>");
+  echo("<tr><td>Code</td><td>".sw_h($view_code)."</td></tr>");
+  echo("<tr><td>Table</td><td>".sw_h($table)."</td></tr>");
+  if ($row) {
+    echo("<tr><td>Board name</td><td>".sw_h(sw_val($row, "name"))."</td></tr>");
+    echo("<tr><td>BCFG total</td><td>".sw_h(sw_val($row, "total"))."</td></tr>");
+    echo("<tr><td>Managers</td><td>".sw_h(sw_val($row, "sysop"))." ".sw_h(sw_val($row, "sysop1"))." ".sw_h(sw_val($row, "sysop2"))." ".sw_h(sw_val($row, "sysop3"))."</td></tr>");
+    echo("<tr><td>Limits</td><td>I=".sw_h(sw_val($row, "itype"))." R=".sw_h(sw_val($row, "rtype"))." W=".sw_h(sw_val($row, "wtype"))." D=".sw_h(sw_val($row, "dtype"))."</td></tr>");
+  }
+  else {
+    echo("<tr><td>BCFG row</td><td>No row</td></tr>");
+  }
+  if (sw_table_exists($DB_NAME, $table)) $real_count = sw_count_rows($DB_NAME, $table, "");
+  else $real_count = -1;
+  echo("<tr><td>Real rows</td><td>".sw_num($real_count)."</td></tr>");
+  echo("</table></div>");
+}
+
+function sw_render_user_find() {
+  global $DB_NAME, $q;
+  $q = sw_in($q);
+  echo("<div class='sw-box'><div class='sw-title'>User search</div>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("user_find"))."' method=post>");
+  echo("<input type=hidden name=cmd value='user_find'> ID/name <input type=text name=q size=30 value='".sw_h($q)."'>");
+  echo(" <input class='btn' type=submit value='Search'>");
+  echo("</form>");
+  if (strlen($q) < 1) {
+    echo("<div class='sw-muted'>No keyword.</div></div>");
+    return;
+  }
+  $esc = sw_sql($q);
+  $query = "select num,id,name,type,del,login,logout,all_log,month_log from user where id like '%$esc%' or name like '%$esc%' order by id limit 50";
+  $result = mysql_db_query($DB_NAME, $query);
+  echo("<table class='sw-grid'><tr><th class='num'>num</th><th>id</th><th>name</th><th class='num'>type</th><th>del</th><th>last-login</th><th class='num'>all</th><th class='num'>month</th></tr>");
+  $count = 0;
+  if ($result) {
+    while ($row = mysql_fetch_array($result)) {
+      $del = sw_val($row, "del");
+      if (strlen($del) < 1) $del = "&nbsp;";
+      else $del = sw_h($del);
+      echo("<tr>");
+      echo("<td class='num'>".sw_h(sw_val($row, "num"))."</td>");
+      echo("<td>".sw_h(sw_val($row, "id"))."</td>");
+      echo("<td>".sw_h(sw_val($row, "name"))."</td>");
+      echo("<td class='num'>".sw_h(sw_val($row, "type"))."</td>");
+      echo("<td class='center'>$del</td>");
+      echo("<td>".sw_h(sw_val($row, "login"))."</td>");
+      echo("<td class='num'>".sw_h(sw_val($row, "all_log"))."</td>");
+      echo("<td class='num'>".sw_h(sw_val($row, "month_log"))."</td>");
+      echo("</tr>");
+      $count++;
+    }
+  }
+  echo("</table><div class='sw-muted'>$count row(s)</div></div>");
+}
+
+function sw_render_user_type() {
+  global $user_id, $new_type;
+  $user_id = sw_in($user_id);
+  $new_type = sw_in($new_type);
+  $row = false;
+  if (strlen($user_id) > 0 && sw_safe_word($user_id)) $row = sw_load_user($user_id);
+  echo("<div class='sw-box'><div class='sw-title'>Change user type</div>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("user_type"))."' method=post>");
+  echo("<input type=hidden name=cmd value='user_type'> User ID <input type=text name=user_id size=20 value='".sw_h($user_id)."'>");
+  echo(" <input class='btn' type=submit value='Load'>");
+  echo("</form>");
+  if (strlen($user_id) > 0 && !$row) echo("<div class='sw-error'>No such user or invalid ID.</div>");
+  if ($row) {
+    if (strlen($new_type) < 1) $new_type = sw_val($row, "type");
+    echo("<table class='sw-grid'><tr><th width='180'>Item</th><th>Value</th></tr>");
+    echo("<tr><td>ID</td><td>".sw_h(sw_val($row, "id"))."</td></tr>");
+    echo("<tr><td>Name</td><td>".sw_h(sw_val($row, "name"))."</td></tr>");
+    echo("<tr><td>Current type</td><td>".sw_h(sw_val($row, "type"))."</td></tr>");
+    echo("<tr><td>Delete flag</td><td>".sw_h(sw_val($row, "del"))."</td></tr>");
+    echo("</table>");
+    echo("<form class='sw-form' action='".sw_h(sw_url("user_type"))."' method=post>");
+    echo("<input type=hidden name=cmd value='save_user_type'>");
+    echo("<input type=hidden name=user_id value='".sw_h($user_id)."'>");
+    echo("New type <input type=text name=new_type size=4 maxlength=2 value='".sw_h($new_type)."'>");
+    echo(" <label><input type=checkbox name=confirm value='Y'> Confirm update</label>");
+    echo(" <label><input type=checkbox name=self_confirm value='Y'> Confirm self downgrade</label>");
+    echo(" <input class='btn' type=submit value='Save'>");
+    echo("</form>");
+  }
+  echo("</div>");
+}
+
+function sw_render_user_del() {
+  global $user_id, $del_action;
+  $user_id = sw_in($user_id);
+  $row = false;
+  if (strlen($user_id) > 0 && sw_safe_word($user_id)) $row = sw_load_user($user_id);
+  echo("<div class='sw-box'><div class='sw-title'>Set user delete flag</div>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("user_del"))."' method=post>");
+  echo("<input type=hidden name=cmd value='user_del'> User ID <input type=text name=user_id size=20 value='".sw_h($user_id)."'>");
+  echo(" <input class='btn' type=submit value='Load'>");
+  echo("</form>");
+  if (strlen($user_id) > 0 && !$row) echo("<div class='sw-error'>No such user or invalid ID.</div>");
+  if ($row) {
+    echo("<table class='sw-grid'><tr><th width='180'>Item</th><th>Value</th></tr>");
+    echo("<tr><td>ID</td><td>".sw_h(sw_val($row, "id"))."</td></tr>");
+    echo("<tr><td>Name</td><td>".sw_h(sw_val($row, "name"))."</td></tr>");
+    echo("<tr><td>Type</td><td>".sw_h(sw_val($row, "type"))."</td></tr>");
+    echo("<tr><td>Current delete flag</td><td>".sw_h(sw_val($row, "del"))."</td></tr>");
+    echo("</table>");
+    echo("<form class='sw-form' action='".sw_h(sw_url("user_del"))."' method=post>");
+    echo("<input type=hidden name=cmd value='save_user_del'>");
+    echo("<input type=hidden name=user_id value='".sw_h($user_id)."'>");
+    echo("<select name=del_action>");
+    echo("<option value='D'>Mark deleted</option>");
+    echo("<option value='restore'>Restore</option>");
+    echo("</select>");
+    echo(" <label><input type=checkbox name=confirm value='Y'> Confirm update</label>");
+    echo(" <input class='btn' type=submit value='Save'>");
+    echo("</form>");
+  }
+  echo("</div>");
+}
+
+function sw_render_board_list() {
+  global $DB_NAME, $f;
+  $f = sw_in($f);
+  echo("<div class='sw-box'><div class='sw-title'>Board list</div>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("board_list"))."' method=post>");
+  echo("<input type=hidden name=cmd value='board_list'> Filter <input type=text name=f size=30 value='".sw_h($f)."'>");
+  echo(" <input class='btn' type=submit value='Search'>");
+  echo("</form>");
+  if (strlen($f) > 0) {
+    $esc = sw_sql($f);
+    $query = "select table_name,name,total,sysop,sysop1,sysop2,sysop3 from bcfg where table_name like '%$esc%' or name like '%$esc%' order by table_name limit 200";
+  }
+  else {
+    $query = "select table_name,name,total,sysop,sysop1,sysop2,sysop3 from bcfg order by table_name limit 200";
+  }
+  $result = mysql_db_query($DB_NAME, $query);
+  echo("<table class='sw-grid'><tr><th>table</th><th class='num'>total</th><th>managers</th><th>name</th></tr>");
+  $count = 0;
+  if ($result) {
+    while ($row = mysql_fetch_array($result)) {
+      $managers = sw_val($row, "sysop")." ".sw_val($row, "sysop1")." ".sw_val($row, "sysop2")." ".sw_val($row, "sysop3");
+      echo("<tr>");
+      echo("<td>".sw_h(sw_val($row, "table_name"))."</td>");
+      echo("<td class='num'>".sw_h(sw_val($row, "total"))."</td>");
+      echo("<td>".sw_h($managers)."</td>");
+      echo("<td>".sw_h(sw_val($row, "name"))."</td>");
+      echo("</tr>");
+      $count++;
+    }
+  }
+  echo("</table><div class='sw-muted'>$count row(s)</div></div>");
+}
+
+function sw_render_board_admin() {
+  global $DB_NAME, $club, $code, $table_name;
+  $table_name = sw_in($table_name);
+  if (!$table_name && $club && $code) $table_name = $club . "_" . $code;
+  echo("<div class='sw-box'><div class='sw-title'>Edit board managers</div>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("board_admin"))."' method=post>");
+  echo("<input type=hidden name=cmd value='board_admin'> Table <input type=text name=table_name size=30 value='".sw_h($table_name)."'>");
+  echo(" <input class='btn' type=submit value='Load'>");
+  echo("</form>");
+  if (strlen($table_name) < 1) {
+    echo("<div class='sw-muted'>No table selected.</div></div>");
+    return;
+  }
+  if (!sw_safe_word($table_name)) {
+    echo("<div class='sw-error'>Invalid table name.</div></div>");
+    return;
+  }
+  $esc = sw_sql($table_name);
+  $result = mysql_db_query($DB_NAME, "select sysop,sysop1,sysop2,sysop3,name from bcfg where table_name='$esc'");
+  if ($result) $row = mysql_fetch_array($result);
+  if (!$row) {
+    echo("<div class='sw-error'>No bcfg row for ".sw_h($table_name).".</div></div>");
+    return;
+  }
+  echo("<table class='sw-grid'><tr><th width='180'>Item</th><th>Value</th></tr>");
+  echo("<tr><td>Table</td><td>".sw_h($table_name)."</td></tr>");
+  echo("<tr><td>Board name</td><td>".sw_h(sw_val($row, "name"))."</td></tr>");
+  echo("</table>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("board_admin"))."' method=post>");
+  echo("<input type=hidden name=cmd value='save_board_admin'>");
+  echo("<input type=hidden name=table_name value='".sw_h($table_name)."'>");
+  echo("<table class='sw-grid'>");
+  echo("<tr><th width='180'>Manager</th><th>User ID</th></tr>");
+  echo("<tr><td>sysop</td><td><input type=text name=new_sysop size=20 value='".sw_h(sw_val($row, "sysop"))."'></td></tr>");
+  echo("<tr><td>sysop1</td><td><input type=text name=new_sysop1 size=20 value='".sw_h(sw_val($row, "sysop1"))."'></td></tr>");
+  echo("<tr><td>sysop2</td><td><input type=text name=new_sysop2 size=20 value='".sw_h(sw_val($row, "sysop2"))."'></td></tr>");
+  echo("<tr><td>sysop3</td><td><input type=text name=new_sysop3 size=20 value='".sw_h(sw_val($row, "sysop3"))."'></td></tr>");
+  echo("</table>");
+  echo("<p><label><input type=checkbox name=confirm value='Y'> Confirm update</label> <input class='btn' type=submit value='Save'></p>");
+  echo("</form></div>");
+}
+
+function sw_render_club_list() {
+  global $DB_NAME, $f;
+  $f = sw_in($f);
+  echo("<div class='sw-box'><div class='sw-title'>Club list</div>");
+  echo("<form class='sw-form' action='".sw_h(sw_url("club_list"))."' method=post>");
+  echo("<input type=hidden name=cmd value='club_list'> Filter <input type=text name=f size=30 value='".sw_h($f)."'>");
+  echo(" <input class='btn' type=submit value='Search'>");
+  echo("</form>");
+  if (strlen($f) > 0) {
+    $esc = sw_sql($f);
+    $query = "select club,name,sysop,total,guesttype,stop from ccfg where club like '%$esc%' or name like '%$esc%' order by club limit 200";
+  }
+  else {
+    $query = "select club,name,sysop,total,guesttype,stop from ccfg order by club limit 200";
+  }
+  $result = mysql_db_query($DB_NAME, $query);
+  echo("<table class='sw-grid'><tr><th>club</th><th class='num'>total</th><th class='num'>gt</th><th class='num'>stop</th><th>sysop</th><th>name</th></tr>");
+  $count = 0;
+  if ($result) {
+    while ($row = mysql_fetch_array($result)) {
+      echo("<tr>");
+      echo("<td>".sw_h(sw_val($row, "club"))."</td>");
+      echo("<td class='num'>".sw_h(sw_val($row, "total"))."</td>");
+      echo("<td class='num'>".sw_h(sw_val($row, "guesttype"))."</td>");
+      echo("<td class='num'>".sw_h(sw_val($row, "stop"))."</td>");
+      echo("<td>".sw_h(sw_val($row, "sysop"))."</td>");
+      echo("<td>".sw_h(sw_val($row, "name"))."</td>");
+      echo("</tr>");
+      $count++;
+    }
+  }
+  echo("</table><div class='sw-muted'>$count row(s)</div></div>");
+}
+
+$connect = mysql_connect($DB_HOST, $DB_USER, $DB_PASS);
+if (!$connect) {
+  echo("DB connect error: ".mysql_error());
+  exit;
+}
+
+$cfgrow = false;
+$result = mysql_db_query($DB_NAME, "select * from cfg limit 1");
+if ($result) $cfgrow = mysql_fetch_array($result);
+
+if (!$cmd) $cmd = "summary";
+if (!$club) $club = "main";
+
+$current_name = "";
+$current_type = intval($userty);
+$current_row = false;
+if ($userid && $userid != "guest") $current_row = sw_load_user($userid);
+if ($current_row) {
+  $current_name = sw_val($current_row, "name");
+  $current_type = intval(sw_val($current_row, "type"));
+}
+
+$cfg_sysop = sw_val($cfgrow, "sysop");
+$can_use = false;
+if ($current_row && $current_type >= 18) $can_use = true;
+if ($current_row && strlen($cfg_sysop) > 0 && $userid == $cfg_sysop) $can_use = true;
+if ($super_user) $can_use = true;
+if (check_sysop()) $can_use = true;
+
+if (!$can_use) {
+  sw_header("XHOST SYSOP", "");
+  echo("<div class='sw-error'>SYSOP utility is restricted to sysop accounts.</div>");
+  sw_footer();
+  exit;
+}
+
+$notice = "";
+
+if ($cmd == "save_user_type") {
+  $user_id = sw_in($user_id);
+  $new_type = sw_in($new_type);
+  $target = sw_load_user($user_id);
+  if (!$target) $notice = "No such user or invalid ID.";
+  else if (!ereg("^[0-9][0-9]?$", $new_type)) $notice = "Invalid type.";
+  else {
+    $new_type_i = intval($new_type);
+    if ($new_type_i < 0 || $new_type_i > 19) $notice = "Invalid type.";
+    else if (intval(sw_val($target, "type")) >= 18 && $current_type < 19) $notice = "Only level 19 can change another sysop account.";
+    else if ($user_id == $userid && $new_type_i < 18 && $self_confirm != "Y") $notice = "Self downgrade requires confirmation.";
+    else if ($confirm != "Y") $notice = "Update was not confirmed.";
+    else {
+      $esc = sw_sql($user_id);
+      $result = mysql_db_query($DB_NAME, "update user set type=$new_type_i where id='$esc'");
+      if (!$result) $notice = "Update error: ".mysql_error();
+      else $notice = "Updated $user_id type to $new_type_i.";
+    }
+  }
+  $cmd = "user_type";
+}
+
+if ($cmd == "save_user_del") {
+  $user_id = sw_in($user_id);
+  $target = sw_load_user($user_id);
+  if (!$target) $notice = "No such user or invalid ID.";
+  else if (intval(sw_val($target, "type")) >= 18 && $current_type < 19) $notice = "Only level 19 can change another sysop account.";
+  else if ($confirm != "Y") $notice = "Update was not confirmed.";
+  else {
+    if ($del_action == "D") $delch = "D";
+    else if ($del_action == "restore") $delch = " ";
+    else $delch = "";
+    if (strlen($delch) < 1) $notice = "Invalid delete flag action.";
+    else {
+      $esc = sw_sql($user_id);
+      $result = mysql_db_query($DB_NAME, "update user set del='$delch' where id='$esc'");
+      if (!$result) $notice = "Update error: ".mysql_error();
+      else $notice = "Updated $user_id delete flag.";
+    }
+  }
+  $cmd = "user_del";
+}
+
+if ($cmd == "save_board_admin") {
+  $table_name = sw_in($table_name);
+  $new_sysop = sw_in($new_sysop);
+  $new_sysop1 = sw_in($new_sysop1);
+  $new_sysop2 = sw_in($new_sysop2);
+  $new_sysop3 = sw_in($new_sysop3);
+  if ($confirm != "Y") $notice = "Update was not confirmed.";
+  else if (!sw_safe_word($table_name)) $notice = "Invalid table name.";
+  else {
+    $ids = array($new_sysop, $new_sysop1, $new_sysop2, $new_sysop3);
+    $ok = true;
+    for ($i = 0; $i < 4; $i++) {
+      if (strlen($ids[$i]) > 0) {
+        if (!sw_safe_word($ids[$i])) {
+          $notice = "Invalid manager ID: ".$ids[$i];
+          $ok = false;
+          break;
+        }
+        if (!sw_user_exists($ids[$i])) {
+          $notice = "No such user: ".$ids[$i];
+          $ok = false;
+          break;
+        }
+      }
+    }
+    if ($ok) {
+      $esc_table = sw_sql($table_name);
+      $result = mysql_db_query($DB_NAME, "select table_name from bcfg where table_name='$esc_table'");
+      if (!$result || !mysql_fetch_array($result)) $notice = "No bcfg row for $table_name.";
+      else {
+        $esc0 = sw_sql($new_sysop);
+        $esc1 = sw_sql($new_sysop1);
+        $esc2 = sw_sql($new_sysop2);
+        $esc3 = sw_sql($new_sysop3);
+        $query = "update bcfg set sysop='$esc0',sysop1='$esc1',sysop2='$esc2',sysop3='$esc3' where table_name='$esc_table'";
+        $result = mysql_db_query($DB_NAME, $query);
+        if (!$result) $notice = "Update error: ".mysql_error();
+        else $notice = "Updated managers for $table_name.";
+      }
+    }
+  }
+  $cmd = "board_admin";
+}
+
+sw_header("XHOST SYSOP", $notice);
+
+if ($cmd == "summary") sw_render_summary();
+else if ($cmd == "current") sw_render_current();
+else if ($cmd == "user_find") sw_render_user_find();
+else if ($cmd == "user_type") sw_render_user_type();
+else if ($cmd == "user_del") sw_render_user_del();
+else if ($cmd == "board_list") sw_render_board_list();
+else if ($cmd == "board_admin") sw_render_board_admin();
+else if ($cmd == "club_list") sw_render_club_list();
+else sw_render_summary();
+
+sw_footer();
+mysql_close($connect);
+?>
